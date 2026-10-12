@@ -10,11 +10,15 @@
 
 **软件版本：机器人中控 R17 V164 · 固件 control.40 · 训练中控 R1.5.27 · 首次配网 R5**
 
+[⬇️ **下载已发布的系统镜像 R1**](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) · [📦 **查看正式发布页**](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1)
+
 [🎮 机器人中控在线演示](https://kissqy.github.io/Microduck-kissqy/) · [🧠 训练中控在线演示](https://kissqy.github.io/Microduck-kissqy/training/)
 
 </div>
 
-> 📣 **Public Image R1 已完成实机重刷验证，正在进行正式发布。** 系统镜像已上传至 GitHub Release 草稿，当前尚未公开；R17 V164 和训练中控 R1.5.27 的下载包仍待附加。请以 [Releases 页面](https://github.com/kissqy/Microduck-kissqy/releases) 实际可见的附件为准。
+> ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试。**[点击下载系统镜像 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)**，无需自行编译机器人固件。
+>
+> 📦 **机器人中控 R17 V164 和训练中控 R1.5.27 的 ZIP 尚待补入 Release 附件。** 两个 ZIP 已准备好，上传完成后会在同一 [发布页](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1) 提供下载。旧版仓库源码暂未同步升级，请以正式镜像及对应版本说明为准。
 
 ---
 
@@ -22,13 +26,13 @@
 
 这是一只会**走路、坐下、捡东西、踢球、前滚翻**的小鸭。装上滑轮，还能探索**对称滑行、蹲下、原地转和倒地起身**等动作。实体手柄就能控制，不必为了每个动作打开电脑点按钮；想训练自己的动作，还有独立训练中控。
 
-**Public Image R1 已完成制作并通过刷卡实测**：把官方系统和本项目机器人服务预装在一起。正式发布后，只需刷入 Radxa ZERO 3W、连接 Wi-Fi，再打开中文中控即可使用现成的软件环境，无须从源码编译固件。
+**Public Image R1 已正式发布并通过刷卡实测**：把官方系统和本项目机器人服务预装在一起。刷入 Radxa ZERO 3W、连接 Wi-Fi，再打开中文中控，就能使用现成的软件环境，无须从源码编译固件。
 
 ## 🚀 三步开始
 
-1. **刷镜像** — 从 [GitHub Releases](https://github.com/kissqy/Microduck-kissqy/releases) 下载整合镜像 `.img.xz`，用 [Armbian Imager](https://imager.armbian.com/) 选择「自定义镜像」直接刷入 TF 卡。**不需要手动解压**。镜像正式公开后下载链接才会生效。
+1. **刷镜像** — [直接下载 Microduck Zero 3W 系统镜像 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)，用 [Armbian Imager](https://imager.armbian.com/) 选择「自定义镜像」，选好 TF 卡后直接刷写。**无需手动解压**，刷机工具会自动解压写入。
 2. **连网络** — Zero 首次启动后连接 `Microduck-kissqy` 热点（密码 `12345678`），按照提示设置家庭 Wi-Fi 和新的系统登录密码；若手机没有自动弹出网页，就访问 `http://10.42.0.1:8088`。
-3. **开中控** — 从 Releases 下载并解压 **R17 V164**，运行 `start.cmd` 连接鸭鸭；核对标定并完成 HOME 后，实体手柄就能操控。想训练，另下载 **R1.5.27**。对应附件会在正式发布时提供。
+3. **开中控** — **R17 V164** 中控 ZIP 补充到 Release 后，下载解压并运行 `start.cmd` 连接鸭鸭；核对标定并完成 HOME 后再启用运动。独立 **R1.5.27** 训练中控也将随附。
 
 > 🛠️ **软件预装不等于机械免标定。** 第一次装配或更换舵机，务必核对全部关节的零位、方向、限位和 IMU，再启用运动；不要直接把样机标定用在另一只鸭上。
 
@@ -36,6 +40,17 @@
   <img src="docs/assets/wifi-setup-desktop.webp" width="760" alt="Microduck 首次开机热点配网页面，带真实鸭鸭与开源入口" />
   <p><sub>首次热点配网页面展示；实际以 Public Image R1 开机界面为准。</sub></p>
 </div>
+
+## 📥 下载与版本
+
+| 文件 | 状态 | 入口 |
+| --- | --- | --- |
+| **Microduck Zero 3W 公开系统镜像 R1** · 官方 0.15.1 + V164 / control.40 | ✅ 已公开，实机重刷通过 | **[⬇️ 直接下载 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** |
+| **机器人中控 R17 V164** | ⏳ ZIP 待补入 Release 附件 | [查看发布页](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1) |
+| **训练中控 R1.5.27** | ⏳ ZIP 待补入 Release 附件 | [查看发布页](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1) |
+| **Armbian Imager** | ✅ 官方刷机工具 | [官方下载](https://imager.armbian.com/) |
+
+**提示：** 当前仓库中的源码和在线演示仍为此前的版本；本次发布先提供经过刷卡验证的整合系统镜像。不同硬件装配请先完成关节及 IMU 标定，再尝试运动。
 
 ## 🎮 两个中控，各做各的事
 
