@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 # Microduck HD1910
 
 基于 Microduck 官方 **0.15.1** 的飞特 HD1910 适配，包含机器人固件、R17 机器人中控和独立训练中控。参考硬件：Radxa ZERO 3W、官方骨架、15 个 HD1910。社区个人项目，与 Pollen Robotics 无官方隶属关系。

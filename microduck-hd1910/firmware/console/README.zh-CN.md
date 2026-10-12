@@ -1,3 +1,5 @@
+**简体中文** | [English](USER-GUIDE.en.md)
+
 # Microduck R17 V164 / control.40 使用说明
 
 当前中控版本为 `1.0.164`，随包机器人固件为 `1fa8438-feetech-ft6-control.40`，配套官方系统为 `0.15.1`。实体手柄使用原生 padd → robotd 通道，可控制行走和滑轮模型；四个滑轮 ONNX 随固件安装。

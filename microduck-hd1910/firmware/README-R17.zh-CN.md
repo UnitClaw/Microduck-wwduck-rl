@@ -1,3 +1,5 @@
+**简体中文** | [English](README-R17.en.md)
+
 # Microduck control.40 固件与 R17 V164 中控
 
 本目录是 **control.40** 固件源码，基于官方 Microduck **0.15.1**，IPC API 为 **40**。配套机器人中控为 **R17 V164**。

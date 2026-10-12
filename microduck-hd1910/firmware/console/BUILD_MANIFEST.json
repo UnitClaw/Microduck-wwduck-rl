@@ -119,13 +119,13 @@
   "files": [
     {
       "path": "README.zh-CN.md",
-      "bytes": 6892,
-      "sha256": "462b3759e15c09cb67f03e93e7884e44dea0a5918c25d08ef64ebdd698d06fe7"
+      "bytes": 6940,
+      "sha256": "422ee0dd98c732d0d5717c786fc8862041a55f040165aadae1d59d5031473254"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 5764,
-      "sha256": "9714a52cf0afd89627e196be460cf87535cace9ad0b86bb676232964b2e2a54a"
+      "bytes": 5821,
+      "sha256": "e7da4b354edb65dedbf93e4de723c157a2f8187d3dc2769340ceb9dab731c4bc"
     },
     {
       "path": "agent.py",
@@ -154,8 +154,8 @@
     },
     {
       "path": "docs/joint-scale-design148.md",
-      "bytes": 25032,
-      "sha256": "af4e81c5ad4772e22c9a1321e1ad2b9d3d1c033e25fc8cc25c3ede140868a474"
+      "bytes": 25199,
+      "sha256": "3924ee4e032f7bdd3bc9d005f4086d40e392ec200fcc91bf0bd8e4be8b574670"
     },
     {
       "path": "firmware_packages.py",
@@ -549,8 +549,8 @@
     },
     {
       "path": "verification/README.md",
-      "bytes": 906,
-      "sha256": "6d55d094372c4e6c341256d19b2683c2a58c003b3d35eb977a0b2ae3c6e190d1"
+      "bytes": 950,
+      "sha256": "0797a61087e96422ce1e6c564c13fe0de51bc13de07efc4b06eb2a9863cf85ca"
     },
     {
       "path": "verification/console-regression151.log",
@@ -1075,5 +1075,16 @@
     "date": "2026-10-12",
     "omitted_legacy_release_notes": 21,
     "shipped_archive_unchanged": true
+  },
+  "repository_documentation_translation": {
+    "date": "2026-10-12",
+    "languages": [
+      "zh-CN",
+      "en"
+    ],
+    "guide": "README.en.md",
+    "detailed_guide": "USER-GUIDE.en.md",
+    "shipped_archives_unchanged": true,
+    "application_ui_unchanged": true
   }
 }

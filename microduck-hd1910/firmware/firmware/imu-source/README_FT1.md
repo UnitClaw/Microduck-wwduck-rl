@@ -1,3 +1,5 @@
+**简体中文** | [English](README_FT1.en.md)
+
 # Microduck 原生飞特 FT1：通信与 IMU 测试版
 
 2026-09-20。基于已冻结的 daemon 0.10.0，基线提交

@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 # Microduck R17 V164 / control.40 随包固件
 
 当前固件构建为 `1fa8438-feetech-ft6-control.40`，配套中控 `1.0.164` 和官方系统 `0.15.1`。robotd 与 padd 为本版 ARM64 编译程序；robotctl、mediad、输入桥及安装流程使用配套包内配置。

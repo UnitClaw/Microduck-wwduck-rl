@@ -1,3 +1,5 @@
+**简体中文** | [English](public-image-r1.en.md)
+
 # 🦆 Microduck 一键系统镜像 R1
 
 **刷入镜像，连接 Wi-Fi，打开中控，让你的小鸭动起来！**

@@ -1,0 +1,104 @@
+[简体中文](README.md) | **English**
+
+<div align="center">
+
+## 🎬 See the duck in action — 5 real-robot videos
+
+<table>
+<tr>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
+</tr>
+</table>
+
+<sub>These clips show the real robot. The online console demos use simulated data: they cannot connect to your robot or run actual training. The demos currently show earlier versions.</sub>
+
+# 🦆 Microduck · Bring a little desktop duck to life
+
+### Flash the image. Connect to Wi-Fi. Open the console. Get your duck moving.
+
+**An integrated ZERO 3 W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
+
+**Versions: Robot Console R17 V164 · Firmware control.40 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
+
+[⬇️ **Download Public Image R1**](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) · [📦 **Release page**](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1)
+
+[🎮 **Download Robot Console V164**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [🧠 **Download Training Studio R1.5.27**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) · [🛠️ **Browse control.40 source**](microduck-hd1910/firmware/README.en.md)
+
+[🎮 Robot Console online demo](https://kissqy.github.io/Microduck-kissqy/) · [🧠 Training Studio online demo](https://kissqy.github.io/Microduck-kissqy/training/)
+
+</div>
+
+> ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, first-boot Wi-Fi setup, SSH, robot communication, and R17 console recognition. **[Download the .img.xz image](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** — no need to compile the robot firmware yourself.
+>
+> 📦 **Robot Console R17 V164 and Training Studio R1.5.27 are ready to download.** [Robot Console](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [Training Studio](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip). The corresponding **control.40 firmware source and both console sources are published here**; see the download table below.
+
+---
+
+[📚 All documentation](docs/README.en.md)
+
+## ✨ Skip the software setup from scratch
+
+This little duck can **walk, sit, pick things up, kick a ball, and roll forward**. Add rollers to explore **swizzling, crouching, spinning, and standing up after a fall**. Use a physical gamepad to control it; an independent Training Studio is available when you want to train your own movements.
+
+**Public Image R1 is released and has been tested by reflashing a real board.** It combines the official system with this project's preinstalled robot services and movement models. Flash it onto a Radxa ZERO 3 W, connect to Wi-Fi, and open the console to use the prepared software environment without compiling firmware from source.
+
+## 🚀 Start in three steps
+
+1. **Flash the image** — [Download the Microduck ZERO 3 W .img.xz image](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz). In [Armbian Imager](https://imager.armbian.com/), choose a custom image and your microSD card, then flash it. **Manual decompression is unnecessary:** the imager decompresses it during writing.
+2. **Connect to Wi-Fi** — On first boot, join the `Microduck-kissqy` hotspot with password `12345678`. Follow the setup page to enter your home Wi-Fi and set a new system login password. If the page does not open automatically, visit `http://10.42.0.1:8088`.
+3. **Open the console** — [Download Robot Console R17 V164](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip), extract the complete ZIP, and run `start.cmd`. Connect to the duck, check its calibration, and complete HOME before enabling movement. For training, [download Training Studio R1.5.27](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) and run `start-training.cmd`.
+
+> 🛠️ **Preinstalled software still requires calibration for your assembly.** After assembly or servo replacement, verify every joint's zero position, direction, limits, and the IMU before enabling movement. Do not copy the reference duck's calibration blindly.
+
+<div align="center">
+  <img src="docs/assets/wifi-setup-desktop.webp" width="760" alt="Microduck first-boot hotspot and Wi-Fi setup page" />
+  <p><sub>First-boot Wi-Fi setup preview. The actual screen is the one shipped with Public Image R1.</sub></p>
+</div>
+
+## 📥 Downloads and versions
+
+| Component | Status | Link |
+| --- | --- | --- |
+| **Microduck ZERO 3 W Public Image R1** · Official 0.15.1 + V164 / control.40 | ✅ Released; real-board reflash tested | **[⬇️ Download .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** |
+| **Robot Console R17 V164** | ✅ Available; includes the control.40 firmware upgrade payload | **[⬇️ Download ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip)** |
+| **Training Studio R1.5.27** | ✅ Available; independent training console | **[⬇️ Download ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)** |
+| **control.40 firmware source** | ✅ Firmware paired with V164 | [Source](microduck-hd1910/firmware/README.en.md) · [Build guide](microduck-hd1910/docs/BUILD.en.md) |
+| **Robot Console V164 / Training Studio R1.5.27 source** | ✅ Matches the ZIPs above | [Robot Console guide](microduck-hd1910/firmware/console/README.en.md) · [Training Studio guide](microduck-hd1910/training-console/README.en.md) |
+| **Complete repository source** | ✅ Downloadable or cloneable with Git | [Repository ZIP](https://github.com/kissqy/Microduck-kissqy/archive/refs/heads/main.zip) |
+| **Armbian Imager** | ✅ Official flashing tool | [Download](https://imager.armbian.com/) |
+
+**Notes:** The system image is hosted in Releases; the two console ZIPs are in `release-assets/`. V164 reuses the **control.40** firmware compiled for V163. V163 in the original source archive name identifies that build; it does not mean the old control.29 firmware. The online demos still show earlier versions. Calibrate joints and the IMU for your own assembly before trying movements.
+
+## 🎮 Two consoles, two jobs
+
+| 🐣 Robot Console · R17 V164 | 🧠 Training Studio · R1.5.27 |
+| --- | --- |
+| Live 3 D pose, camera, joint / IMU data, servo calibration | Training tasks, recipes, queue, progress and reward curves |
+| Physical gamepad control, firmware maintenance, model status | Visual simulation, policy evaluation, ONNX export |
+| No need to compile the ZERO services yourself | Requires a computer with a training environment; the interface itself does not require a ZERO |
+
+**V164 includes 10 movement models: 6 regular models and 4 roller models.** The control service executes the models; you do not have to hand-script servo movements. Roller movements and recovery depend on assembly, calibration, and training and still need careful real-robot evaluation.
+
+**English instructions:** [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [Image setup](docs/releases/public-image-r1.en.md) · [Source / build guides](microduck-hd1910/README.en.md). The application interfaces in the current downloads remain Chinese; the English guides include the original button labels where needed.
+
+## 🔧 DIY HAT and IMU
+
+Both the custom HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.
+
+[HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md)
+
+## ❤️ Sharing the project and crediting its creators
+
+This is a **personal learning and development project** based on [Pollen Robotics' official Microduck](https://github.com/pollen-robotics/microduck) `0.15.1`, rather than an official release. **Except for explicitly identified upstream and third-party code, models, and assets, the additional firmware adaptations, consoles, tools, documentation, and the author's trained results were developed by this project's author, with AI-assisted programming.**
+
+**Original work that the author owns and can license is provided for personal learning, research, and noncommercial use only. Obtain the author's written permission before commercial use**, including commercial products, paid services, or distribution with robots sold commercially. Upstream Apache-2.0 software, third-party MIT components, official geometry, and other assets retain their own licenses; personal terms do not override third-party rights.
+
+Full scope: [Component licenses](microduck-hd1910/LICENSE) · [Personal noncommercial terms](microduck-hd1910/LICENSES/Personal-NonCommercial.txt) · [Third-party credits](microduck-hd1910/docs/THIRD-PARTY.en.md)
+
+This project grew from one board, one duck, and many debugging sessions. I am an individual maker, with AI helping on parts of the code. I hope these files help you get your own duck moving sooner. Stars ⭐, discussion, and feedback are welcome.
+
+<p align="center"><img width="180" alt="QR code to support the author" src="https://github.com/user-attachments/assets/49054608-65ba-41d6-b3f1-a97941976c4b" /></p>

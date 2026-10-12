@@ -1,3 +1,5 @@
+**简体中文** | [English](README_FT2_SYNC20.en.md)
+
 # FT2 Sync20 增量
 
 FT2 在 FT1 的 20 字节 IMU 快照上增加地址 56 的只读别名，同时保留地址 124。

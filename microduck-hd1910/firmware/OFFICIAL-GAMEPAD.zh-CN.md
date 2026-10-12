@@ -1,3 +1,5 @@
+**简体中文** | [English](OFFICIAL-GAMEPAD.en.md)
+
 R17 v1.0.97 / 官方 0.15.1 手柄
 
 R7 GameSir Xbox 输入桥二进制与映射沿用 R17。官方 padd 原样编译。

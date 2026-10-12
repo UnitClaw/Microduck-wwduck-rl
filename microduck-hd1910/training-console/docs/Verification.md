@@ -1,12 +1,14 @@
+**简体中文** | [English](Verification.en.md)
+
 # R1.5.15 远程训练增量验证
 
-新增远程验证见 [SSH训练说明](R1.5.15-ssh-training.zh-CN.md)。下面保留既有版本的验证记录。服务器长训尚未执行。
+新增远程验证见 [现行 SSH 训练说明](../README.md#本机与服务器上的任务)。下面保留既有版本的验证记录。服务器长训尚未执行。
 
-[R1.5.10训练队列与本版验证](R1.5.10-queue-validation.zh-CN.md)
+[现行训练队列操作](../README.md#第一次训练)
 
 # R1.5.9 当前动作与齿隙
 
-最新核对、执行结果及限制见 [R1.5.9验证](R1.5.9-current-actions-validation.zh-CN.md)。
+最新核对、执行结果及限制见 [保留的逐任务审计](audit-0151/official-task-parameter-audit.zh-CN.md)。
 
 以下为历史记录。
 

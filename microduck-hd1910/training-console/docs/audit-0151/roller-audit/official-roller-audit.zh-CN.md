@@ -1,3 +1,5 @@
+**简体中文** | [English](official-roller-audit.en.md)
+
 # 官方轮滑六族参数审计（2026-10-07）
 
 只读比对 frozen `8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec` 与 current `273afe0b31c4ab365b9ff806a927b63ac92b5ddd`。六族 env_cfg、registry、backlash 包装器、机器人常量及两个轮滑 XML 字节相同。共享 mdp 修改未改变这六族启用的行为。JSON 含实际 factory 的 train / play 完整关键配置；短步结果另存 smoke-frozen.json。

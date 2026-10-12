@@ -1,3 +1,5 @@
+**简体中文** | [English](official-roller-route.en.md)
+
 # 官方滑轮起身路由核对
 
 目标 0.15.1 / 1fa84386。本工程保留的 robotd-params/src/lib.rs 中 Roller 默认 stand=None；robotd/src/main.rs 的 set_standing_disabled 对 Roller 为 true。原始训练导出合同也声明 manual_skill、slot=null、required_skill_settings=null。

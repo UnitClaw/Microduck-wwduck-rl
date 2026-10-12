@@ -1,3 +1,5 @@
+**简体中文** | [English](BASELINE.en.md)
+
 # 发布基线与验证范围
 
 当前公开基线为 **Public Image R1 + R17 V164 / control.40 + Training R1.5.27**。源码按对应交付包同步，具体身份与哈希见 [PUBLICATION-MANIFEST.json](../PUBLICATION-MANIFEST.json)。

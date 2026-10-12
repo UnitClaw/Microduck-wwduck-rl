@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 <div align="center">
 
 ## 🎬 看看鸭鸭的真实表现（5 段视频）
@@ -35,6 +37,8 @@
 > 📦 **机器人中控 R17 V164 和训练中控 R1.5.27 已上传，可直接下载。** [下载机器人中控](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [下载训练中控](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)。配套的 **control.40 固件源码及两个中控源码已同步到仓库**，入口见下方下载表。
 
 ---
+
+[📚 全部说明文档](docs/README.md)
 
 ## ✨ 不用从零配置一堆软件
 

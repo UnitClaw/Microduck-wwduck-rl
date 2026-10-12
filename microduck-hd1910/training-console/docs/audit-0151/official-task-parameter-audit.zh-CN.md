@@ -1,3 +1,5 @@
+**简体中文** | [English](official-task-parameter-audit.en.md)
+
 # 官方动作逐任务参数核验（2026-10-07）
 
 训练保持 `8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec`，对照当前 develop `273afe0b31c4ab365b9ff806a927b63ac92b5ddd`。实际导入两版注册器得到同样33个上游任务；本地左脚踢球2个别名调用官方参数化工厂，因此中控共35项。不是按 README 概述拼接不存在的组合。

@@ -1,3 +1,6 @@
+中文：PUBLICATION-NOTE.txt
+English: https://github.com/kissqy/Microduck-kissqy/blob/main/microduck-hd1910/firmware/console/PUBLICATION-NOTE.en.md
+
 Microduck 机器人中控 R17 V164
 
 本目录程序源码来自 Microduck-Console-R17-V164.zip。

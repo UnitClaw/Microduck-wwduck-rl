@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 # 🧠 Microduck Training Studio · R1.5.27
 
 独立的中文训练中控，用于组织训练任务、管理队列、查看奖励曲线与日志、评估物理仿真、导出 ONNX 和完整模型包。

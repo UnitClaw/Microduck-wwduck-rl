@@ -158,5 +158,16 @@
     "removed_legacy_documents": 49,
     "firmware_programs_models_and_runtime_archives_unchanged": true,
     "history": "Removed documents remain available in Git history."
+  },
+  "repository_documentation_translation": {
+    "date": "2026-10-12",
+    "english_guides": 58,
+    "language_switch": "Paired Markdown links at the top of each guide",
+    "homepage": "../README.en.md",
+    "documentation_index": "../docs/README.en.md",
+    "scope": "Documentation only; English editions preserve version-specific history and original technical identifiers. Existing upstream English documentation is retained.",
+    "application_interfaces": "Existing Chinese interfaces unchanged",
+    "firmware_binaries_models_and_runtime_archives_unchanged": true,
+    "revalidated_hardware_in_translation": false
   }
 }
