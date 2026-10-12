@@ -82,7 +82,7 @@
 
 ## 🔧 HAT 与 IMU 自制记录
 
-[HAT 制作时间线与电压问题](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/)
+[HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/)
 
 ## ❤️ 分享给大家，也尊重原创
 

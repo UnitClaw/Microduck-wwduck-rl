@@ -23,6 +23,6 @@
 
 - [IMU EasyEDA 工程：ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2)
 - [IMU 固件源码及各版说明](../microduck-hd1910/firmware/firmware/imu-source/)
-- [HAT 制作时间线及供电问题记录](HAT-TIMELINE.md)
+- [HAT 制作时间线](HAT-TIMELINE.md)
 
 **记录基线：** A5 是已跑通的原 Dynamixel 版本；飞特适配建立在其已验证硬件基础上。上述通信次数均对应当时的定点验证记录，不代表所有总线工况的长期验收。
