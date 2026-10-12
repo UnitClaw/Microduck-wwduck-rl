@@ -230,7 +230,7 @@ pub fn spawn(
                 // is the want — see [`crate::pipeline::Frames`]. `starved` now counts a tee that
                 // did not answer within the timeout, which is the same fault it always meant and a
                 // narrower one than "there was nothing there when I looked".
-                let Some(frame) = frames.next_frame() else {
+                let Some(frame) = frames.inspect_next(Clone::clone) else {
                     starved += 1;
                     continue;
                 };

@@ -37,6 +37,17 @@ def from_action(action):
                      'head_alpha': action['head_alpha'], 'legs_alpha': action['legs_alpha']})
 
 
+def validate_new_training(value=None):
+    """The removed UI cannot leave an enabled EMA in a newly queued recipe.
+
+    validate/configure remain available for immutable old runs and checkpoints.
+    """
+    settings = validate(value)
+    if settings['enabled']:
+        raise ValueError('新建训练已取消头腿滤波，请刷新 R1.5.21 页面后重新加入队列。旧模型续训按原记录保留。')
+    return validate()
+
+
 def describe(action, control_hz=50.0):
     settings = from_action(action)
     return {**settings, 'control_hz': float(control_hz),

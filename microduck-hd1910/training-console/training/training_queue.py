@@ -34,6 +34,10 @@ class TrainingQueueMixin:
                         or not isinstance(e.get('id'), str) or e['id'] in ids):
                     raise ValueError('队列条目无效')
                 ids.add(e['id'])
+            current_entries=[e for e in saved['entries'] if e['request'].get('task') in TASKS]
+            if len(current_entries)!=len(saved['entries']):
+                saved['entries']=current_entries
+                self._save_queue_json(path,saved)
             self.training_queue = saved
         except FileNotFoundError:
             pass
@@ -73,6 +77,8 @@ class TrainingQueueMixin:
         from training_console import validate_parameters, validate_profile
         from training.official_spec import physical_recipe
         with self.lock:
+            if 'target_limit_comparison' in value or 'target_limit_start_mode' in value:
+                raise ValueError('限幅对照仅用于 ONNX 仿真，不能加入训练队列。')
             if self.closed:
                 raise ValueError('训练中控正在关闭。')
             key = value.get('client_id')
@@ -88,6 +94,9 @@ class TrainingQueueMixin:
                 raise ValueError('请选择当前官方动作。')
             ref = json.loads((self.directory_source/'data/task-configs'/(task+'.json')).read_text(encoding='utf-8'))
             req = validate_parameters(value, {'tasks': [task], 'configs': {task: ref}})
+            if not value.get('source_job'):
+                from training.action_filter import validate_new_training
+                req['action_filter'] = validate_new_training(req.get('action_filter'))
             req['execution_profile'] = validate_profile(value.get('execution_profile') or self.profile)
             if TASKS[task]['role'] == 'sitstand' and not value.get('source_job') and req['training_action_scale'] != 1:
                 raise ValueError('官方坐站动作系数固定1.0。')

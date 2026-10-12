@@ -2209,7 +2209,7 @@
       "title": "实际控制实现",
       "english": "Loaded controller class",
       "unit": "类名",
-      "explanation": "XL330与STS3215使用不同控制律；HD1910辨识文件选用后者作为模型结构。"
+      "explanation": "XL330 与 HD1910 使用不同的仿真控制参数；此处用于核对加载的模型。"
     },
     "error_gain": {
       "title": "误差到PWM换算",

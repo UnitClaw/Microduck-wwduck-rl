@@ -24,13 +24,18 @@ class RecoveryLaunchTests(unittest.TestCase):
                                     'engine': ENGINE, 'tasks': list(TASKS), 'configs': {}}
 
     def model(self, task=STAND):
-        value = {'task': task, 'training_action_scale': 1.0, 'training_firmware_p': 5,
-                 'action_filter': {'enabled': True, 'head_alpha': 1.0, 'legs_alpha': 1.0}}
+        value = {'task': task, 'training_action_scale': 1.0, 'training_firmware_p': 5}
         job = self.manager.jobs[self.manager.launch('train', value)['job_id']]
+        # Populate the historical receipt after exercising the current no-EMA entry.
+        historical_filter = {'enabled': True, 'head_alpha': 1.0, 'legs_alpha': 1.0, 'version': 1}
+        job['request']['action_filter'] = copy.deepcopy(historical_filter)
         job.update(status='completed', revision=REVISION, checkpoints=[{'path': '/fixture/model_11000.pt',
                                                      'iteration': 11000}])
         job['effective_config'] = {'resolved': json.loads(
             (tc.ROOT/'data/task-configs'/(task+'.json')).read_text())['inspection']}
+        job['effective_config']['action_filter'] = copy.deepcopy(historical_filter)
+        job['effective_config']['resolved']['full']['env']['actions']['joint_pos'].update(
+            head_alpha=1.0, legs_alpha=1.0, filter_version=1)
         return job, {'source_job': job['id'], 'checkpoint': '/fixture/model_11000.pt'}
 
     def test_pt_check_binds_source_task_and_mapping_and_disables_pushes(self):
@@ -45,6 +50,7 @@ class RecoveryLaunchTests(unittest.TestCase):
         self.assertEqual(request['policy_parameters']['training_action_scale'], 1.0)
         self.assertEqual(request['policy_parameters']['training_firmware_p'], 5)
         self.assertEqual(request['policy_parameters']['action_filter']['legs_alpha'], 1.0)
+        self.assertTrue(request['policy_parameters']['action_filter']['enabled'])
         self.assertEqual(source, original)
 
     def test_onnx_check_uses_export_bound_source_and_sha(self):

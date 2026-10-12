@@ -10,15 +10,29 @@ config_dir=/etc/robot/feetech-ft5
 params_path=$config_dir/robotd.toml
 calibration_path=$config_dir/hd1910-calibration.toml
 dropin=/etc/systemd/system/robotd.service.d/zzzz-r17-0151.conf
-runtime_dropins=/run/systemd/system/robotd.service.d
 state_dir=/var/lib/robot/feetech-ft5/r5
 socket_path=/run/robotd.sock
 temporary_dir=
 input_paused=0
+input_setup_complete=true
 install_phase=idle
 service_user=root
 service_group=robot
 bus_port=/dev/ttyS2
+
+install_log() { printf '[固件安装 / %s] %s · %s\n' "$install_phase" "$1" "$2"; }
+install_step() {
+    install_phase=$1; local detail=$2; shift 2
+    "$@"
+    install_log 成功 "$detail"
+}
+optional_install_step() {
+    install_phase=$1; local detail=$2 result; shift 2
+    if "$@"; then install_log 成功 "$detail"; else
+        result=$?; input_setup_complete=false
+        install_log 失败 "$detail；退出码 $result，实际原因见上方；主服务继续独立安装"
+    fi
+}
 
 fail() { echo "错误：$*" >&2; return 1; }
 require_root() { [[ $EUID -eq 0 ]] || fail '请用 sudo bash service.sh 执行。'; }
@@ -33,6 +47,15 @@ restart_service() {
         journalctl -u robotd.service -n 30 --no-pager -o cat >&2 || true
         return "$result"
     fi
+    # This observer cannot stop or restart robotd. It receives the existing
+    # four-step push events once; systemd itself has no readiness dependency.
+    install_phase='等待机器人启动'
+    local event_args=()
+    [[ ${MICRODUCK_INSTALL_LOG:-} != 1 ]] || event_args=(--install-log)
+    if python3 "$install_dir/startup_gate.py" --timeout 60 "${event_args[@]}"; then return 0; fi
+    # The failed observer never stops the service; preserve native failure details.
+    journalctl -u robotd.service -n 30 --no-pager -o cat >&2 || true
+    return 78
 }
 
 on_error() {
@@ -40,7 +63,9 @@ on_error() {
     trap - ERR
     if [[ -n $temporary_dir ]]; then rm -rf -- "$temporary_dir"; fi
     if [[ $input_paused == 1 ]]; then
-        echo "安装未完成；阶段：$install_phase；以上为实际错误，可直接重新升级。" >&2
+        install_log 失败 "退出码 $result；实际原因见上方；安装未完成，未重新连接数据通道" >&2
+    elif [[ ${MICRODUCK_INSTALL_LOG:-} == 1 ]]; then
+        install_log 失败 "退出码 $result；实际原因见上方；未改动运行服务" >&2
     fi
     exit "$result"
 }
@@ -88,8 +113,14 @@ install_bundle() {
     local install_mode=commissioning
     local model_args=()
     [[ ${1:-} != reset-models ]] || model_args=(--replace-models)
+    export MICRODUCK_INSTALL_LOG=1
     install_phase=preparing
     identity
+    # A valid archive checksum alone cannot detect a library that was already
+    # truncated before packaging. Reject invalid ELF ranges before touching
+    # the running robot or any input producer; this is installation-only work.
+    install_step '检查可执行文件' '校验可执行文件与推理库的完整性、装载范围和 AArch64 架构' python3 "$bundle_dir/elf_integrity.py" "$bundle_dir"
+    install_phase='准备本机配置'
     temporary_dir=$(mktemp -d)
     python3 "$bundle_dir/rebuild-config.py" --prepare "$temporary_dir"
     local base_args=(--source "$temporary_dir/robotd.toml")
@@ -107,28 +138,25 @@ install_bundle() {
             install_mode=motion
         fi
     fi
-    if [[ ${1:-} == reset-models ]]; then
-        echo '已明确要求重置模型：恢复随包模型与默认绑定（LB 手动起身使用 11000 轮老师）；保留本机标定与官方动作缩放。'
-    else
-        echo '本次升级清理旧 7000／平地 10000 轮起身及 18000 轮联合模型；恢复损坏的随包合同，LB 使用 11000 轮老师，基础系数 1.0；保留当前行走、本机标定和参数。'
-    fi
+    install_log 成功 '本次安装配置已生成；本机标定与已保存参数已读取'
     # padd is a separate official daemon. Stop both input producers before
     # replacing their executable/code; robotd alone does not stop padd.
     input_paused=1
-    install_phase=stopping
     # Stopping an absent/already stopped service is optional during replacement.
     # Atomic file installation also avoids truncating running executable inodes.
-    systemctl stop microduck-webpad.socket microduck-webpad.service padd.service gamesir-xboxd.service 2>/dev/null || echo '旧输入服务停止返回非零，继续直接升级。'
-    request_relax_service || true
-    systemctl stop robotd.service || true
+    optional_install_step '停止旧实体手柄服务' '停止 padd 与 GameSir 输入桥' systemctl stop padd.service gamesir-xboxd.service
+    install_phase='请求停止运动'
+    request_relax_service || install_log 提示 '松开请求未确认；继续停止旧 robotd 进程'
+    install_step '停止旧机器人服务' 'systemd 停止旧 robotd，释放串口与旧 IPC socket' systemctl stop robotd.service
     if [[ $bundle_dir != "$install_dir" ]]; then
-        install_phase=replacing
         install -d -m 755 "$install_dir"
-        python3 "$bundle_dir/install-files.py" "$bundle_dir" "$install_dir" "${model_args[@]}"
+        install_step '替换固件文件' '逐文件原子替换服务文件' python3 "$bundle_dir/install-files.py" "$bundle_dir" "$install_dir" "${model_args[@]}"
     fi
     chmod 755 "$install_dir/robotd" "$install_dir/service.sh" "$install_dir/configure.py"
-    install_phase=configuring
+    install_phase='安装本机配置'
     install -d -m 755 -o "$service_user" -g "$service_group" "$config_dir"
+    # Retire the removed manual P/D/torque override before starting this release.
+    rm -f -- "$config_dir/servo-test-parameters.json"
     python3 - "$temporary_dir/robotd.toml" "$params_path" "$install_dir" <<'PYPARAMS'
 from pathlib import Path
 import sys
@@ -143,25 +171,41 @@ PYPARAMS
         python3 "$install_dir/calibration-config.py" copy "$temporary_dir/hd1910-calibration.toml" --output "$calibration_path"
         chown "$service_user:$service_group" "$calibration_path"
     fi
-    install_phase=audio-setup
-    python3 "$install_dir/voice-setup.py" "$params_path"
-    chown "$service_user:$service_group" "$params_path"
-    python3 "$install_dir/runtime.py" configure-startup "$install_mode"
-    install_phase=input-setup
-    python3 "$install_dir/gamepad.py" prepare-all "$install_dir"
-    systemctl daemon-reload
-    install_phase=robotd-start
-    echo '正在启动 robotd；启动失败直接返回错误。'
+    install_log 成功 '服务参数与本机标定已安装'
+    install_phase='准备音库文件'
+    python3 "$install_dir/voice-setup.py" "$params_path" --prepare || install_log 失败 '音库文件未准备好；实际原因见上方；继续启动主服务'
+    install_step '安装主服务启动配置' "写入 robotd 启动命令；串口 /dev/ttyS2；模式 $install_mode" python3 "$install_dir/runtime.py" configure-startup "$install_mode"
+    install_step '重载服务配置' 'systemd 读取本次安装的服务配置' systemctl daemon-reload
     restart_service
-    install_phase=input-start
-    echo '正在启动真实手柄、padd 与网页输入监听；网页工作进程按需启动。'
-    systemctl start gamesir-xboxd.service microduck-webpad.socket padd.service
+    install_phase='启动机器人服务'
+    install_log 成功 'robotd 四步启动完成；控制循环已运行，未请求运动'
+    printf '{"robotd_ready":true,"mode":"%s"}\n' "$install_mode"
+    # Input configuration belongs after core readiness. A failed input setup
+    # has no authority to stop the already running robot service.
+    input_setup_complete=true
+    install_phase='安装实体手柄配置'
+    if python3 "$install_dir/gamepad.py" prepare-all "$install_dir"; then
+        optional_install_step '重载手柄配置' 'systemd 读取输入桥与 padd 的服务配置' systemctl daemon-reload
+        if [[ $input_setup_complete == true ]]; then
+            optional_install_step '启动实体手柄服务' 'robotd 已就绪；启动 GameSir 输入桥与官方 padd' systemctl restart gamesir-xboxd.service padd.service
+        fi
+    else
+        input_setup_complete=false
+        install_log 失败 '实际原因见上方；跳过手柄启动，robotd 继续运行'
+    fi
+    install_phase='配置系统音频'
+    python3 "$install_dir/voice-setup.py" "$params_path" --system || install_log 失败 '音频配置未完成；实际原因见上方；robotd 继续运行'
+    # Already installed recovery policy produces no duplicate commands/logs.
+    install_phase='附属系统设置'
+    python3 "$install_dir/runtime.py" disable-automatic-recovery || install_log 失败 '系统设置未完成；实际原因见上方；robotd 继续运行'
+    install_phase='配置按需摄像头'
+    python3 "$install_dir/camera-setup.py" "$install_dir" || install_log 失败 '摄像头配置未完成；实际原因见上方；robotd 与输入服务继续运行'
     input_paused=0
     rm -rf -- "$temporary_dir"; temporary_dir=
     install_phase=finished
-    echo "R17 / 0.15.1 文件与配置已安装，服务已启动：$install_mode。"
-    echo '安装不自动开始运动；后续模型继续从中控导入。'
-    echo "{\"upgrade_installed\":true,\"mode\":\"$install_mode\",\"input_setup_complete\":true}"
+    install_phase='完成安装'
+    install_log 成功 "R17 / 0.15.1 已安装；robotd 四步启动已完成，模式 $install_mode；未请求运动"
+    echo "{\"upgrade_installed\":true,\"robotd_ready\":true,\"mode\":\"$install_mode\",\"input_setup_complete\":$input_setup_complete}"
 }
 
 if [[ ${1:-} == models || ${1:-} == connection ]]; then
@@ -187,7 +231,6 @@ status)
     show_service
     python3 "$install_dir/runtime.py" connection
     client bus-status
-    python3 "$install_dir/uart-service.py" status
     ;;
 reset-models)
     [[ $# -eq 1 ]] || fail '用法：reset-models（明确恢复随包模型并删除其他模型）'
@@ -223,9 +266,7 @@ enable)
     chown "$service_user:$service_group" "$calibration_path"
     write_dropin motion
     restart_service
-    python3 "$install_dir/runtime.py" verify-ready motion
     python3 "$install_dir/runtime.py" verify-calibration
-    verify_motion_models
     show_service
     echo '已切入运动模式；有效反馈和 Home 条件满足后可站起测试。'
     ;;
@@ -238,7 +279,6 @@ disable)
     systemctl stop robotd.service
     write_dropin "$switch_mode"
     restart_service
-    python3 "$install_dir/runtime.py" verify-ready commissioning
     python3 "$install_dir/runtime.py" verify-calibration
     show_service
     echo "已请求停扭矩并切换同一服务到 $switch_mode；实际总线状态见上方。"
@@ -258,22 +298,8 @@ reconnect)
     [[ $# -eq 1 ]] || fail '用法：reconnect'
     request_relax_service
     restart_service
-    python3 "$install_dir/gamepad.py" ensure-webpad
     systemctl start padd.service gamesir-xboxd.service
     echo 'robotd 已按现有配置重新启动；输入连接复用，不重写配置。'
-    ;;
-model-import)
-    require_installed
-    [[ $# -eq 4 ]] || fail '用法：model-import 完整ZIP路径 文件名 官方动作槽'
-    import_result=$(python3 "$install_dir/runtime.py" import-model "$2" "$3" "$4")
-    model_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<< "$import_result")
-    python3 "$install_dir/model_preflight.py" model-assign "$model_id" "$4"
-    request_relax_service
-    systemctl stop robotd.service
-    python3 "$install_dir/runtime.py" assign-model "$model_id" "$4"
-    restart_service
-    verify_motion_models
-    python3 "$install_dir/runtime.py" model-assignment "$model_id" "$4"
     ;;
 pad-settings)
     require_installed
@@ -286,27 +312,15 @@ pad-settings)
     ;;
 action-scale)
     require_installed
-    [[ $# -eq 6 ]] || fail '用法：action-scale 模型标识 缩放 P D 转矩限制'
-    python3 "$install_dir/runtime.py" validate-advanced "$3" "$4" "$5" "$6"
+    [[ $# -eq 3 ]] || fail '用法：action-scale 模型标识 缩放'
+    python3 "$install_dir/runtime.py" validate-scale "$3"
     # Applying numbers does not import or replace a model. Do not reparse all
     # training YAML or launch a second inference validator for this operation.
     request_relax_service
     systemctl stop robotd.service
-    python3 "$install_dir/runtime.py" set-action-scale "$2" "$3" "$4" "$5" "$6"
+    python3 "$install_dir/runtime.py" set-action-scale "$2" "$3"
     restart_service
-    verify_motion_models
-    echo "高级参数已应用：缩放 $3 / P $4 / D $5 / 转矩限制 $6；重新 HOME 上力后确认舵机寄存器。"
-    ;;
-model-delete)
-    require_installed
-    [[ $# -eq 2 ]] || fail '用法：model-delete 模型标识'
-    # Preflight before any service or config mutation, including last-walk deletion.
-    python3 "$install_dir/model_preflight.py" "$1" "$2"
-    request_relax_service
-    systemctl stop robotd.service
-    python3 "$install_dir/runtime.py" delete-model "$2"
-    restart_service
-    verify_motion_models
+    echo "动作缩放已应用：$3；重新 HOME 后可启用动作。"
     ;;
 
 *)

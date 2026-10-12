@@ -1,17 +1,11 @@
-Public1 公开发布副本
+Microduck 机器人中控 R17 V164
 
-程序版本保持：R17 v1.0.146 / control.29 / API40；训练中控 R1.5.17。
-完整源码在发布本附件的同一个 GitHub 仓库，对应标签
-r17-v1.0.146-training-r1.5.17-public1。
-固件与机器人中控源码：firmware/；训练中控源码：training-console/。
+本目录程序源码来自 Microduck-Console-R17-V164.zip。
+随包机器人固件为 1fa8438-feetech-ft6-control.40，由 V163 编译，V164 沿用。
+固件源码位于上一级目录，训练中控源码位于 ../../training-console/。
+使用说明见 README.zh-CN.md；固件编译说明见 ../../docs/BUILD.md。
 
-本次仅增加明确授权/来源说明并刷新发布清单。固件载荷、已编译程序、
-ONNX模型和控制代码保持原字节。机器人中控清单里旧Walk字段已按实际
-9600轮联合模型修正；训练示例的个人SSH来源/目标及导入历史已去除，
-样机标定数值未修改。
+运行 ZIP 的下载入口见 GitHub 项目首页：
+https://github.com/kissqy/Microduck-kissqy
 
-包中旧 source_distribution 字段保留原发行来源记录，不是本次GitHub
-源码下载入口。本次源码以同标签的GitHub仓库为准。
-
-使用个人授权部分前请阅读 LICENSE 和第三方许可；Apache固件程序、
-第三方代码和素材继续适用原许可证。新联合步态/起身仍以实机结果为准。
+本目录补入作者原创中控的现有 LICENSE；第三方内容保留原许可证。

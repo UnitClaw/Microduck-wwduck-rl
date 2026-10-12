@@ -8,7 +8,7 @@ ENGINE = 'official_0151'
 RUNTIME_VERSION = '0.15.1'
 RUNTIME_REVISION = '1fa84386f07884e27866411bc1ba166977bced95'
 REVISION = '8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec'
-TRAINING_ADAPTER_REVISION = 'R1.5.9-current-actions-backlash'
+TRAINING_ADAPTER_REVISION = 'R1.5.26-no-ema'
 PIN = {
     'title': '官方训练 · 适配固件 0.15.1 / HD1910',
     'url': 'https://github.com/pollen-robotics/microduck_rl.git',
@@ -19,9 +19,9 @@ PIN = {
     'target_runtime': RUNTIME_VERSION, 'runtime_revision': RUNTIME_REVISION,
 }
 
-# Public deployed action set, checked against the official policies manifest.
-# Native task variants stay available internally for historical PT evaluation.
-# Profiles keep the action picker short; terrain/gear play select a real task.
+# Frozen official task factories, checked against the 0.15.1 command interface.
+# Profiles keep one entry per action; every terrain/gear-play choice names a
+# registered upstream task. Published ONNX coverage is recorded separately.
 PROFILES = [
     ('joint', 'VelStand', '行走与倒地起身 / Walk + recovery', 6000, 'velstand',
      '当前官方 walk 槽：行走、零速度保持和倒地恢复；粗糙＋齿隙为官方发布配方。', 'Rough', True, '当前实机动作 / Current actions'),
@@ -38,20 +38,45 @@ PROFILES = [
     ('walk', 'Velocity', '行走老师 / Walking teacher', 50000, 'velocity',
      '联合训练的行走热启动与行走老师；单独训练不含完整倒地恢复。', 'Rough', True, '联合训练老师 / Teachers'),
     ('stand', 'StandUp', '倒地起身老师 / Recovery teacher', 15000, 'standup',
-     '联合训练的起身老师；不是旧版单独原地站立模型。两位老师的动作系数和滤波需一致。', 'Rough', True, '联合训练老师 / Teachers'),
+     '联合训练的起身老师；不是旧版单独原地站立模型。两位老师的 P、动作映射与机器人合同需一致。', 'Rough', True, '联合训练老师 / Teachers'),
     ('roller', 'Velocity', '轮滑行走 / Roller skating', 50000, 'velocity_rollers',
      '官方被动滑轮机器人配方；需要安装滑轮，不用于当前无滑轮硬件。', 'Flat', False, '滑轮硬件动作 / Requires rollers'),
     ('crouch', 'RollerCrouch', '轮滑蹲下 / Roller crouch', 8000, 'roller_crouch',
      '需要滑轮；官方相位动作周期5秒、运行窗口3.5秒。', 'Flat', False, '滑轮硬件动作 / Requires rollers'),
+    ('swizzle', 'Velocity', '轮滑对称蹬滑 / Swizzle', 50000, 'velocity_swizzle',
+     '需要滑轮；转向槽表示航向误差，不能直接按普通行走的转速指令使用。0.15.1现成路径仅核定直行子集。', 'Flat', False, '滑轮硬件动作 / Requires rollers'),
+    ('slope', 'RollerSlope', '轮滑下坡 / Roller slope', 8000, 'roller_slope',
+     '官方坡面滑行任务；任务 ID 虽含 Flat，实际使用斜坡模型。需要安装滑轮。', 'Slope', False, '滑轮硬件动作 / Requires rollers'),
+    ('roller_stand', 'RollerStandUp', '轮滑倒地起身 / Roller recovery', 15000, 'roller_standup',
+     '从地面恢复到滑轮站姿；需要安装滑轮。官方未注册此任务的齿隙版本。', 'Flat', False, '滑轮硬件动作 / Requires rollers'),
+    ('spin', 'Spin', '轮滑原地旋转 / Roller spin', 8000, 'spin',
+     '官方滑轮旋转任务；需要安装滑轮。官方未注册此任务的齿隙版本。', 'Flat', False, '滑轮硬件动作 / Requires rollers'),
 ]
+ROLLER_ROLES = ('roller', 'crouch', 'swizzle', 'slope', 'roller_stand', 'spin')
+NO_BACKLASH_ROLES = ('roulade', 'roller_stand', 'spin')
+DEPLOYMENT_NOTES = {
+    'roller': '轮滑的x表示推进/滑行/刹车；y、yaw、head、body需为0。当前R148实机中控尚不接收此任务。',
+    'swizzle': '完整转向需支持航向误差的控制端；当前R148尚不接收此任务，本次提供训练与导出。',
+    'slope': '运行时twist/head/body均须为0；当前R148尚不接收此任务，不能当作普通遥控行走模型。',
+    'roller_stand': '0.15.1轮滑模式不会自动触发此模型，需另配零指令技能与执行窗口；当前R148尚不接收此任务。',
+    'crouch': '0.15.1需使用相位入口，周期5秒、窗口3.5秒；当前R148尚不接收此任务。',
+    'spin': '0.15.1需使用相位入口，周期4秒、窗口2.8秒；当前R148尚不接收此任务。',
+    'kick_left': '独立左脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。',
+    'kick_right': '独立右脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。',
+}
 TASKS = {}
 ACTION_PROFILES = []
 for role, family, title, budget, source, description, default_terrain, default_backlash, group in PROFILES:
     variants = []
-    terrains = ('Flat', 'Rough') if role in ('walk', 'stand', 'joint') else ('Flat',)
+    terrains = ('Flat', 'Rough') if role in ('walk', 'stand', 'joint', 'sitstand', 'ground_pick') else (default_terrain,)
     for terrain in terrains:
-        for backlash in ((False, True) if role != 'roulade' else (False,)):
-            name = f'Mjlab-{family}-{terrain}'+('-Backlash' if backlash else '')+'-MicroDuck'+('-Rollers' if role == 'roller' else '')
+        for backlash in ((False, True) if role not in NO_BACKLASH_ROLES else (False,)):
+            suffix = '-Backlash' if backlash else ''
+            if role == 'swizzle':
+                name = 'Mjlab-Velocity-Swizzle'+suffix+'-MicroDuck'
+            else:
+                id_terrain = 'Flat' if role == 'slope' else terrain
+                name = f'Mjlab-{family}-{id_terrain}'+suffix+'-MicroDuck'+('-Rollers' if role == 'roller' else '')
             upstream = name.replace('BallKickLeft', 'BallKick')
             TASKS[name] = {
                 'id': name, 'upstream': upstream, 'upstream_task': upstream,
@@ -60,18 +85,13 @@ for role, family, title, budget, source, description, default_terrain, default_b
                 'source_revision': REVISION, 'source': f'microduck_{source}_env_cfg.py',
                 'group': group, 'terrain': terrain, 'backlash': backlash,
                 'backlash_total_deg': 2.0 if backlash else 0.0,
-                'hardware': 'rollers' if role in ('roller', 'crouch') else 'feet',
+                'hardware': 'rollers' if role in ROLLER_ROLES else 'feet',
+                'deployment_note': DEPLOYMENT_NOTES.get(role, ''),
                 **({'kick_foot': 'left'} if role == 'kick_left' else {}),
             }
             variants.append(name)
     default = next(k for k in variants if TASKS[k]['terrain'] == default_terrain and TASKS[k]['backlash'] == default_backlash)
     ACTION_PROFILES.append({'role': role, 'name': title, 'group': group, 'default_task': default, 'variants': variants})
-# These former choices were not the currently published one-shot recipes.
-# Their original records can still be evaluated/exported without relabelling.
-for family, role, source, budget in [('SitStand', 'sitstand', 'sitstand', 15000), ('GroundPick', 'ground_pick', 'ground_pick', 20000)]:
-    name = f'Mjlab-{family}-Rough-MicroDuck'
-    TASKS[name] = {**TASKS[f'Mjlab-{family}-Flat-MicroDuck'], 'id': name, 'upstream': name, 'upstream_task': name,
-                   'terrain': 'Rough', 'enabled': False, 'reason': '历史配方，仅评估、导出或原配置续训。'}
 WALK = 'Mjlab-Velocity-Flat-MicroDuck'
 STAND = 'Mjlab-StandUp-Flat-MicroDuck'
 JOINT = 'Mjlab-VelStand-Flat-MicroDuck'
@@ -80,7 +100,9 @@ PIN['task'] = DEFAULT_TASK
 JOINT_TASKS = tuple(k for k, v in TASKS.items() if v['role'] == 'joint')
 
 def new_training_action_scale(task):
-    return 0.9 if TASKS[task]['role'] in ('walk', 'stand', 'joint') else 1.0
+    if task not in TASKS:
+        raise ValueError('未知训练任务。')
+    return 1.0
 
 TEACHER_TASKS = {role: tuple(k for k, v in TASKS.items() if v['role'] == role) for role in ('walk', 'stand')}
 OBSERVATIONS = ['base_ang_vel', 'projected_gravity', 'joint_pos', 'joint_vel', 'actions', 'command', 'head_command', 'body_command']
@@ -92,7 +114,7 @@ RUNTIME_HOME = [0.,-.0873,-.4579,-.0049,.4530,.3491,.3491,0.,0.,0.,.0873,.4579,.
 for _task, _info in TASKS.items():
     _info['training_action_scale'] = new_training_action_scale(_task)
 
-CATALOG = {'revision': REVISION, 'version': '1.5.13', 'runtime_version': RUNTIME_VERSION,
+CATALOG = {'revision': REVISION, 'version': '1.5.27', 'runtime_version': RUNTIME_VERSION,
            'runtime_revision': RUNTIME_REVISION, 'aliases': {},
            'reference_envs': 4096, 'reference_steps_per_iteration': 24,
            'budget_note': '以4096环境×24步为采样基准，课程和默认预算按并行数换算；官方轮数是默认上限，不是收敛保证。',

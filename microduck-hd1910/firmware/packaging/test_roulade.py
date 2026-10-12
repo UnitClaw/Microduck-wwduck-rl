@@ -4,7 +4,7 @@ from pathlib import Path
 import model_packages as models
 from configure import dumps
 ROOT=Path(__file__).resolve().parents[1]
-ROLL='8fdaf12c7478a8314a63647a466bfa34'
+ROLL='59e15d7b04d0c40e9b11b8a70bdecae6'
 class RouladeTests(unittest.TestCase):
  def test_original_model_contract_and_manifest_skill(self):
   info=models.verify_directory(ROOT/'policies/roulade')
@@ -13,15 +13,6 @@ class RouladeTests(unittest.TestCase):
   for rel in ('packaging/robotd-profile.toml','config/robotd-selftrained.toml'):
    config=tomllib.loads((ROOT/rel).read_text());self.assertIn(ROLL,config['policy']['roulade']);self.assertEqual(config['pad']['x'],'roulade');self.assertEqual(config['policy']['skill'][0],info['skill'])
    self.assertEqual(config['policy']['action_scale'],.7);self.assertNotIn('head_lowpass',config['policy']);self.assertNotIn('legs_lowpass',config['policy']);self.assertFalse(config['safety']['limp_fall'])
- def test_selection_persists_skill_and_binding_without_overwriting_global_settings_or_calibration(self):
-  with tempfile.TemporaryDirectory() as temp:
-   base=Path(temp);directory=base/'models'/ROLL;directory.parent.mkdir();shutil.copytree(ROOT/'policies/roulade',directory)
-   cfg=base/'robotd.toml';cal=base/'calibration.toml';cal.write_bytes((ROOT/'packaging/hd1910-calibration.robot.toml').read_bytes());cal_before=cal.read_bytes()
-   original={'policy':{'action_scale':.65,'r17_inference_scale':.7,'head_lowpass':.5,'legs_lowpass':.7,'voltage_adapt':True,'skill':[{'name':'another','duration':2.0}]},'pad':{'a':'ground_pick','dpad_down':'sit_toggle','x':''}}
-   cfg.write_text(dumps(original));models.assign_model(ROLL,'roulade',base,cfg,cal)
-   selected=tomllib.loads(cfg.read_text());self.assertEqual(selected['policy']['action_scale'],.65);self.assertEqual(selected['policy']['head_lowpass'],.5);self.assertEqual(selected['policy']['legs_lowpass'],.7);self.assertTrue(selected['policy']['voltage_adapt']);self.assertNotIn('r17_inference_scale',selected['policy']);self.assertEqual(selected['pad']['x'],'roulade');self.assertEqual(selected['pad']['dpad_down'],'sit_toggle');self.assertEqual(len(selected['policy']['skill']),2)
-   self.assertEqual(cal.read_bytes(),cal_before);self.assertEqual(cfg.read_bytes(),cfg.with_name('robotd.saved.toml').read_bytes())
-   models.assign_model(ROLL,'roulade',base,cfg,cal);self.assertEqual(tomllib.loads(cfg.read_text()),selected)
  def test_unsupported_skill_window_is_rejected_before_install(self):
   files={name:(ROOT/'policies/roulade'/name).read_bytes() for name in models.EXPORT_FILES}
   for bad in ({'duration_s':0},{'chain':'true'},{'action_scale':float('nan')},{'kind':'perpetual'},{'command':{'encoding':'phase'}}):

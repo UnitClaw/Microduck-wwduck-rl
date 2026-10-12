@@ -44,6 +44,17 @@ The functions run once at their mature stage. No curriculum runs during play.
     from mjlab.managers.event_manager import EventTermCfg
 
     specialist = bool(request.get('recovery_evaluation'))
+    recorded_pose = None
+    if request.get('target_limit_start_mode') == 'recorded':
+        if __package__:
+            from .limit_comparison_request import validate_request
+        else:
+            from limit_comparison_request import validate_request
+        profile = request.get('target_limit_comparison')
+        validate_request(request, profile=profile)
+        if not specialist or not isinstance(profile, dict) or not profile.get('recorded_start'):
+            raise ValueError('真机起点需要隔离的ONNX限幅对照与有效录制姿态。')
+        recorded_pose = copy.deepcopy(profile['recorded_start'])
     if specialist:
         cfg.scene.terrain.terrain_type = 'plane'
         cfg.scene.terrain.terrain_generator = None
@@ -66,11 +77,14 @@ The functions run once at their mature stage. No curriculum runs during play.
     cfg.events[STARTUP_EVENT] = EventTermCfg(
         func=initialize_evaluation, mode='startup',
         params={'mature_step': int(max(steps, default=0)) + 1,
-                'timed_terms': tuple(names), 'specialist': specialist})
+                'timed_terms': tuple(names), 'specialist': specialist,
+                **({'recorded_pose': recorded_pose,
+                    'recorded_backlash': 'Backlash' in request['task']} if recorded_pose else {})})
     return cfg
 
 
-def initialize_evaluation(env, env_ids, mature_step, timed_terms, specialist=False):
+def initialize_evaluation(env, env_ids, mature_step, timed_terms, specialist=False,
+                          recorded_pose=None, recorded_backlash=False):
     """Run original timed curricula against live managers, then freeze them."""
     import torch
     from mjlab.managers.curriculum_manager import NullCurriculumManager
@@ -100,6 +114,8 @@ def initialize_evaluation(env, env_ids, mature_step, timed_terms, specialist=Fal
         term.func = reset_ground_pose
         term.params = {'source_func': source_func, 'source_params': source_params,
                        'pose': 'back_flat'}
+        if recorded_pose is not None:
+            term.params.update(recorded_pose=recorded_pose, recorded_backlash=recorded_backlash)
         zero_commands(env, freeze_ranges=True)
 
 
@@ -131,7 +147,8 @@ def zero_commands(env, freeze_ranges=False):
         term.command.zero_()
 
 
-def reset_ground_pose(env, env_ids, source_func, source_params, pose='back_flat'):
+def reset_ground_pose(env, env_ids, source_func, source_params, pose='back_flat',
+                      recorded_pose=None, recorded_backlash=False):
     """Use upstream joint/reset conventions and restrict the starting pose.
 
 Upstream supine is yaw * pitch(-90 degrees). Its log-roll axis is BODY Z;
@@ -153,6 +170,14 @@ The reset remains inside EventManager, before official history resets.
                       face_up_prob=0.0, face_up_roll_max=0.0)
         params['face_down_prob' if pose == 'face_down' else 'face_up_prob'] = 1.0
     source_func(env, ids, **params)
+    if recorded_pose is not None:
+        if pose != 'back_flat':
+            raise ValueError('真机起点不能与其它放置姿态叠加。')
+        if __package__:
+            from .recorded_start import apply_pose
+        else:
+            from recorded_start import apply_pose
+        apply_pose(env, ids, recorded_pose, backlash_expected=recorded_backlash)
     if pose in ('left_side', 'right_side'):
         angle = math.pi / 2 if pose == 'left_side' else -math.pi / 2
         ct, st = math.cos(angle / 2), math.sin(angle / 2)

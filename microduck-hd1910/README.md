@@ -1,32 +1,36 @@
 # Microduck HD1910
 
-基于 Microduck 官方 0.15.1 的飞特 HD1910 适配，包含机器人固件、R17 机器人中控和训练中控。适用参考硬件：Radxa ZERO 3W、官方骨架、15 个 HD1910。社区个人项目，与 Pollen Robotics 无官方隶属关系。
+基于 Microduck 官方 **0.15.1** 的飞特 HD1910 适配，包含机器人固件、R17 机器人中控和独立训练中控。参考硬件：Radxa ZERO 3W、官方骨架、15 个 HD1910。社区个人项目，与 Pollen Robotics 无官方隶属关系。
 
 **源码公开；作者原创部分仅供个人非商业使用。第三方内容保留原许可证，范围见 [LICENSE](LICENSE)。**
 
-## 当前版本
+## 当前版本与源码
 
-| 内容 | 版本 / 源码位置 |
-| --- | --- |
-| 固件与设备服务 | R17 v1.0.146 · control.29 · API40；`firmware/` |
-| 机器人中控 | R17 v1.0.146；`firmware/console/` |
-| 训练中控 | R1.5.17；`training-console/` |
+| 内容 | 当前版本 | 源码位置 |
+| --- | --- | --- |
+| 机器人固件与设备服务 | 官方 0.15.1 · control.40 · API40 | [firmware/](firmware/) |
+| 机器人中控 | R17 V164（1.0.164） | [firmware/console/](firmware/console/) |
+| 训练中控 | R1.5.27 | [training-console/](training-console/) |
+| 公开系统镜像 | Public Image R1 · 首次配网 R5 | [镜像发布页](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1) |
 
-## 使用
+V164 中控沿用 V163 编译的 **control.40** 固件。原固件源码包名为 `Microduck-Source-R17-V163-control40-compiled.tar.gz`；V163 是编译来源版本。当前 `firmware/BUILD.json` 与 V164 随包固件的 BUILD 记录一致，两个中控的程序源码与各自 ZIP 同步。
 
-1. 电脑安装 Python 3.10+ 和系统 OpenSSH 客户端；Windows 推荐 Python 3.12。
-2. 下载本仓库 Releases 中的机器人中控 ZIP，解压后运行 `start.cmd`；macOS/Linux 运行 `bash start.command`。页面地址：`http://127.0.0.1:8090`。
-3. 填写自己的 `用户名@机器人IP` 和 SSH 登录信息，连接后在“系统维护”安装随包固件。中控已经带固件，独立固件 ZIP 是同一载荷。
-4. 使用本机标定，按 **HOME → 保持 → 行走** 操作。包内标定为样机参考，每台机器人需核对自己的标定。
-5. 训练中控：Windows 运行 `start-training.cmd`；Linux 运行 `bash start-training.command`，打开 `http://127.0.0.1:8092`。
-6. 本机训练使用 NVIDIA GPU + Linux/WSL2，先安装 git 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。首次“安装训练环境”下载固定版本引擎和依赖；SSH 服务器可用“部署并准备环境”。选择任务后“加入队列 → 开始训练”，完成后导出 ONNX/ZIP。
+## 下载与使用
 
-直接从源码运行时，以上入口分别位于 `firmware/console/` 和 `training-console/`。固件是机器人服务升级包，使用前机器人需已有可启动的 Linux、SSH 和对应硬件环境；本包不包含整盘系统镜像。
+1. [下载系统镜像 R1](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)，用 [Armbian Imager](https://imager.armbian.com/) 刷入 TF 卡。
+2. 首次开机连接 `Microduck-kissqy` 热点（密码 `12345678`），设置家庭 Wi-Fi 和新的系统登录密码。未自动弹出页面时访问 `http://10.42.0.1:8088`。
+3. [下载机器人中控 V164](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip)，完整解压后运行 `start.cmd`；macOS/Linux 运行 `bash start.command`。页面地址为 `http://127.0.0.1:8090`。
+4. 填写自己的 `用户名@机器人IP` 和 SSH 登录信息，连接后核对本机标定，按 **HOME → 保持 → 行走** 使用。镜像已预装机器人服务；已有系统需要升级时，可在中控“系统维护”安装随包固件。
+5. 需要训练时，[下载训练中控 R1.5.27](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)，运行 `start-training.cmd` 或 `bash start-training.command`，打开 `http://127.0.0.1:8092`。
 
-## 说明
+训练使用 NVIDIA GPU + Linux/WSL2，先安装 git 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。首次准备环境会下载固定版本的训练引擎和依赖。当前提供 14 类动作、35 种任务配方；具体使用见 [训练中控说明](training-console/README.zh-CN.md)。
 
-- 新联合 Walk 为 9600 轮，统一基础缩放 0.9、头滤波 0.5、腿滤波 0.7；LB 独立起身老师保留。详见 [当前固件说明](firmware/README-R17.zh-CN.md)。
-- 本次是发布资料整理；已交付程序和模型保持原版本。真实步态、背部起身效果以实机记录为准。
-- [VS Code 上传 GitHub](docs/PUBLISH.md) · [从源码编译](docs/BUILD.md) · [版本与验证范围](docs/BASELINE.md) · [第三方来源](docs/THIRD-PARTY.md)
+## 从源码使用
 
-上游：[Microduck](https://github.com/pollen-robotics/microduck) · [microduck_rl](https://github.com/pollen-robotics/microduck_rl)
+- 机器人中控启动入口：`firmware/console/start.cmd` 或 `start.command`。
+- 训练中控启动入口：`training-console/start-training.cmd` 或 `start-training.command`。
+- 固件编译：[BUILD.md](docs/BUILD.md)。编译不是日常使用的前置要求。
+- 发布版本与验证范围：[BASELINE.md](docs/BASELINE.md)。完整来源及校验记录：[PUBLICATION-MANIFEST.json](PUBLICATION-MANIFEST.json)。
+- 许可与第三方来源：[LICENSE](LICENSE) · [THIRD-PARTY.md](docs/THIRD-PARTY.md)。
+
+每台机器人都需要核对自己的关节零位、方向、限位和 IMU。程序、模型和原有控制实现按交付包同步；本次源码公开不扩大原有模型的实机验收范围。

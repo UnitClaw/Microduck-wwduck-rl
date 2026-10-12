@@ -1,3 +1,11 @@
+## 当前 R17 v1.0.157-Fix6 / control.36
+
+当前实现以 [R157](../../console/docs/releases/R157.md) 为准。旧版 R17 章节保留作历史设计参考：其中 UART 启动前后钩子、配置完成 ACK、UART 代际状态文件、额外冷重开和网页虚拟 Xbox 路径已退役，不再作为当前启动或网页控制流程。
+
+主服务按配置与 IPC、硬件首份有效数据、模型与控制器、首个完整控制周期四步输出状态。状态按变化推送；实体手柄互斥由一次现状读取和后续内核设备事件维护。网页输入使用独立持久 SSH 进程连接官方 IPC。辅助输入、蓝牙及声音服务不作为主服务启动门槛，正常启动不复制或备份配置。配置修改者在内容变化时备份并写入。保留手动中控升级，停用自动更新和启动自动固件回滚。原始 UART 遥测与浏览器解析不变。
+
+硬件首份有效数据阶段仍要求全部关节新鲜、无暂存关节、IMU 解码器累计 25 份有效融合四元数。此前在这些成功读之间也使用 1 秒故障等待，造成 24 秒软件延迟。control.36 只在关节完整且 IMU 尚未就绪时，借用已有控制周期进行有限的 24 次短等待；之后 IMU 仍未就绪则恢复原 1 秒间隔。读失败或关节不完整始终使用 1 秒等待。这发生在现有 startup pose 循环内，不新增线程、循环、串口读取通道或稳态 50 Hz 工作，不缩减就绪样本数，不发送目标、增益或上力。四步日志区分关节等待和 IMU 就绪确认；中控全部来源日志保留于同一完整会话文件，原始输出与阶段标记同时显示。
+
 # `robotd` — the control loop
 
 Status: draft · Date: 2026-08-20 · Owner: pierre
@@ -478,12 +486,13 @@ The current `Mjlab-Velocity-Rough-Backlash-MicroDuck` export describes its entir
 
 R17 HD1910 exports supply the exact HOME, joint order, command padding and training action scale through a checked deployment contract. Model switching does not overwrite the global head/leg filters. The custom-only profile refuses stock fallback if an export fails to load.
 
-### R17 v1.0.146: uniform tuning of the combined Walk
+### R17 v1.0.154: combined Walk execution
 
 The shipped Walk is the user's `Mjlab-VelStand-Rough-Backlash-MicroDuck` student.
 Its ONNX and exported training files remain unchanged. The separate
 `deployment-execution.json` declares the explicitly selected runtime configuration:
-`mode: "uniform"`, base action scale 0.9, head target alpha 0.5 and leg target alpha 0.7.
+`mode: "uniform"`, base action scale 1.0, head target alpha 0.5 and leg target alpha 0.7.
+These are the v153 values retained by v154; the earlier v146 scale 0.9 is historical.
 The profile is bound to the full ONNX SHA256 and accepted only for the exact Walk task's
 scale-1, unfiltered export. The schema rejects unknown/duplicate fields, non-finite
 numbers, scales outside [0.1,2.0], and target alphas outside (0,1]. Without this file,
@@ -496,14 +505,15 @@ falling and get-up. There is no posture classifier, phase gate, timer or additio
 work. The training teachers' tilt gates are not deployment switches. The uploaded
 student itself was trained without these filters and with scale 1, so using the official
 runtime coefficients is the user's chosen physical test, not a claim that its training
-mapping was already 0.9/0.5/0.7.
+mapping was already 1.0/0.5/0.7.
 
 Each frame computes HOME + raw action × base scale × the existing voltage multiplier,
 then applies the original target EMA (first target passes through). The observation
 continues to receive the raw previous policy output. The single Walk replaces the
 previous walking teacher; that older model is retained only in the source's test-data
-fixtures, never as an installed/catalog model. The separate LB 11000-round teacher
-retains its v1.0.145 skill behavior and its own full-scale/direct-target mapping.
+fixtures, never as an installed/catalog model. The Walk student owns deployed recovery.
+The separate LB teacher binding is retired in v154; it remains only in source fixtures.
+The builtin model and pad migration are owned by [R17 settings](r17-settings-design.md).
 
 `LoadedModel.runtime_execution_profile` reports the static uniform profile.
 `active_action_scale` reports the actual scale including voltage compensation;
@@ -1141,6 +1151,8 @@ R17 中控的系统电源管理（control.9）使用 `service.sh power-relaxed`�
 
 ## R17 LB 手动起身（v1.0.145）
 
+本节为已退役入口的历史记录。v154 不绑定 `stand_test`，不提供 LB 起身测试；联合 Walk 负责恢复。保留的原生分支和源码老师仅供回归，当前按键及模型迁移见 [R17 设置设计](r17-settings-design.md)。
+
 实体与网页手柄仍通过原 padd 发送 `robot.do stand_test`。HOME 或策略运行中原有的 LB 入口保留；卸力、尚未 HOME、普通回 HOME 途中，只要原生安全层已经确认倒地，也可以按 LB 从当前姿态执行同一个命名起身模型。它不是自动起身：启动仍然卸力，无人按键不会上力。倒地沿用现有 `safety.fall_gravity_z` 和 `safety.fall_debounce`，没有第二套检测器。
 
 IPC 复用现有每轮 HOME 报告内的传感器就绪信息，要求不超过 80 ms、关节完整新鲜、姿态有效、IMU 安装方向已确认且就绪。HOME 的关节角和直立条件只约束普通 Start 开启 Walk，不约束倒地 LB。控制循环在消费本次 LB 时，再检查本轮实际传感器；反馈不足的请求当次拒绝，不等反馈恢复后重放。
@@ -1176,6 +1188,8 @@ Input installation directly replaces the frozen official padd unit and the owned
 
 ### R17 rough recovery teacher test (v1.0.130)
 
+Historical fixture behavior only: v154 removes this installed teacher and its `stand_test` binding. The current runtime uses the combined Walk; [R17 settings](r17-settings-design.md) owns the migration.
+
 `Mjlab-StandUp-Rough-Backlash-MicroDuck` uses the same trained target-filter
 contract as the existing rough Walk. Both use the saved native
 `policy.action_scale` once; the exported 0.7 is a training record, not an
@@ -1188,9 +1202,102 @@ remains `none`, so idle uses the existing 14000-round Walk. The existing officia
 6-second training episode defines the manual test window, with zero twist,
 head and body command, no chaining and no local tuning overrides. The formerly
 empty LB binding invokes `robot.do`; padd and the Xbox bridges are unchanged.
-The current entry, return and cancellation rules are described in
+The historical entry, return and cancellation rules are described in
 [R17 LB 手动起身](#r17-lb-手动起身v10145). No automatic recovery controller is installed.
 
 Installer merging adds new named skills while retaining existing ones. A new
 release binding can fill a previously empty button; an occupied user binding
 and later edits to the installed test remain intact on the next upgrade.
+
+
+### R17 v1.0.147: unfiltered Roulade and GroundPick exports
+
+The installed Roulade and GroundPick slots replace their previous exports with
+`Mjlab-Roulade-Flat-MicroDuck` (SHA256
+`59e15d7b04d0c40e9b11b8a70bdecae6da87a5e096efc204fb58eea304fcbbac`) and
+`Mjlab-GroundPick-Flat-Backlash-MicroDuck` (SHA256
+`b14e3a8b56ddbb8d2d831e727774a168c8f5b00194e3e431ae7593a840498c69`).
+The ONNX and exported training metadata stay byte-for-byte original. The older
+models live only in `test-data/roulade-legacy` and
+`test-data/ground-pick-legacy` for their existing numerical regression tests.
+
+A current target-filter contract and a backlash observation contract are two
+separate properties. Both new exports declare target filtering disabled with
+head/leg alpha 1 and raw previous-action feedback. The new Roulade uses ordinary
+`joint_pos_rel` / `joint_vel_rel`; GroundPick requires
+`joint_pos_rel_backlash` / `joint_vel_rel_backlash`. The loader validates each
+function's exact final name against the task. On hardware the existing encoder
+position minus Home and measured joint velocity already provide those inputs;
+no synthetic backlash, randomized delay, observation history or additional bus
+read is introduced. Training simulation noise and delays are not replayed on
+the robot.
+
+For the current format, `required_policy_settings` uses the slot's own
+`roulade_action_scale` or `ground_pick_action_scale`, not the gait's
+`action_scale`. Missing legacy `action_ema_old_weight` means zero only after
+recognizing and validating the current format. Roulade's task name also exists
+in the older format: an `action_filter` or `export_contract_revision` field
+selects strict current-format validation, including rejecting a missing or null
+filter. The older export without those declarations keeps its original EMA and
+runtime filter semantics. GroundPick's required period must match its trained
+phase-command period.
+
+The existing skill-specific runtime scales are configured to 1 for these two
+new exports. Every inference target is `Home + raw_action * 1 * voltage_mult`,
+and both target filter readbacks are 1. No extra execution sidecar is needed.
+Previous-action observations remain the raw ONNX output. The voltage multiplier
+continues to follow the existing runtime setting, so base scale 1 does not imply
+that the reported actual scale is always 1. These contracts do not reassign the
+Walk profile or global target filters.
+
+The original pad and `robot.do` paths remain in use: X requests the named
+one-second, chainable Roulade; A requests GroundPick's cos/sin phase command,
+with a four-second cycle and the existing .7 cutoff (140 policy ticks at 50 Hz).
+Head/body padding and scripted twist remain internal to the selected skill.
+On expiry, normal selection returns to the same joint Walk with its uniform
+1.0/.5/.7 profile and existing target history. HOME cancellation and the existing
+safety rules remain unchanged. The v154 profile does not bind an independent
+LB recovery teacher.
+No IPC fields, extra model switches, posture classifier, network request or
+50 Hz loop stage are added.
+
+`unfiltered_skill_tests.rs` loads both exact new ONNX files, compares their raw
+outputs with a separately assembled encoder/phase/previous-action observation,
+and checks direct targets under different voltage multipliers, phase cutoff,
+held Roulade requests, HOME cancellation and the return to the joint Walk.
+Contract tests reject observation/task mismatches, incorrect slot scales,
+filter downgrades and inconsistent GroundPick periods. The retained legacy
+reference tests and joint Walk/LB tests cover compatibility; these tests do not
+establish physical rolling, pickup or recovery success on a real robot.
+
+## R17 UART 启动恢复（control.32）
+
+Feetech motion/commissioning 每次新开 UART 只初始化一次。通信 timeout 时，失败 future 释放持有的串口，等待一次 400 ms，然后仅重新打开一次；其他配置错误及关机请求不重开。删除 control.31 的同一串口五次重试。没有自动重启或正常控制周期中的新恢复循环。
+
+`--uart-setup` 为首次打开和重新打开分别发布 `configuring_uart` 及 `uart_generation` 1/2。已有一次性 systemd 启动助手在 UART 空闲时写入并回读 CPU3 IRQ/FIFO1，携带对应 generation 调用 `robot.uartConfigured`；缺失、过期及非等待阶段的确认被拒绝。旧句柄关闭后，第二次设置必须重新应用。助手仅在本次启动内有限等待最多 20 秒，motion 的实际 cycle>0 或 commissioning 的 ready 才算完成；控制线程失败导致 ExecStartPost 失败，`Restart=no` 避免反复重启。
+
+启动卸力顺序为寄存器 40 OFF、全部 15 舵机回读、IMU200 身份、原寄存器检查。确认前不写增益或目标。HOME/策略/技能的旧启动保护涵盖 `recovering_uart`，失败请求不在后续恢复时回放。正常 50 Hz 及读写期限不变。
+
+中控在健康心跳仍 live 时展示单次发布的真实 `configuration_error`，即使没有新运动反馈；心跳断开不让旧总线错误覆盖失联状态。“导出启动诊断”是用户触发的只读 SSH 操作，不建立运动任务，不暂停输入，不打开 tty，不改变服务或蓝牙状态；每条日志命令有 5 秒上限并保留局部失败结果。
+
+
+## R17 HD1910 合同 P（control.33）
+
+Feetech 上力时从已验证模型合同的 `actuators[0].kp_fw` 取得 P，使用既有整数 1—32 校验；当前随包合同为 5。全部 15 个关节，包括独立鸭嘴，使用该合同 P。HD1910 `arm` 先检查现有转矩状态和寄存器：全部卸力时，在写入前保存每个关节原 P，再以地址 50、单字节 payload 写入并回读；已经上力时只确认 P 匹配，不为重启重写或生成虚构恢复数据。`disarm` 仅恢复本次保存的原 P，保留部分写入失败时所需的恢复记录。
+
+48—49 号转矩限制、51 号 D、52 号 I、41 号加速度及 EEPROM 不显式写入。P 写入和恢复不跨到相邻寄存器；寄存器检查仍可读取 D／I 与原生状态。旧嘴巴 P=10／D=20 和测试覆盖分支已删除，官方 XL330 gain 请求不会替换 HD1910 合同 P。本页 §2.1 的 XL330 P／I／D 说明仅适用于 Dynamixel，不能套用为 Feetech 51 号的写入规则。UI、保存配置与旧模块清理由 [R17 设置设计](r17-settings-design.md) 管理。
+
+右踢的当前合同识别 `Mjlab-BallKick-Flat-MicroDuck`，验证 61 输入／14 输出、原关节顺序及 HOME、零命令、0.5 秒技能窗口、基础 1 和目标直通。它复用原 `Slot::KickRight`、`robot.do` 和技能到期回 Walk 路径；原始上一帧动作仍进入下一帧观察，电压补偿与限位照旧。没有新增 IPC 字段、姿态分支、推理次数或正常 50 Hz 循环阶段。模型及按键绑定见 [R17 设置设计](r17-settings-design.md)。
+
+
+## R17 显式关闭策略回 HOME（control.34）
+
+直接 HOME 事件和 Ready 终点保留只作用于 Feetech。网页 HOME 在策略已启用时发送显式 `robot.enable(on=false, toggle=false)`。原控制循环依赖 `was_driving` 下降沿直接设置 HOME；若 IMU 或总线已暂停推理，`was_driving` 已为 false，网页关闭策略可能遗漏 HOME，保留暂停时实测 hold。v155 将 enabled→false 的直接 HOME 意图单次交给原控制循环：Ready 状态清除 controller 历史／技能并选择完整绝对合同 HOME，不上力、不增加插值；already-disabled 的显式 false 不发新的请求。私有 `PowerRequest::Home` 与 `request_home_hold()` 复用原单次 power 槽，不增加控制队列或循环。停止／Init 清除待消费技能按键是共享 intents 规则，各 backend 一致；私有 Home 请求也清除该按键。这是请求边沿取消，不增加稳态工作。原取消及启用代次保护保留，已关闭的 false 不覆盖待处理卸力。原启动状态约束与关机保护继续生效。
+
+网页直接 HOME 与 `robot.init` 是两条既有路径。网页在策略已关闭时的 HOME、实体 Start-off 使用 Init；有有效反馈时仍按原 `HOME_RAMP` 两秒线性目标插值，到期后定点保持。Ready 收到 Init、当前 sensors 为 None 时也保留绝对 HOME hold，避免请求消失；原 backend 的 blind-held 关节在反馈恢复前仍冻结在实测位置，反馈新鲜后使用 HOME 目标。Limp 且无反馈不动作，不发起上力。回位后策略保持关闭，必须由新的用户操作重新启用。
+
+两条 HOME 路径均绕过 `Controller::step`，不经过模型目标低通、合同动作 EMA、策略动作缩放或头部／身体命令滤波。14 个姿态关节使用完整 `deployment::home()`，Ready 的独立嘴巴仍接受原 mouth intent；不能把嘴巴动态意图视为姿态回位不足。模型推理才使用固定 HOME 加当前网络输出，不累加上次目标；HOME controller reset 清除动作历史、目标滤波与循环记忆。本版不改变既有插值时长和定点保持算法。
+
+HOME 与联合 Walk 保持都使用同一 HD1910 合同 P，当前为 5；`Safety::apply` 的状态 gain 经 `FeetechIo::set_gain` 不产生寄存器写入，不能用 XL330 gain 或 `standing_gain_ratio` 推断本机承重。当前 Stand 槽为 none，联合模型零速度保持仍走 Walk。v154 起的 P-only 上力与恢复规则继续沿用，本版未提高 P，未改写 48／51；它们是设备当前值，源码不能将其声称为固定 0 或 20。HOME 固定目标由舵机内部位置闭环跟随，模型保持持续根据观测调整目标；同 P 不表示物理表现相同。
+
+实际进入保持继续要求关节 HOME 误差不超过 5°、倾斜不超过 10°、连续三个有效周期及原反馈新鲜度。`homed` 只表示回位阶段完成，不等于载荷下实测完全到位。此状态修正不能据此认定“不够硬”、回位残差或实机倾斜／摔倒的全部原因；它也未增加正常 50 Hz 控制工作。页面连接等待及保存方向分别见 [连接设计](r17-connection-design.md#initial-feedback-and-reconnection-v10155) 和 [设置设计](r17-settings-design.md#v10155-已保存方向显示)。

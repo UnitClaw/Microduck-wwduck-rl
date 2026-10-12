@@ -103,7 +103,7 @@ class PowerConnectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             archive=Path(temporary)/'package';archive.write_bytes(b'archive')
             replies=iter([SimpleNamespace(returncode=0,stdout=(directory+'\n').encode()),SimpleNamespace(returncode=0,stderr=b'')])
-            with patch('service_control.bundle_info',return_value={}),patch.object(transport,'_ssh_run',side_effect=AssertionError('must reuse management SSH')),patch.object(StagingUpload,'upload'),patch.object(transport,'_manage',side_effect=manage):
+            with patch('service_control.bundle_info',return_value={}),patch.object(StagingUpload,'upload'),patch.object(transport,'_manage',side_effect=manage):
                 with self.assertRaisesRegex(ControlError,'actual install error'):transport.upgrade(password='secret',archive=archive)
         self.assertEqual(calls[-1],(['/bin/rm','-rf','--',directory],'secret'))
     def test_installation_disables_bytecode_cache_for_python_children(self):

@@ -1,7 +1,11 @@
-# Docs
+# Microduck R17 V162 / control.39 documentation
 
-The [README](../README.md) is the front door — what a microduck is, and where to go. If you have
-one in front of you and want to drive it, start at the [cheat sheet](robot/cheatsheet.md).
+The [R17 README](../README-R17.zh-CN.md) is the current package overview. For this robot's
+installation and physical gamepad mapping, use the [console guide](../console/README.zh-CN.md).
+The [firmware guide](../packaging/README.zh-CN.md) owns the shipped model and calibration list;
+the [build guide](../V162-构建说明.md) owns the ARM64 toolchain and verification scope.
+
+The references below cover the upstream daemon architecture and development interfaces.
 
 [`faq.md`](faq.md) is the other front door: task-shaped questions from somebody building
 *against* a duck rather than changing it — running a model too heavy for the board, getting the
@@ -29,13 +33,9 @@ docs give the reasoning and point at it.
 How it works and why. These change rarely; when behaviour and a design doc disagree, the doc is
 the bug.
 
-**One page owns a mechanism, and the others link to it.** The table below is that assignment: if a
-fact belongs to a page listed here, every other page says one sentence and points, rather than
-explaining it again. A fact written down in six places drifts in six directions, each of them locally
-reasonable — which is how six documents came to promise that `updaterd` and `btd` kept their old
-binaries until the next reboot, two releases after they stopped doing so, including the two pages
-someone reads while diagnosing exactly that. So when two documents disagree, the one that does not
-own the mechanism is the bug.
+**One page owns a mechanism, and the others link to it.** The table below assigns ownership:
+when a fact belongs to a listed page, other documents link there instead of repeating its
+implementation details. The current R17 console mapping is documented in the console guide.
 
 | | |
 |---|---|

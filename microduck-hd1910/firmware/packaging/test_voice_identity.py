@@ -31,8 +31,8 @@ class SystemAudioTests(unittest.TestCase):
   if 'store' in argv:
    state=self.system/'var/lib/alsa/asound.state';state.parent.mkdir(parents=True,exist_ok=True);state.write_text(f'{self.current},{self.muted}')
   return SimpleNamespace(returncode=0,stdout='',stderr='')
- def install(self):
-  with patch.object(helper,'BASE',self.base),patch.object(helper,'ROOT',self.system),patch.object(helper,'seed',return_value=(1,'test')),patch.object(helper.shutil,'which',return_value='/usr/sbin/alsactl'),patch.object(helper.subprocess,'run',self.runner),patch.dict(os.environ,{'SUDO_USER':'radxa'}),patch.object(helper.pwd,'getpwnam',return_value=self.user):helper.setup(self.params)
+ def install(self,**options):
+  with patch.object(helper,'BASE',self.base),patch.object(helper,'ROOT',self.system),patch.object(helper,'seed',return_value=(1,'test')),patch.object(helper.shutil,'which',return_value='/usr/sbin/alsactl'),patch.object(helper.subprocess,'run',self.runner),patch.dict(os.environ,{'SUDO_USER':'radxa'}),patch.object(helper.pwd,'getpwnam',return_value=self.user):helper.setup(self.params,**options)
  def test_legacy_loudness_migrates_to_hardware_pcm_and_system_state_without_home_json(self):
   self.install()
   self.assertEqual(self.current,voice_preferences.raw(5));self.assertFalse(self.muted)
@@ -61,6 +61,20 @@ class SystemAudioTests(unittest.TestCase):
  def test_mute_migrates_and_os_restore_precedes_robotd_without_startup_audio_hook(self):
   self.legacy=0;self.install();self.assertTrue(self.muted)
   import runtime
-  unit=runtime.unit('motion');self.assertIn('After=alsa-restore.service alsa-state.service',unit)
+  unit=runtime.unit('motion');self.assertNotIn('Wants=alsa-',unit)
   self.assertNotIn('voice-setup.py',unit);self.assertNotIn('ALSA_CONFIG_PATH=',unit)
+ def test_file_preparation_precedes_native_start_but_does_not_touch_system_audio(self):
+  self.legacy=None;(self.bank/'.seed').unlink()
+  self.install(prepare_only=True)
+  self.assertEqual(sum('ensure-bank' in c for c in self.commands),1)
+  self.assertFalse(any(c[0] in ('systemctl','amixer','alsactl','/usr/sbin/alsactl') for c in self.commands))
+  configured=self.params.read_bytes();saved=self.params.with_name('robotd.saved.toml')
+  self.assertEqual(saved.read_bytes(),configured)
+  self.commands.clear();self.install(system_only=True)
+  self.assertEqual(self.params.read_bytes(),configured)
+  self.assertFalse(any('ensure-bank' in c for c in self.commands))
+ def test_existing_bank_and_audio_configuration_are_not_rewritten_in_either_phase(self):
+  self.install();params_time=self.params.stat().st_mtime_ns;self.commands.clear()
+  self.install(prepare_only=True);self.install(system_only=True)
+  self.assertEqual(self.commands,[]);self.assertEqual(self.params.stat().st_mtime_ns,params_time)
 if __name__=='__main__':unittest.main()

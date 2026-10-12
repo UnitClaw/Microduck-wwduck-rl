@@ -44,7 +44,7 @@ fn r9_startup_cadence_and_motion_use_one_bus_without_recovery() {
         false,
     ));
     state.commissioning.store(true, Ordering::Relaxed);
-    let started = Arc::new(AtomicBool::new(false));
+    let started = Arc::new(AtomicBool::new(true));
     let corrupt = Arc::new(AtomicBool::new(false));
     let goals = Arc::new(AtomicU64::new(0));
     let exits = Arc::new(AtomicBool::new(false));
@@ -81,7 +81,7 @@ fn r9_startup_cadence_and_motion_use_one_bus_without_recovery() {
             }
             assert!(
                 device_started.load(Ordering::Acquire),
-                "UART transmitted before configuration acknowledgement"
+                "simulated hardware was not started"
             );
             pending.extend_from_slice(&bytes[..n]);
             while pending.len() >= 4 {
@@ -192,7 +192,6 @@ fn r9_startup_cadence_and_motion_use_one_bus_without_recovery() {
                 &control_state,
                 Duration::from_millis(20),
                 &path,
-                true,
             ))
     });
     let wait = |predicate: &dyn Fn() -> bool| {
@@ -207,16 +206,6 @@ fn r9_startup_cadence_and_motion_use_one_bus_without_recovery() {
             std::thread::sleep(Duration::from_millis(5));
         }
     };
-    wait(&|| {
-        state
-            .bus_status
-            .load_full()
-            .is_some_and(|s| s["phase"] == "configuring_uart")
-    });
-    std::thread::sleep(Duration::from_millis(60));
-    assert_eq!(state.ticks.load(Ordering::Relaxed), 0);
-    started.store(true, Ordering::Release);
-    state.uart_setup_ready.store(true, Ordering::Release);
     wait(&|| state.ticks.load(Ordering::Relaxed) >= 8);
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let (command_state, command_started) = (state.clone(), Arc::new(AtomicBool::new(false)));

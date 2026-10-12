@@ -15,6 +15,7 @@ from unittest.mock import Mock, patch
 from training import runtime_adapter as adapter, worker
 
 TASK='Mjlab-Velocity-Flat-MicroDuck'
+ROOT=Path(__file__).resolve().parents[1]
 
 
 def config():
@@ -30,6 +31,31 @@ def config():
                        resume=False,load_run='',load_checkpoint=''))
 
 
+def inspection_fixture(task, env, agent):
+    """Use complete compiled reference evidence while isolating the training API.
+
+    The inspector is the mock boundary; the production configuration auditor still
+    checks real joint, observation, command, actuator and contact fixture fields.
+    Reflect API-edited fields so the readback does not claim stale launch settings.
+    """
+    result=json.loads((ROOT/'data/task-configs'/(task+'.json')).read_text())['inspection']
+    resolved_env=result['full']['env'];resolved_agent=result['full']['agent']
+    resolved_env['scene']['num_envs']=env.scene.num_envs
+    resolved_env['sim']['mujoco']['timestep']=env.sim.mujoco.timestep
+    resolved_env['decimation']=env.decimation
+    resolved_env['actions']['joint_pos']['scale']=env.actions['joint_pos'].scale
+    if 'push_robot' not in env.events:
+        resolved_env['events'].pop('push_robot',None)
+    for name in ('max_iterations','save_interval','seed','run_name','logger','resume','load_run','load_checkpoint'):
+        resolved_agent[name]=getattr(agent,name)
+    for name in ('learning_rate','gamma','entropy_coef','clip_param'):
+        resolved_agent['algorithm'][name]=getattr(agent.algorithm,name)
+    for role in ('actor','critic'):
+        resolved_agent[role]['hidden_dims']=list(getattr(agent,role).hidden_dims)
+        resolved_agent[role]['activation']=getattr(agent,role).activation
+    return result
+
+
 class TrainingApiTests(unittest.TestCase):
     def setUp(self):
         self.req={'op':'train','task':TASK,'num_envs':64,'iterations':5,'save_interval':5,'run_name':'console_test',
@@ -42,7 +68,7 @@ class TrainingApiTests(unittest.TestCase):
 
     def test_official_entry_receives_environment_count_iterations_and_resume(self):
         req={**self.req,'checkpoint':'/tmp/run.with.dots/model_100.pt'}
-        with patch.object(adapter,'inspect_configs',return_value={}),patch.object(adapter,'emit') as emit:
+        with patch.object(adapter,'inspect_configs',side_effect=inspection_fixture),patch.object(adapter,'emit') as emit:
             adapter.train(req)
         self.api.launch_training.assert_called_once_with(TASK,self.cfg)
         self.assertEqual(self.cfg.env.scene.num_envs,64)
@@ -55,14 +81,18 @@ class TrainingApiTests(unittest.TestCase):
         self.assertEqual(self.cfg.agent.load_checkpoint,r'^model_100\.pt$')
         event=next(c.kwargs['data'] for c in emit.call_args_list if c.args==('effective_config',))
         self.assertEqual(event['num_envs'],64);self.assertEqual(event['iterations'],5)
+        self.assertTrue(event['configuration_audit']['passed'])
+        self.assertEqual(event['resolved']['full']['env']['scene']['num_envs'],64)
+        self.assertEqual(event['resolved']['model']['entity_compiled']['nu'],14)
 
     def test_preflight_uses_same_configuration_without_starting_training(self):
         req={k:v for k,v in self.req.items() if k!='run_name'}
-        with patch.object(adapter,'inspect_configs',return_value={}),patch.object(adapter,'emit') as emit:
+        with patch.object(adapter,'inspect_configs',side_effect=inspection_fixture),patch.object(adapter,'emit') as emit:
             adapter.preflight(req)
         self.assertEqual(self.cfg.env.scene.num_envs,64);self.assertEqual(self.cfg.agent.max_iterations,5)
         self.api.launch_training.assert_not_called()
         self.assertEqual(emit.call_args.kwargs['data']['checks']['action_count'],14)
+        self.assertTrue(emit.call_args.kwargs['data']['configuration_audit']['passed'])
 
     def test_missing_real_field_is_reported_before_training(self):
         del self.cfg.env.scene.num_envs

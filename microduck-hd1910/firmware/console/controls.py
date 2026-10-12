@@ -1,12 +1,11 @@
-"""R17 browser input forwarding; official padd owns all action mapping."""
+"""R17 browser input over persistent SSH to official robotd IPC."""
 import json, re, select, threading, time
-from socket_transport import open_remote_socket
+from input_channel import InputChannel
 from session_sequences import SequenceWindow
 class ControlError(Exception):
     def __init__(self,message,status=409):super().__init__(message);self.status=status
 class Transport:
     """PC-side input client. SSH only forwards bytes to the activated Unix socket."""
-    INPUT_SOCKET = '/run/microduck-webpad/input.sock'
     AUDIO_HELPER = '/opt/robot/feetech-ft5-r5/audio-control.py'
 
     def __init__(self, target=None, socket_path="/run/robotd.sock", system_log=None):
@@ -15,6 +14,9 @@ class Transport:
         self.connected = False
         self.suspended = False
         self.peer = self.reader = None
+        self.input_channel = None
+        self.status_listeners = set()
+        self.status_lock = threading.RLock()
         self.input_prepared = False
         self.pad_status = {}
         self.pad_status_at = 0.0
@@ -35,40 +37,35 @@ class Transport:
         self.connected = True
 
     def _close_input(self):
-        reader, peer = self.reader, self.peer
-        self.reader = self.peer = None
-        self.input_prepared = False
-        if reader is not None:
-            try:reader.close()
-            except OSError:pass
-        if peer is not None:
-            try:peer.close()
-            except OSError:pass
+        channel,self.input_channel=self.input_channel,None
+        self.input_prepared=False
+        if channel is not None:channel.close()
+
+    def _input_status(self, value):
+        with self.status_lock:
+            current={k:v for k,v in value.items() if k!='accepted'}
+            changed=current!=self.pad_status
+            self.pad_status=current
+            self.pad_status_at=time.monotonic()
+            listeners=tuple(self.status_listeners) if changed else ()
+        for listener in listeners:
+            listener(dict(self.pad_status))
+
+    def subscribe_input_status(self, listener):
+        with self.status_lock:
+            self.status_listeners.add(listener)
+            if self.pad_status:listener(dict(self.pad_status))
+        def unsubscribe():
+            with self.status_lock:self.status_listeners.discard(listener)
+        return unsubscribe
 
     def _open_input(self, create=True):
-        stale = False
-        if self.peer is not None:
-            try:
-                if select.select([self.peer], [], [], 0)[0]:
-                    stale = True
-            except (OSError, ValueError):stale = True
-        if not create:
-            if stale:self._close_input()
-            return self.peer is not None
-        if self.peer is None or stale:
-            # Keep the old endpoint reference until its replacement is open.
-            # An idle worker's EOF must not force a fresh SSH authentication for
-            # every new gesture. This opens no command and replays no old frame.
-            peer = open_remote_socket(self.target, self.INPUT_SOCKET, self.log, timeout=3)
-            try:
-                peer.settimeout(1.5)
-                reader = peer.makefile('rb')
-            except Exception:
-                peer.close()
-                raise
-            self._close_input()
-            self.peer, self.reader = peer, reader
-            self.input_prepared = True
+        if self.input_channel is not None and self.input_channel.error:self._close_input()
+        if self.input_channel is None:
+            if not create:return False
+            self.input_channel=InputChannel(self.target,self.socket_path,self._input_status,self.log)
+            self.input_prepared=True
+        self.input_channel.start()
         return True
 
     def _audio(self, action, value=None):
@@ -77,9 +74,12 @@ class Transport:
             raise ControlError('音量维护连接尚未就绪',503)
         args = ['python3', self.AUDIO_HELPER, action]
         if action == 'set-volume':args.append(str(value))
-        result = transport._manage(args, privileged=False)
+        result = transport._manage(args, privileged=False,record_output=False)
         if result.get('accepted') is not True:
             raise ControlError(result.get('reason') or '音量回读未确认',503)
+        volume=result.get('audio',{}).get('volume')
+        if type(volume) is not int or not 0<=volume<=100:
+            raise ControlError(result.get('audio',{}).get('message') or '未取得有效系统音量',503)
         return result
 
     def _load_audio_once(self):
@@ -91,31 +91,45 @@ class Transport:
             try:
                 with self.audio_lock:
                     result = self._audio('status')
-                    if generation == self.audio_generation:self.audio_status = result['audio']
+                    if generation == self.audio_generation:
+                        self.audio_status = result['audio']
+                        if self.log:self.log.add('系统音量','读取成功 · '+str(result['audio']['volume'])+'%')
             except Exception as exc:
                 if generation == self.audio_generation:
                     self.audio_status = {**self.audio_status,'initializing':False,'message':'音量未确认：'+str(exc)}
+                    if self.log:self.log.add('系统音量','读取失败 · '+str(exc))
         threading.Thread(target=load,daemon=True).start()
 
     def _local_status(self):
-        return {**self.pad_status,'accepted':True,'available':True,'audio':self.audio_status}
+        return {'accepted':True,'available':True,**self.pad_status,'audio':self.audio_status}
 
     def call(self, command):
         action = command.get('action')
         self.ensure()
         if action in ('connect','webpad_status'):
-            if action == 'connect':self._load_audio_once()
+            if action == 'connect':
+                with self.write_lock:
+                    try:self._open_input()
+                    except Exception:
+                        self._close_input()
+                        raise
+                self._load_audio_once()
             return self._local_status()
         if action == 'set_volume':
-            with self.audio_lock:
-                result = self._audio('set-volume',command['volume'])
-                if isinstance(result.get('audio'),dict):self.audio_status = result['audio']
+            try:
+                with self.audio_lock:
+                    result = self._audio('set-volume',command['volume'])
+                    if isinstance(result.get('audio'),dict):self.audio_status = result['audio']
+            except Exception as exc:
+                if self.log:self.log.add('系统音量','设置失败 · '+str(exc))
+                raise
+            if self.log:self.log.add('系统音量','设置成功 · '+str(result.get('volume',command['volume']))+'% · 已回读并保存')
             return result
         if action not in ('webpad_state','webpad_close'):
             raise ControlError('无效手柄操作',400)
         started = time.monotonic()
         with self.write_lock:
-            if action == 'webpad_close' and self.peer is None:
+            if action == 'webpad_close' and self.input_channel is None:
                 return self._local_status()
             # A slow first SSH authentication may prepare the channel but send
             # no input. Browser error cleanup must not undo that preparation.
@@ -132,11 +146,8 @@ class Transport:
                            'owner':command['owner']}
                 if action == 'webpad_state':request['frame'] = command.get('frame')
                 self.input_prepared = False
-                self.peer.sendall((json.dumps(request,ensure_ascii=False,allow_nan=False)+'\n').encode())
-                line = self.reader.readline(65537)
-                if not line or not line.endswith(b'\n') or len(line)>65536:
-                    raise ConnectionError('手柄接口未返回有效响应')
-                result = json.loads(line)
+                if action == 'webpad_state':request['context']=command.get('context',{})
+                result = self.input_channel.request(request)
                 if not isinstance(result,dict) or type(result.get('accepted')) is not bool:
                     raise ValueError('手柄接口回执无效')
                 self.pad_status = {k:v for k,v in result.items() if k!='accepted'}
@@ -147,7 +158,7 @@ class Transport:
                     self.log.add('手柄输入',result.get('reason','输入未接受'))
                 # All browser owners share this transport. A delayed close for
                 # an old page must not close the new owner's underlying socket.
-                if action == 'webpad_close' and not result.get('owner'):self._close_input()
+                # Keep the event listener connected while the console is open.
                 return result
             except Exception as exc:
                 if not expired_unsent:self._close_input()
@@ -173,14 +184,16 @@ class Transport:
     def resume(self):
         with self.write_lock:self.suspended = False
 
-    def reconnect_after_service(self):
+    def pause_input(self):
         with self.write_lock:
-            self._close_input()
-            self.pad_status = {};self.pad_status_at = 0.0
-            # Voice setup may have repaired a failed initial read. One new
-            # finite read replaces its result; older in-flight reads are stale.
-            self.audio_generation += 1
-            self.audio_requested = False
+            if self.input_channel is not None and not self.input_channel.error:
+                result = self.input_channel.request({'action':'reset'})
+                if result.get('accepted') is not True:
+                    raise ControlError(result.get('reason') or '旧输入清除未确认',503)
+                self._input_status(result)
+
+    def reconnect_after_service(self):
+        self.pause_input()
         return self.call({'action':'connect'})
 
 
@@ -202,7 +215,7 @@ class Controller:
             # The low-rate native system sample supplies display state without
             # activating webpad. A newer input rejection takes precedence until
             # the next system sample; arbitration always remains on the Zero.
-            if isinstance(system.get('real_gamepads'),list) and system_at>=getattr(self.transport,'pad_status_at',0):
+            if not pad.get('event_authoritative') and isinstance(system.get('real_gamepads'),list) and system_at>=getattr(self.transport,'pad_status_at',0):
                 devices=system['real_gamepads']
                 pad.update(real_connected=bool(devices),real_devices=devices)
             if isinstance(system.get('pad_settings'),dict):pad['settings']=system['pad_settings']
@@ -231,7 +244,7 @@ class Controller:
             except ValueError as exc:raise ControlError(str(exc)) from None
             if action=='webpad_state':
                 s=self.store.snapshot();bus=s.get('bus',{})
-                if s.get('service_operation') or s.get('service_control',{}).get('busy') and s.get('service_control',{}).get('job',{}).get('action')!='set-pad-settings':raise ControlError('等待服务操作完成')
+                if s.get('service_operation') or s.get('service_control',{}).get('busy') and s.get('service_control',{}).get('job',{}).get('action') not in {'set-pad-settings'}:raise ControlError('等待服务操作完成')
                 if not s.get('service_compatible') or bus.get('mode')!='motion' or bus.get('phase')!='control':raise ControlError('先升级配套 R17 / 0.15.1 服务并切到运动模式')
         if action=='set_volume':
             result=self.transport.call({'action':action,'volume':payload['volume']})
@@ -242,7 +255,7 @@ class Controller:
             if action in ('webpad_state','webpad_close'):
                 with self.lock:
                     if seq<self.sequences.get(key,-1):raise ControlError('过期输入已丢弃')
-            result=self.transport.call({'action':action,'owner':client,**({'frame':payload.get('frame')} if action=='webpad_state' else {})})
+            result=self.transport.call({'action':action,'owner':client,**({'frame':payload.get('frame'),'context':{'settings':s.get('system',{}).get('pad_settings',{})}} if action=='webpad_state' else {})})
             return result
         try:
             if action in ('webpad_state','webpad_close'):
@@ -253,7 +266,7 @@ class Controller:
             raise
         with self.lock:
             self.pad={k:v for k,v in result.items() if k not in ('accepted','control_rtt_ms')}
-            self.message=result.get('reason') or ('真实手柄已接管' if result.get('real_connected') else '网页输入经 Xbox 接口交给官方 padd')
+            self.message=result.get('reason') or ('真实手柄已接管' if result.get('real_connected') else '网页输入经持久 SSH 直达官方 robotd IPC')
             if result.get('accepted') is not True:
                 if action=='connect':self.sequences.retire(key)
                 raise ControlError(self.message)
@@ -270,6 +283,8 @@ class Controller:
             with self.lock:
                 for key in list(self.sequences):
                     if key[0]==owner:self.sequences.retire(key)
+    def pause_input(self):
+        with self.input_lock:self.transport.pause_input()
     def close(self):self.transport.close()
     def reconnect_after_service(self):
         with self.input_lock:

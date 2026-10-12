@@ -22,9 +22,17 @@ CONFIG = Path('/etc/robot/feetech-ft5/robotd.toml')
 LEGACY = ['etc/systemd/system/gamesir-n2lite-24g.service',
           'etc/udev/rules.d/71-gamesir-n2lite-24g.rules','usr/local/sbin/gamesir-n2lite-24g']
 SERVICES = ['gamesir-xboxd.service','gamesir-n2lite-24g.service','padd.service']
+ACTIVE_INSTALL_STEP='安装实体手柄配置'
 
 def run(*args,check=True):
-    return subprocess.run(args,check=check,text=True,encoding='utf-8',errors='replace',capture_output=True)
+    result=subprocess.run(args,check=False,text=True,encoding='utf-8',errors='replace',capture_output=True)
+    if check and result.returncode:raise RuntimeError((result.stderr or result.stdout or '命令未成功').strip())
+    return result
+
+def log_step(label,status,detail):
+    global ACTIVE_INSTALL_STEP
+    if status=='开始':ACTIVE_INSTALL_STEP=label
+    print(f'[固件安装 / {label}] {status} · {detail}',flush=True)
 
 def replace_owned_file(source,target,mode):
     # Replace the directory entry, not a mask symlink or a live executable inode.
@@ -41,6 +49,7 @@ def replace_owned_file(source,target,mode):
 def install(bundle, deferred=False):
     # Mapping source and uinput descriptor are exactly R7; binary is precompiled.
     # upgrade_client installs a missing padd unit later in the same upgrade.
+    if deferred:log_step('安装 R7 输入桥配置','开始','写入桥接程序、systemd 单元与 uinput 规则')
     if not deferred:
         run('modprobe','uinput')
         for service in SERVICES:run('systemctl','stop',service,check=False)
@@ -51,6 +60,11 @@ def install(bundle, deferred=False):
     for name,rel in FILES.items():
         target=ROOT/rel
         replace_owned_file(source/name,target,0o755 if rel.startswith('usr/') else 0o644)
+    from configure import atomic_write
+    atomic_write(ROOT/'etc/systemd/system/gamesir-xboxd.service.d/zzzz-r17-ready.conf',
+                 '[Unit]\nAfter=robotd.service\n[Service]\nType=exec\nExecStart=\n'
+                 'ExecStart=/usr/bin/python3 '+str(BASE/'startup_gate.py')+' --timeout 60 --exec /usr/local/sbin/gamesir-xboxd\n'
+                 'Environment=PYTHONDONTWRITEBYTECODE=1\nRestartPreventExitStatus=78\n')
     p=ROOT/MODULE;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('uinput\n')
     if not deferred:
         run('systemctl','daemon-reload')
@@ -58,7 +72,8 @@ def install(bundle, deferred=False):
         run('udevadm','trigger','--subsystem-match=input','--action=change')
         run('systemctl','--no-reload','enable','gamesir-xboxd.service')
     # Start is explicit; never change a working input service during model replacement.
-    print('R7 Xbox 输入桥配置已就绪。' if deferred else 'R7 标准 Xbox 输入桥已安装；映射源码不变，运行服务为 R17。')
+    if deferred:log_step('安装 R7 输入桥配置','成功','R7 Xbox 输入桥配置已就绪')
+    else:print('R7 标准 Xbox 输入桥已安装；映射源码不变，运行服务为 R17。')
 
 def start():
     run('systemctl','start','gamesir-xboxd.service')
@@ -68,6 +83,7 @@ def start():
 def upgrade_client(deferred=False):
     # Always install the frozen official unit; old unit/drop-in text may be
     # malformed or UTF-16 and must not be decoded before it can be repaired.
+    if deferred:log_step('安装官方 padd 配置','开始','安装官方服务单元与本机手柄幅度参数')
     run('systemd-sysusers',str(BASE/'padd-sysusers.conf'))
     dest=ROOT/'etc/systemd/system/padd.service'
     replace_owned_file(BASE/'padd.service',dest,0o644)
@@ -75,59 +91,25 @@ def upgrade_client(deferred=False):
     if not SETTINGS_PATH.exists():save(**settings)
     dest=ROOT/PAD_DROPIN;dest.parent.mkdir(parents=True,exist_ok=True)
     from configure import atomic_write
-    atomic_write(dest,'[Service]\nExecStart=\nExecStart='+str(BASE/'padd')+' --socket /run/robotd.sock --config '+str(CONFIG)+' --max-head '+format(settings['head_rad'],'g')+' --input-settings '+str(SETTINGS_PATH)+'\nRuntimeDirectory=padd\n')
+    atomic_write(dest,'[Service]\nExecStart=\nExecStart=/usr/bin/python3 '+str(BASE/'startup_gate.py')+' --timeout 60 --exec '+str(BASE/'padd')+' --socket /run/robotd.sock --config '+str(CONFIG)+' --max-head '+format(settings['head_rad'],'g')+' --input-settings '+str(SETTINGS_PATH)+'\nRuntimeDirectory=padd\nEnvironment=PYTHONDONTWRITEBYTECODE=1\nRestartPreventExitStatus=78\n')
     if not deferred:
         run('systemctl','daemon-reload')
         run('systemctl','--no-reload','enable','padd.service')
         run('systemctl','restart','padd.service')
-    print('官方 padd 配置已就绪；R7 映射保持。' if deferred else '官方 0.15.1 手柄客户端已配套升级；R7 输入映射保持。')
+    if deferred:log_step('安装官方 padd 配置','成功','官方 padd 配置已就绪；R7 映射保持')
+    else:print('官方 0.15.1 手柄客户端已配套升级；R7 输入映射保持。')
 
-def install_webpad(verify=True, deferred=False):
-    if not deferred:
-        run('modprobe','uinput')
-        run('systemctl','stop','microduck-webpad.socket','microduck-webpad.service',check=False)
-    path=ROOT/'etc/modules-load.d/microduck-webpad.conf';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('uinput\n')
-    for name in ('microduck-webpad.service','microduck-webpad.socket'):
-        replace_owned_file(BASE/name,ROOT/'etc/systemd/system'/name,0o644)
-    run('systemctl','--no-reload','disable','microduck-webpad.service',check=False)
-    if not deferred:
-        run('systemctl','daemon-reload')
-        run('systemctl','--no-reload','enable','microduck-webpad.socket')
-        restart_webpad()
-        if verify:verify_webpad()
-    print('网页 Xbox 输入配置已就绪。' if deferred else 'R17 网页 Xbox 输入监听已就绪；首次输入按需启动，真手柄连接时撤销网页输入。')
-
-def webpad_logs():
-    for argv in [('systemctl','status','microduck-webpad.socket','microduck-webpad.service','--no-pager','--full'),
-                 ('journalctl','-u','microduck-webpad.service','-n','35','--no-pager','-o','cat')]:
-        result=run(*argv,check=False)
-        print(result.stdout,flush=True)
-        if getattr(result,'stderr',''):print(result.stderr,file=sys.stderr,flush=True)
-
-def restart_webpad():
-    run('systemctl','reset-failed','microduck-webpad.socket','microduck-webpad.service')
-    try:run('systemctl','restart','microduck-webpad.socket')
-    except subprocess.CalledProcessError as exc:
-        if exc.stdout:print(exc.stdout,flush=True)
-        if exc.stderr:print(exc.stderr,file=sys.stderr,flush=True)
-        webpad_logs()
-        raise ValueError('网页手柄监听重启失败；实际服务日志见上方') from None
-
-def webpad_socket_ready():
-    status=run('systemctl','is-active','--quiet','microduck-webpad.socket',check=False)
-    try:return status.returncode==0 and stat.S_ISSOCK((ROOT/'run/microduck-webpad/input.sock').stat().st_mode)
-    except OSError:return False
-
-def verify_webpad():
-    until=time.monotonic()+4
-    while time.monotonic()<until:
-        # Connecting for a health check would activate the worker. Check the
-        # kernel listener and unit only; actual input receives its own reply.
-        if webpad_socket_ready():
-            print(json.dumps({'webpad_socket_verified':True,'path':'/run/microduck-webpad/input.sock'},ensure_ascii=False));return
-        time.sleep(.05)
-    webpad_logs()
-    raise ValueError('网页手柄接口未启动：监听单元或 socket 路径未就绪；实际服务日志见上方')
+def retire_webpad():
+    names=('microduck-webpad.socket','microduck-webpad.service')
+    existing=[name for name in names if (ROOT/'etc/systemd/system'/name).exists() or (ROOT/'etc/systemd/system'/name).is_symlink()]
+    module=ROOT/'etc/modules-load.d/microduck-webpad.conf'
+    if not existing and not module.exists():return
+    log_step('清理旧网页虚拟手柄','开始','停用旧服务并删除其单元和模块配置')
+    if existing:run('systemctl','--no-reload','disable','--now',*existing)
+    for name in ('microduck-webpad.socket','microduck-webpad.service'):
+        (ROOT/'etc/systemd/system'/name).unlink(missing_ok=True)
+    module.unlink(missing_ok=True)
+    log_step('清理旧网页虚拟手柄','成功','旧服务已停用，旧单元与模块配置已删除')
 
 def prepare_all(bundle):
     # The caller stops inputs and reloads systemd once after every unit is ready.
@@ -136,17 +118,15 @@ def prepare_all(bundle):
     changed=not rules.exists() or rules.read_bytes()!=(Path(bundle)/'gamepad-r7/70-gamesir-xbox-bridge.rules').read_bytes()
     install(bundle,deferred=True)
     upgrade_client(deferred=True)
-    install_webpad(verify=False,deferred=True)
-    run('systemctl','--no-reload','enable','gamesir-xboxd.service','padd.service','microduck-webpad.socket')
+    retire_webpad()
+    log_step('启用实体手柄开机启动','开始','systemd 启用 GameSir 输入桥与 padd')
+    run('systemctl','--no-reload','enable','gamesir-xboxd.service','padd.service')
+    log_step('启用实体手柄开机启动','成功','GameSir 输入桥与 padd 已设为开机启动')
     if changed:
+        log_step('加载输入设备规则','开始','重载 udev 并应用更新后的输入设备规则')
         run('udevadm','control','--reload-rules')
         run('udevadm','trigger','--subsystem-match=input','--action=change')
-    print('输入配置已集中安装；等待一次 systemd 重载和启动。',flush=True)
-
-def ensure_webpad():
-    if webpad_socket_ready():
-        print('网页手柄监听已就绪；输入工作进程按需启动。');return
-    restart_webpad()
+        log_step('加载输入设备规则','成功','输入设备规则已应用')
 
 def live_settings_process():
     pid=int(run('systemctl','show','padd.service','-p','MainPID','--value').stdout.strip())
@@ -178,9 +158,10 @@ def main():
     elif action=='install':install(sys.argv[2])
     elif action=='prepare-all':prepare_all(sys.argv[2])
     elif action=='upgrade-client':upgrade_client()
-    elif action=='install-webpad':install_webpad(verify='--no-verify' not in sys.argv[2:])
-    elif action=='ensure-webpad':ensure_webpad()
-    elif action=='verify-webpad':verify_webpad()
     else:raise ValueError('unknown gamepad installation action')
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:main()
+    except Exception as exc:
+        if os.environ.get('MICRODUCK_INSTALL_LOG')!='1':raise
+        log_step(ACTIVE_INSTALL_STEP,'失败',str(exc));sys.exit(1)

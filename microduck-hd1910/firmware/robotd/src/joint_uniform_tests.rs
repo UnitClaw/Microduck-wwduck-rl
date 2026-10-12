@@ -92,10 +92,10 @@ fn joint_without_profile_keeps_training_baseline_at_every_posture() {
 }
 
 /// The real ONNX sees identical raw previous-action observations in both runs.
-/// The uniform run changes only HOME+scale and the official per-target EMA arithmetic;
+/// The bundled uniform run retains scale 1.0 and adds the official per-target EMA arithmetic;
 /// upright, prone, supine, side and zero/nonzero commands cannot select another tuning.
 #[test]
-fn joint_uniform_real_onnx_uses_point_nine_and_official_filters_in_every_posture() {
+fn joint_uniform_real_onnx_uses_bundled_scale_and_official_filters_in_every_posture() {
     let plain = without_override();
     let mut c = controller(&directory());
     let mut raw = controller(plain.path());
@@ -122,10 +122,10 @@ fn joint_uniform_real_onnx_uses_point_nine_and_official_filters_in_every_posture
         assert_eq!(step.label, "walk");
         assert!(!step.busy);
         assert!(c.active_uniform_profile());
-        assert_eq!(c.applied_action_scale(), Some(0.9 * voltage));
+        assert_eq!(c.applied_action_scale(), Some(voltage));
         assert_eq!(c.active_target_filters(), (0.5, 0.7));
         let offsets = Observation::scatter_action(&c.last_action);
-        let mut expected = std::array::from_fn(|j| home[j] + 0.9 * voltage * offsets[j]);
+        let mut expected = std::array::from_fn(|j| home[j] + voltage * offsets[j]);
         if let Some(before) = previous {
             for j in 0..NUM_JOINTS {
                 let alpha = if HEAD_JOINTS.contains(&j) {
@@ -149,7 +149,7 @@ fn joint_uniform_real_onnx_uses_point_nine_and_official_filters_in_every_posture
     }
     let metadata = serde_json::to_value(c.active_model().unwrap()).unwrap();
     assert_eq!(metadata["runtime_execution_profile"]["mode"], "uniform");
-    assert_eq!(metadata["runtime_execution_profile"]["action_scale"], 0.9);
+    assert_eq!(metadata["runtime_execution_profile"]["action_scale"], 1.0);
     assert_eq!(
         metadata["runtime_execution_profile"]["model_sha256"],
         JOINT_SHA
@@ -246,7 +246,7 @@ fn joint_uniform_keeps_manual_lb_teacher_and_returns_to_new_walk() {
     }
     assert_eq!(c.active_model().unwrap().sha256, JOINT_SHA);
     assert!(c.active_uniform_profile());
-    assert_eq!(c.applied_action_scale(), Some(0.9 * 1.1));
+    assert_eq!(c.applied_action_scale(), Some(1.1));
     assert_eq!(c.active_target_filters(), (0.5, 0.7));
 }
 

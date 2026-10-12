@@ -49,7 +49,7 @@ class PreparedFirmware:
                 if len(entries)>512 or len(candidates)!=1:
                     raise ControlError('ZIP 中必须包含唯一的本版 R17 固件包',400)
                 entry=candidates[0]
-                if entry.flag_bits&1 or not 0<entry.file_size<=32*1024*1024:
+                if entry.flag_bits&1 or not 0<entry.file_size<=40*1024*1024:
                     raise ControlError('固件包长度或加密格式不受支持',400)
                 # Read one known payload; never extract user-supplied paths or execute its code.
                 digest=hashlib.sha256()

@@ -17,11 +17,11 @@ from management_profile import PROFILE, SLOTS, DEFAULTS
 
 from configure import dumps, atomic_write
 from release_identity import BUILD, CONSOLE_VERSION
-from advanced_parameters import validate_servo,load as load_servo_test,save as save_servo_test
 
 # Installation and management read the same shipped default; no UI-side scale.
 DEFAULT_POLICY = DEFAULTS['policy']
 DEFAULT_ACTION_SCALE = DEFAULT_POLICY['action_scale']
+DEFAULT_JOINT_ACTION_SCALE = DEFAULTS.get('joint_action_scale',1.0)
 
 BASE = Path('/opt/robot/feetech-ft5-r5')
 CONFIG = Path('/etc/robot/feetech-ft5/robotd.toml')
@@ -29,7 +29,7 @@ MODEL_DIR = BASE / 'models'
 STATE_DIR = Path('/var/lib/robot/feetech-ft5/r5')
 DROPINS = Path('/etc/systemd/system/robotd.service.d')
 DROPIN_NAME = 'zzzz-r17-0151.conf'
-RUNTIME_DROPINS = Path('/run/systemd/system/robotd.service.d')
+SYSTEMD_DIR = Path('/etc/systemd/system')
 PROC = Path('/proc')
 # Keep the R17 management identifier; report the package version separately.
 MANAGEMENT_REVISION = 'R17'
@@ -82,78 +82,6 @@ def configure_hat_port():
     atomic(CONFIG, dumps(cfg))
 
 
-def retire_legacy_dropins():
-    """Consolidate obsolete startup commands when replacing the service."""
-    retired = []
-    for path in [*DROPINS.glob('*.conf'), *RUNTIME_DROPINS.glob('*.conf')]:
-        if path == DROPINS / DROPIN_NAME: continue
-        text = path.read_text()
-        logical = re.sub(r'\\\n[ \t]*', ' ', text)
-        legacy = re.search(r'^\s*ExecStart=\s*' + re.escape(str(BASE.parent)) + r'/feetech-ft5-r[2-5]/robotd(?:-[\w-]+)?(?:\s|$)', logical, re.M)
-        foreign = re.search(r'^\s*Exec(?:Start(?:Pre|Post)?|Stop(?:Post)?|Condition)=.*?/opt/microduck-0151(?:/|\s|$)', logical, re.M)
-        if legacy or foreign:
-            backup = STATE_DIR / 'retired-startup' / (hashlib.sha256(str(path).encode()).hexdigest()[:12]+'-'+path.name+'.bak')
-            if not backup.exists(): atomic(backup, text, mode=0o600)
-            # Keep operator environment, identities and resource settings; retire
-            # only the obsolete startup commands. Only the obsolete launch lines are retired.
-            kept = []
-            continuation = False
-            for line in text.splitlines():
-                obsolete_profile_settings = line.strip() in {
-                    'TimeoutStartSec=20s', f'ReadWritePaths=/run {CONFIG.parent}', 'PrivateDevices=no'}
-                remove = continuation or obsolete_profile_settings or bool(re.match(r'^\s*Exec(?:Start(?:Pre|Post)?|Stop(?:Post)?|Condition)=', line)) or bool(re.match(r'^\s*DeviceAllow=/dev/(?:tty|serial)', line))
-                continuation = remove and line.rstrip().endswith('\\')
-                if not remove and line.startswith('Environment='):
-                    values=shlex.split(line.partition('=')[2]);remaining=[v for v in values if not v.startswith(('ORT_DYLIB_PATH=','ALSA_CONFIG_PATH='))]
-                    if values!=remaining:
-                        if not remaining:continue
-                        line='Environment='+shlex.join(remaining)
-                if not remove and not line.lstrip().startswith(('#',';')): kept.append(line)
-            if any('=' in line and not line.lstrip().startswith(('#',';')) for line in kept):
-                atomic(path, '# Startup commands consolidated by Microduck HAT service.\n'+'\n'.join(kept)+'\n')
-            else:
-                path.unlink()
-            retired.append(path.name)
-    return retired
-
-
-def verify_startup(mode):
-    """Check merged systemd commands, including hooks appended after our drop-in."""
-    properties = ('ExecStart', 'ExecStartPre', 'ExecStartPost', 'ExecStopPost', 'ExecStop', 'ExecCondition')
-    merged = {key: run('systemctl', 'show', 'robotd.service', '-p', key, '--value') for key in properties}
-    start = merged['ExecStart']
-    if (f'path={BASE}/robotd ;' not in start or f'--params {CONFIG}' not in start
-            or f'--port {PORT}' not in start or '--uart-setup' not in start
-            or ('--commissioning' in start) != (mode == 'commissioning')):
-        raise ValueError('systemd 实际启动命令不匹配本版 R17，未启动服务：'+start)
-    for key in properties:
-        if '/opt/microduck-0151' in merged[key]:
-            raise ValueError('其他安装目录仍在接管 '+key+'，未启动服务：'+merged[key])
-    if (f'{BASE}/uart-service.py prepare' not in merged['ExecStartPre']
-            or f'{BASE}/uart-service.py apply' not in merged['ExecStartPost']):
-        raise ValueError('UART 启动钩子未生效，未启动服务')
-    return {'startup_verified': True, 'build': BUILD, 'mode': mode}
-
-
-def verify_ready(mode):
-    deadline=time.monotonic()+12
-    last='等待 UART 之后的总线反馈'
-    while time.monotonic()<deadline:
-        try:
-            bus=rpc('robot.busStatus',timeout=2)
-            if bus.get('build')!=BUILD or bus.get('mode')!=mode:
-                raise ValueError('实际服务版本或模式不匹配：'+json.dumps(bus,ensure_ascii=False))
-            if bus.get('phase')=='configuration_error':raise ValueError(bus.get('error') or '总线配置失败')
-            ready=(bus.get('phase')=='ready' and bus.get('torque_state')=='off') if mode=='commissioning' else (
-                bus.get('phase')=='control' and bus.get('fresh_sample') is True
-                and bus.get('native',{}).get('torque_state_confirmed') is False
-                and bus.get('policy_enabled') is False and bus.get('homed') is False)
-            if ready:return {'service_ready':True,'build':BUILD,'mode':mode,'torque':'off'}
-            last=bus.get('error') or bus.get('phase') or last
-        except (OSError,RuntimeError) as exc:last=str(exc)
-        time.sleep(.05)
-    raise ValueError('UART 配置已结束，但总线尚未就绪：'+last)
-
 def verify_calibration():
     """Check the file robotd actually loaded, independently of live servo samples."""
     path=CONFIG.with_name('hd1910-calibration.toml')
@@ -183,25 +111,46 @@ def unit(mode):
     if mode not in ('commissioning', 'motion'): raise ValueError('服务模式无效')
     extra = ' --commissioning' if mode == 'commissioning' else ''
     return (f'# R17 / official 0.15.1 / self-trained HD1910 exports.\n'
-            f'[Unit]\nAfter=alsa-restore.service alsa-state.service\n[Service]\nEnvironment=ORT_DYLIB_PATH={BASE}/onnxruntime/libonnxruntime.so.1.28.0\nUnsetEnvironment=ALSA_CONFIG_PATH\nExecStart=\nExecStart={BASE}/robotd --socket /run/robotd.sock --params {CONFIG} --port {PORT}{extra} --uart-setup\n'
+            f'[Unit]\nOnFailure=\n[Service]\nEnvironment=ORT_DYLIB_PATH={BASE}/onnxruntime/libonnxruntime.so.1.28.0\nUnsetEnvironment=ALSA_CONFIG_PATH\nExecStart=\nExecStart={BASE}/robotd --socket /run/robotd.sock --params {CONFIG} --port {PORT}{extra}\n'
             f'ExecStartPre=\nExecStartPost=\n'
-            f'ExecStopPost=\nRestart=no\n'
+            f'ExecStopPost=\nRestart=always\nRestartSec=2s\n'
             f'ExecStopPost=-/usr/bin/logger -t robotd-exit "result=${{SERVICE_RESULT}} code=${{EXIT_CODE}} status=${{EXIT_STATUS}}"\n'
-            f'ExecStartPre=+/usr/bin/python3 {BASE}/uart-service.py prepare\n'
-            f'ExecStartPost=+/usr/bin/python3 {BASE}/uart-service.py apply --pid $MAINPID --mode {mode}\n'
-            f'TimeoutStartSec=20s\nReadWritePaths=/run {CONFIG.parent} {MODEL_DIR} {STATE_DIR}\nPrivateDevices=no\nDeviceAllow={PORT} rw\nDeviceAllow=char-alsa rw\nSupplementaryGroups=audio\n')
+            f'TimeoutStartSec=30s\nReadWritePaths=/run {CONFIG.parent} {MODEL_DIR} {STATE_DIR}\nPrivateDevices=no\nDeviceAllow={PORT} rw\nDeviceAllow=char-alsa rw\nSupplementaryGroups=audio\n')
 
 
 def configure_startup(mode):
-    """Consolidate old startup commands into one fixed HAT profile."""
+    """Write only the current fixed HAT startup profile."""
     selected = unit(mode)
     MODEL_DIR.mkdir(parents=True,exist_ok=True)
     STATE_DIR.mkdir(parents=True,exist_ok=True,mode=0o700)
     configure_hat_port()
-    retired = retire_legacy_dropins()
     atomic(DROPINS / DROPIN_NAME, selected)
-    return {'port': PORT, 'mode': mode, 'retired': retired}
+    return {'port': PORT, 'mode': mode}
 
+
+def disable_automatic_recovery():
+    units=('updaterd.service','robot-boot-check.timer','robot-boot-check.service')
+    rule='[Unit]\nConditionPathExists=/run/microduck-explicit-official-recovery\n'
+    pending=[name for name in units if not (SYSTEMD_DIR/(name+'.d')/'zzzz-r17-manual.conf').is_file()
+             or (SYSTEMD_DIR/(name+'.d')/'zzzz-r17-manual.conf').read_text()!=rule]
+    if not pending:return
+    failed=False
+    for name in pending:
+        # A drop-in also works when the unit itself is an /etc file: systemctl
+        # mask cannot replace that file. The manual console installer is separate.
+        path=SYSTEMD_DIR/(name+'.d')/'zzzz-r17-manual.conf'
+        result=subprocess.run(['systemctl','disable','--now',name],check=False,capture_output=True)
+        if result is not None and result.returncode:
+            failed=True
+            detail=result.stderr or result.stdout or '未返回原因'
+            if isinstance(detail,bytes):detail=detail.decode(errors='replace')
+            print(f'{name} 停止/禁用指令失败：{detail.strip()}',file=sys.stderr,flush=True)
+        else:atomic(path,rule)
+    run('systemctl','daemon-reload')
+    if os.environ.get('MICRODUCK_INSTALL_LOG')=='1':
+        print('[固件安装 / 停用自动覆盖固件] '+('失败' if failed else '成功')+' · 已安装一次性系统配置；'+('停止/禁用指令有失败，原因见上方；robotd 继续运行' if failed else '自动更新与 golden 恢复已停用'),flush=True)
+    else:
+        print('自动更新、开机 golden 恢复已停用；保留中控手动固件升级。',flush=True)
 
 def argument(argv, name):
     values = []
@@ -237,7 +186,6 @@ def verify_running(mode, port):
             or not argv or argv[0] != str(BASE / 'robotd')
             or process.get('params') != str(CONFIG) or process.get('port') != port
             or process.get('mode') != mode
-            or process.get('uart_setup') is not True
             or argument(argv, '--socket') != '/run/robotd.sock'
             or '--fake' in argv or '--read-only' in argv):
         raise ValueError('实际服务进程与所选配置不一致：' + json.dumps(process, ensure_ascii=False))
@@ -263,7 +211,7 @@ def connection_status():
     matches = (selected == PORT and process['running'] and process.get('port') == PORT
                and process.get('mode') == expected_mode
                and process.get('params') == str(CONFIG)
-               and process.get('uart_setup') is True)
+               and process.get('uart_setup') is False)
     return {'management_revision': MANAGEMENT_REVISION, 'profile':'hd1910-selftrained-v1',
             'release':'Microduck-Robotd-FT6-R17', 'console_version': CONSOLE_VERSION, 'management_capabilities': {feature:True for feature in PROFILE['features']}, 'boot_port': PORT,
             'selected_port': selected, **motion_readiness(),
@@ -320,35 +268,56 @@ def validate_scale(value):
     if scale not in tuple(round(n/100,2) for n in range(10,101)):raise ValueError('缩放只能选择 0.10 到 1.00，步长 0.01')
     return scale
 
-def set_action_scale(ident,value,kp,kd,torque_limit):
+def model_execution_profile(path):
+    """Read the model-bound execution settings without reparsing training YAML."""
+    from model_packages import EXECUTION_FILE,describe_directory
+    directory=Path(path).parent
+    if not (directory/EXECUTION_FILE).exists():return None
+    return describe_directory(directory)['execution_profile']
+
+def set_action_scale(ident,value):
     scale=validate_scale(value)
-    servo=validate_servo(kp,kd,torque_limit)
     if not re.fullmatch('[a-f0-9]{32}',ident):raise ValueError('模型标识无效')
+    if ident not in {row['id'] for row in PROFILE['builtin_models']}:raise ValueError('请选择内置模型')
     data=tomllib.loads(CONFIG.read_text())
     policy=data.setdefault('policy',{})
     active={Path(str(policy.get(slot,''))).parent.name for slot in ('walk','sitstand')}
     if ident not in active:raise ValueError('请选择已安装且启用的自训模型')
+    walk=Path(str(policy.get('walk','')))
+    profile=model_execution_profile(walk) if walk.parent.name==ident else None
+    if profile is not None:
+        from model_packages import EXECUTION_FILE
+        # Native Walk already uses this value as its base scale. Updating the
+        # old global would leave this model unchanged and affect other actions.
+        updated={**profile,'action_scale':scale}
+        atomic_write(walk.parent/EXECUTION_FILE,json.dumps(updated,ensure_ascii=False,indent=2)+'\n')
+        return {'model':ident,'scale_scope':'joint','joint_action_scale':scale,
+                'action_scale':policy.get('action_scale',DEFAULT_ACTION_SCALE),
+                'execution_profile':updated,'sitstand_base_action_scale':1.0,
+                'message':'联合模型基础缩放已保存；头腿滤波与其他动作保持原值。重启后读取新配置。'}
     policy['action_scale']=scale
     policy.pop('r17_inference_scale',None)
     for key in ('walk_action_scale','hold_action_scale','action_scales'):policy.pop(key,None)
     text=dumps(data)
     atomic_write(CONFIG,text)
     atomic_write(CONFIG.with_name(CONFIG.stem+'.saved'+CONFIG.suffix),text)
-    save_servo_test(CONFIG,servo)
-    return {'model':ident,'action_scale':scale,'servo_parameters':servo,'sitstand_base_action_scale':1.0,'message':'高级参数已保存：动作缩放及全部 15 个舵机的 P / D / 转矩限制；重启后重新 HOME，上力时写入并回读确认。'}
+    return {'model':ident,'action_scale':scale,'sitstand_base_action_scale':1.0,'message':'动作缩放已保存；重启后重新 HOME。'}
 
 def model_list():
     from model_packages import catalog
     result=catalog(BASE,CONFIG);policy=tomllib.loads(CONFIG.read_text()).get('policy',{})
     for row in result['models']:
         row['action_scale']=policy.get('action_scale',DEFAULT_ACTION_SCALE) if row.get('slot')=='walk' else 1.0
+        if row.get('slot')=='walk' and row.get('execution_profile'):
+            row['action_scale']=row['execution_profile']['action_scale']
         if row.get('slot')=='roulade':
             row['action_scale']=next((a.get('params',{}).get('action_scale',policy.get('action_scale',DEFAULT_ACTION_SCALE)) for a in policy.get('skill',[]) if a.get('name')=='roulade'),policy.get('action_scale',DEFAULT_ACTION_SCALE))
-    return {**result,'management_actions':['advanced-parameters'],'servo_parameters':load_servo_test(CONFIG),'default_servo_parameters':DEFAULTS['servo'],'action_scale':policy.get('action_scale',DEFAULT_ACTION_SCALE),'default_action_scale':DEFAULT_ACTION_SCALE,'port':detect_port()}
+    return {**result,'management_actions':['action-scale','joint-action-scale'],'action_scale':policy.get('action_scale',DEFAULT_ACTION_SCALE),'default_action_scale':DEFAULT_ACTION_SCALE,'default_joint_action_scale':DEFAULT_JOINT_ACTION_SCALE,'port':detect_port()}
 
 def verify_loaded_models():
-    expected={slot:hashlib.sha256(Path(path).read_bytes()).hexdigest() for slot,path in config()['policy'].items()
-              if slot in SLOTS and path and path!='none'}
+    paths={slot:path for slot,path in config()['policy'].items() if slot in SLOTS and path and path!='none'}
+    expected={slot:hashlib.sha256(Path(path).read_bytes()).hexdigest() for slot,path in paths.items()}
+    expected_profiles={slot:model_execution_profile(path) for slot,path in paths.items()}
     until=time.monotonic()+8;last='等待控制器加载'
     while time.monotonic()<until:
         try:
@@ -357,6 +326,10 @@ def verify_loaded_models():
             policy=config()['policy']
             settings={key:policy.get(key,default) for key,default in DEFAULT_POLICY.items()}
             params_match=all(bus.get(key)==value for key,value in settings.items())
+            # The ONNX digest is unchanged when only its execution sidecar is
+            # edited. Confirm the loaded profile, including unchanged filters.
+            params_match=params_match and all((actual.get(slot) or {}).get('runtime_execution_profile')==profile
+                                             for slot,profile in expected_profiles.items())
             if 'roulade' in expected:
                 scale=next((a.get('params',{}).get('action_scale',policy.get('action_scale',DEFAULT_ACTION_SCALE)) for a in policy.get('skill',[]) if a.get('name')=='roulade'),policy.get('action_scale',DEFAULT_ACTION_SCALE))
                 params_match=params_match and (bus.get('model_action_scales') or {}).get('roulade')==scale
@@ -368,26 +341,15 @@ def verify_loaded_models():
         time.sleep(.1)
     raise ValueError('安装文件已更新，但未确认运行模型一致：'+last[-1500:])
 
-def model_assignment(ident,slot):
-    from model_packages import verify_directory,check_calibration,SLOTS
-    if slot not in SLOTS or not re.fullmatch('[a-f0-9]{32}',ident):raise ValueError('动作或模型标识无效')
-    info=verify_directory(BASE/'models'/ident)
-    if info['slot']!=slot or config()['policy'].get(slot)!=str(BASE/'models'/ident/'policy.onnx'):raise ValueError('模型未绑定到所选动作')
-    if tomllib.loads(CONFIG.with_name(CONFIG.stem+'.saved'+CONFIG.suffix).read_text()).get('policy',{}).get(slot)!=config()['policy'][slot]:raise ValueError('动作模型绑定未持久保存')
-    bus=rpc('robot.busStatus',timeout=2);mode=bus.get('mode')
-    if bus.get('build')!=BUILD or mode not in ('motion','commissioning'):raise ValueError('未取得当前固件模式确认')
-    loaded=(bus.get('loaded_models') or {}).get(slot) or {}
-    if mode=='motion' and loaded.get('sha256')!=info['sha256']:raise ValueError('所选动作实际模型哈希不匹配')
-    return {'model_assignment':{'slot':slot,'id':ident,'sha256':info['sha256'],'saved_verified':True,'running_verified':mode=='motion','mode':mode},'warnings':check_calibration(info),'id':ident,'slot':slot,'name':info['label'],'message':'已绑定 '+info['label']+('，实际模型已确认' if mode=='motion' else '；标定模式仅保存，运动模式加载后确认')+'；请重新 HOME。'}
 
 def main():
     action, *args = sys.argv[1:]
+    if action == 'disable-automatic-recovery':disable_automatic_recovery();return
     if action == 'validate-scale': print(validate_scale(*args)); return
     if action == 'port': print(detect_port()); return
     if action == 'config-path': print(effective_config_path()); return
     if action == 'connection': print(json.dumps(connection_status(), ensure_ascii=False)); return
     if action == 'verify-running': verify_running(*args); return
-    if action == 'model-assignment': print(json.dumps(model_assignment(*args),ensure_ascii=False)); return
     if action == 'verify-models': print(json.dumps(verify_loaded_models(),ensure_ascii=False)); return
     if action == 'verify-calibration': print(json.dumps(verify_calibration(),ensure_ascii=False)); return
     if action == 'bus-status': result = rpc('robot.busStatus', timeout=2)
@@ -395,25 +357,18 @@ def main():
     else:
         if os.geteuid() != 0: raise PermissionError('此操作需要 sudo')
         if action == 'configure-startup': result = configure_startup(*args)
-        elif action == 'verify-startup': result = verify_startup(*args)
-        elif action == 'verify-ready': result = verify_ready(*args)
-        elif action == 'retire-legacy': result = retire_legacy_dropins()
         elif action == 'power': result = power(*args)
-        elif action == 'validate-advanced': result={'action_scale':validate_scale(args[0]),'servo_parameters':validate_servo(*args[1:])}
         elif action == 'set-action-scale': result = set_action_scale(*args)
         elif action == 'relax-confirmed': relax_confirmed(); result = {'torque':'off'}
         elif action == 'relax-request': result = request_relax()
-        elif action == 'import-model':
-            from model_packages import import_package
-            result=import_package(args[0],args[1],target_slot=args[2])
-        elif action == 'assign-model':
-            from model_packages import assign_model
-            result=assign_model(*args)
-        elif action == 'delete-model':
-            from model_packages import delete_model
-            result=delete_model(*args)
         else: raise ValueError('不支持的运行管理操作')
-    print(json.dumps(result, ensure_ascii=False))
+    if os.environ.get('MICRODUCK_INSTALL_LOG')=='1' and action=='configure-startup':
+        return  # The installer owns this step result, with port and mode.
+    elif os.environ.get('MICRODUCK_INSTALL_LOG')=='1' and action=='relax-request':
+        label='成功' if result.get('requested') else '提示'
+        detail='旧 robotd 已接收松开请求；进程停止由下一步 systemd 确认' if result.get('requested') else '旧 robotd 未返回松开确认：'+result.get('detail',result.get('message','旧 robotd 不可达'))
+        print(f'[固件安装 / 请求停止运动] {label} · {detail}',flush=True)
+    else:print(json.dumps(result, ensure_ascii=False))
 
 
 if __name__ == '__main__':

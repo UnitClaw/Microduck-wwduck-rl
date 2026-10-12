@@ -44,6 +44,9 @@ pub mod web;
 #[cfg(any(target_os = "linux", feature = "gstreamer"))]
 pub mod pipeline;
 
+#[cfg(any(target_os = "linux", feature = "gstreamer"))]
+pub mod capture;
+
 /// Auto-exposure, in software, because the board's 3A engine does not do it.
 ///
 /// **Linux only, and unlike [`pipeline`] that is not a packaging decision**: this writes V4L2

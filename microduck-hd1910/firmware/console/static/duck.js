@@ -1,10 +1,12 @@
 import * as T from './vendor/three.module.min.js';
 import {OrbitControls} from './vendor/OrbitControls.js';
-import {parseDuck,rootQuaternion,displayRootQuaternion} from './pose.js';
+import {parseDuck,rootQuaternion} from './pose.js';
 import {servoPartMap} from './joint-map.js';
+import {resolvePoseSample} from './pose-state.js';
+import {REFERENCE_MODES,referencePose,hasReferenceHinge} from './calibration-reference.js';
 
 export class DuckView {
-  constructor(){this.headingReference=null;this.displayYaw=null;}
+  constructor(){this.headingReference=null;this.displayYaw=null;this.referenceMode='measured';this.selected=0;this.referenceStarted=0;}
   async init(container,home,onSelect) {
     this.home=home; this.onSelect=onSelect; this.container=container;
     this.initialView='front';
@@ -24,7 +26,8 @@ export class DuckView {
     const key=new T.DirectionalLight(0xffffff,2.2);key.position.set(.3,-.4,.8);this.scene.add(key);
     const rim=new T.DirectionalLight(0xe3edff,.8);rim.position.set(-.5,.4,.25);this.scene.add(rim);
     const grid=new T.GridHelper(1.6,32,0x415147,0x23302d);grid.rotation.x=Math.PI/2;grid.position.z=-.001;this.scene.add(grid);
-    const axes=new T.AxesHelper(.09);axes.position.set(0,0,.004);this.scene.add(axes);
+    // This legend names body axes, so its arrows must follow the body as well.
+    this.bodyAxes=new T.AxesHelper(.055);this.bodyAxes.material.depthTest=false;this.bodyAxes.renderOrder=10;this.scene.add(this.bodyAxes);
     const modelResponse=await fetch('/assets/duck-visual.bin');if(!modelResponse.ok)throw Error('官方完整视觉模型读取失败');
     this.model=parseDuck(await modelResponse.arrayBuffer());
     // Share immutable GPU geometry between measured and target poses.
@@ -35,6 +38,9 @@ export class DuckView {
     });
     this.actual=this.build(false);this.ghost=this.build(true);
     this.scene.add(this.actual.root,this.ghost.root);this.ghost.root.visible=false;
+    this.sideTags=['左侧 · 20–24','右侧 · 10–14'].map((text,i)=>{
+      const tag=document.createElement('span');tag.className=`robot-side-tag ${i?'robot-right':'robot-left'}`;tag.textContent=text;container.append(tag);return tag;
+    });
     this.ray=new T.Raycaster();let start=null;
     this.renderer.domElement.addEventListener('pointerdown',e=>{start=e.isPrimary&&e.button===0?{x:e.clientX,y:e.clientY,id:e.pointerId}:null;});
     this.renderer.domElement.addEventListener('pointercancel',()=>{start=null;});
@@ -47,7 +53,8 @@ export class DuckView {
       const hit=this.ray.intersectObjects(this.actual.servos,false)[0];if(hit)onSelect(hit.object.userData.joint);
     });
     this.observer=new ResizeObserver(()=>{const w=container.clientWidth,h=container.clientHeight;if(w&&h){this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setSize(w,h);}});
-    this.observer.observe(container);this.pose(this.actual,home,[0,0,-1],0);this.frame();
+    // With no feedback, show an explicitly labelled zero reference, not HOME.
+    this.observer.observe(container);this.pose(this.actual,Array(15).fill(0),[0,0,-1],0);this.view('front');this.frame();
     return this;
   }
   build(ghost) {
@@ -71,53 +78,93 @@ export class DuckView {
   }
   pose(instance,joints,gravity,yaw) {
     const root=instance.root;root.position.set(0,0,0);
-    const q=(this.reversePitch?displayRootQuaternion(gravity,yaw):rootQuaternion(gravity,yaw))||[1,0,0,0];
+    const q=rootQuaternion(gravity,yaw)||[1,0,0,0];
     root.quaternion.set(q[1],q[2],q[3],q[0]);
     this.model.bodies.forEach((b,i)=>{
       const g=instance.bodies[i];g.quaternion.copy(g.userData.rest);
-      if(b.joint>=0)g.quaternion.multiply(instance.rotation.setFromAxisAngle(g.userData.axis,Number.isFinite(joints[b.joint])?joints[b.joint]:this.home[b.joint]));
+      if(b.joint>=0)g.quaternion.multiply(instance.rotation.setFromAxisAngle(g.userData.axis,Number.isFinite(joints[b.joint])?joints[b.joint]:0));
     });
     root.updateMatrixWorld(true);
     // Same display-only floor convention as robotctl: not a measured body height.
     const box=instance.box.setFromObject(root);if(Number.isFinite(box.min.z))root.position.z=-box.min.z;
+    root.updateMatrixWorld(true);
   }
   update(snapshot) {
     if(!this.actual)return;
-    const service=snapshot.mode==='service';
-    this.reversePitch=service;
-    const rows=snapshot.servos.slice(0,15);
-    const joints=service?rows.map(r=>r.status==='live'&&Number.isFinite(r.angle_deg)?r.angle_deg*Math.PI/180:null):snapshot.state.joints;
-    const live=service?snapshot.service_sample_fresh&&snapshot.pose_calibrated:snapshot.channels.state.status==='live';
-    const complete=Array.isArray(joints)&&joints.length===15&&joints.every(Number.isFinite);
-    if(live && complete){
-      if(snapshot.imu.status==='live'&&Array.isArray(snapshot.imu.gravity)&&(!service||snapshot.imu.mount_verified))this.lastGravity=snapshot.imu.gravity;
+    this.lastSnapshot=snapshot;
+    const sample=this.lastSample=resolvePoseSample(snapshot),{rows,joints,live}=sample;
+    const reference=this.referenceMode!=='measured';
+    if(sample.gravity)this.lastGravity=[...sample.gravity];
+    if(live){
       // A stale IMU does not magically make the real robot upright. Hold its last
       // known tilt while the UI explicitly labels tilt as unknown/stale.
       // A local display origin, never an IMU mounting correction. Keep the
       // grid and camera fixed; only later heading changes rotate the duck.
-      const yaw=snapshot.state.odom?.yaw;
-      if(snapshot.channels.state.status==='live'&&Number.isFinite(yaw)){
+      const yaw=snapshot.state?.odom?.yaw;
+      if(snapshot.channels?.state?.status==='live'&&Number.isFinite(yaw)){
         if(!Number.isFinite(this.headingReference))this.headingReference=yaw;
         const delta=yaw-this.headingReference;
         this.displayYaw=Math.atan2(Math.sin(delta),Math.cos(delta));
       }
-      this.pose(this.actual,joints,this.lastGravity,this.displayYaw??0);
-      if(this.showGhost)this.pose(this.ghost,snapshot.state.targets||joints,this.lastGravity,this.displayYaw??0);
+      if(!reference){
+        this.pose(this.actual,joints,this.lastGravity,this.displayYaw??0);
+        if(this.showGhost&&sample.targetJoints)this.pose(this.ghost,sample.targetJoints,this.lastGravity,this.displayYaw??0);
+        this.measuredPoseSeen=true;
+      }
       // Apply the startup view once. Later samples must not undo orbit/zoom.
       if(!this.hasPose&&this.initialView)this.view(this.initialView);
       this.initialView=null;
       this.hasPose=true;
     }
-    this.ghost.root.visible=!!(this.showGhost && live && complete && snapshot.state.targets?.length===15);
+    if(reference)this.renderReference(performance.now());
+    this.ghost.root.visible=!!(!reference&&this.showGhost&&live&&sample.targetJoints);
     this.actual.parts.forEach(m=>{
       const i=m.userData.joint,row=rows[i];
       m.material.color.copy(m.userData.baseColor);
       m.material.emissive.setHex(0);m.material.emissiveIntensity=0;
-      if(this.heat && row && Number.isFinite(row.temperature_c) && row.status==='live')m.material.color.setHSL(.33-Math.min(1,Math.max(0,(row.temperature_c-25)/40))*.33,.8,.5);
+      if(!reference&&this.heat && row && Number.isFinite(row.temperature_c) && row.status==='live')m.material.color.setHSL(.33-Math.min(1,Math.max(0,(row.temperature_c-25)/40))*.33,.8,.5);
       const chosen=i>=0&&i===this.selected;
       if(chosen){m.material.emissive.setHex(0xc8ff6b);m.material.emissiveIntensity=.55;}
-      m.material.transparent=!live;m.material.opacity=chosen||live?1:.36;
-      m.renderOrder=chosen?1:0;m.material.depthTest=!chosen;m.material.depthWrite=!chosen&&live;
+      const visible=reference||live;
+      m.material.transparent=!visible;m.material.opacity=visible?1:(chosen ? .55 : .25);
+      m.renderOrder=chosen?1:0;m.material.depthTest=!chosen;m.material.depthWrite=!chosen&&visible;
+    });
+    this.onDisplayChange?.();
+  }
+  setReference(mode){
+    if(!REFERENCE_MODES.includes(mode))throw Error('未知的三维显示模式');
+    if((mode==='positive'||mode==='negative')&&!hasReferenceHinge(this.selected))return false;
+    this.referenceMode=mode;this.referenceStarted=performance.now();
+    if(mode!=='measured'){
+      this.renderReference(this.referenceStarted);this.view('front');
+    }else if(!this.lastSample?.live){
+      // Do not leave a demonstration on screen under an old measured label.
+      this.pose(this.actual,Array(15).fill(0),[0,0,-1],0);this.measuredPoseSeen=false;
+    }
+    this.update(this.lastSnapshot||{});return true;
+  }
+  selectJoint(index){
+    if(!Number.isInteger(index)||index<0||index>=15)return;
+    this.selected=index;this.referenceStarted=performance.now();
+    if(!hasReferenceHinge(index)&&['positive','negative'].includes(this.referenceMode))this.referenceMode='zero';
+    this.update(this.lastSnapshot||{});
+  }
+  renderReference(now){
+    const animated=['positive','negative'].includes(this.referenceMode);
+    const t=animated?Math.min(1,Math.max(0,(now-this.referenceStarted)/1000)):1;
+    this.referenceAnimating=animated&&t<1;
+    this.referenceJoints=referencePose(this.referenceMode,this.selected,t*t*(3-2*t));
+    this.pose(this.actual,this.referenceJoints,[0,0,-1],0);
+  }
+  updateBodyMarkers(){
+    if(!this.actual)return;
+    this.camera.updateMatrixWorld(true);
+    const body=this.actual.bodies[0];body.getWorldPosition(this.bodyAxes.position);body.getWorldQuaternion(this.bodyAxes.quaternion);
+    const width=this.container.clientWidth,height=this.container.clientHeight;
+    this.sideTags.forEach((tag,i)=>{
+      const point=body.localToWorld(new T.Vector3(0,i?-.075:.075,-.014)).project(this.camera);
+      tag.hidden=point.z< -1||point.z>1||Math.abs(point.x)>1||Math.abs(point.y)>1;
+      tag.style.left=`${(point.x+1)*width/2}px`;tag.style.top=`${(1-point.y)*height/2}px`;
     });
   }
   focusJoint(joint){
@@ -142,13 +189,15 @@ export class DuckView {
   resetHeading(){this.headingReference=null;this.displayYaw=null;}
   view(name) {
     this.focus=null;
-    const positions={front:[.56,0,.23],side:[0,-.56,.23],top:[.001,0,.7],home:[.56,0,.23]};
+    const positions={front:[.52,0,.11],back:[-.52,0,.11],left:[0,.52,.11],side:[0,-.52,.11],top:[.001,0,.58],home:[.52,0,.11]};
     name=Object.hasOwn(positions,name)?name:'home';
     if(!this.hasPose)this.initialView=name;
-    // All presets share the fixed display axes. Re-selecting a view must not
-    // cancel a real turn or rotate the ground relative to the display origin.
-    this.camera.position.fromArray(positions[name]);
-    this.controls.target.set(0,0,.145);this.controls.update();
+    // View names describe the robot, even after it has turned in the scene.
+    // Only the camera moves: measured joints, heading and ground stay intact.
+    const root=this.actual?.root,rotation=root?.quaternion||new T.Quaternion();
+    const target=this.actual?this.actual.bodies[0].localToWorld(new T.Vector3(0,0,.025)):new T.Vector3(0,0,.145);
+    this.camera.position.copy(target).add(new T.Vector3(...positions[name]).applyQuaternion(rotation));
+    this.controls.target.copy(target);this.controls.update();
   }
-  frame(){this.advanceFocus(performance.now());this.controls.update();this.renderer.render(this.scene,this.camera);requestAnimationFrame(()=>this.frame());}
+  frame(){const now=performance.now();if(this.referenceMode!=='measured'&&this.referenceAnimating){this.renderReference(now);this.onDisplayChange?.();}this.advanceFocus(now);this.controls.update();this.updateBodyMarkers();this.renderer.render(this.scene,this.camera);requestAnimationFrame(()=>this.frame());}
 }

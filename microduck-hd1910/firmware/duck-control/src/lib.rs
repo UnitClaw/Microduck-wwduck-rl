@@ -30,6 +30,5 @@ pub use model::{
 pub use obs::{ACTION_LEN, Command, OBS_LEN, Observation};
 
 pub mod hd1910;
-pub mod hd1910_test;
 
 pub mod deployment;

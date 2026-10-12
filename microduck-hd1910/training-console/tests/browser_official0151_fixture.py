@@ -25,6 +25,17 @@ for task in (WALK,STAND):
                checkpoints=[{'path':'/fixture/'+task+'/model_1000.pt','name':'model_1000.pt','iteration':1000}])
     job['request']['training_action_scale']=1.0
     job['effective_config']={'resolved':json.loads((tc.ROOT/'data/task-configs'/(task+'.json')).read_text())['inspection']}
+    if os.environ.get('TRAINING_BROWSER_LEGACY_FILTER') and task == STAND:
+        # A saved pre-R1.5.21 model; current new-training API must not create EMA jobs.
+        old_filter={'enabled':True,'head_alpha':.5,'legs_alpha':.7,'version':1}
+        job['request'].update(label='历史滤波 fixture',training_action_scale=.7,training_firmware_p=3,action_filter=old_filter)
+        job['effective_config'].update(training_action_scale=.7,training_firmware_p=3,action_filter=old_filter)
+        resolved=job['effective_config']['resolved']
+        resolved['full']['env']['actions']['joint_pos'].update(scale=.7,head_alpha=.5,legs_alpha=.7,filter_version=1)
+        resolved['full']['env']['scene']['entities']['robot']['articulation']['actuators'][0]['kp_fw']=3.
+        resolved['model']['actuators'][0]['kp_fw']=3.
+        properties=resolved['model']['actuators'][0]['runtime_properties']
+        properties['kp_fw']=3.;properties['duty_slope_per_rad']*=3/5
 job=manager.jobs[manager.launch('train',{'task':WALK})['job_id']]
 job.update(status='completed',request={**job['request'],'engine':'hd1910','label':'历史模型 fixture'},
            checkpoints=[{'path':'/fixture/legacy/model_5000.pt','iteration':5000}])

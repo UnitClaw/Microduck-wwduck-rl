@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
@@ -266,23 +267,102 @@ static void close_consumer_input(struct pollfd *input) {
     input->revents = 0;
 }
 
-static int64_t monotonic_ms(void) {
-    struct timespec now = {0};
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+struct input_watch {
+    int fd;
+    int parent;
+    int input;
+    const char *directory;
+};
+
+static void watch_input_directory(struct input_watch *watch) {
+    if (watch->input < 0)
+        watch->input = inotify_add_watch(watch->fd, watch->directory,
+                IN_CREATE | IN_MOVED_TO | IN_ATTRIB | IN_DELETE |
+                IN_MOVED_FROM | IN_DELETE_SELF | IN_MOVE_SELF);
 }
 
-static void retry_consumer_input(struct pollfd *input, int64_t *next_retry_ms) {
-    if (input->fd >= 0)
-        return;
-    int64_t now = monotonic_ms();
-    if (now < *next_retry_ms)
-        return;
-    /* The main node may produce events continuously, so retry on a clock
-     * deadline rather than waiting for poll to time out. */
-    *next_retry_ms = now + 1000;
-    input->fd = open_consumer_input();
-    input->revents = 0;
+static int start_input_watch(struct input_watch *watch, const char *directory,
+                             const char *parent) {
+    *watch = (struct input_watch){.fd = -1, .parent = -1, .input = -1,
+                                  .directory = directory};
+    watch->fd = inotify_init1(IN_CLOEXEC | IN_NONBLOCK);
+    if (watch->fd < 0)
+        return -1;
+    watch->parent = inotify_add_watch(watch->fd, parent, IN_CREATE | IN_MOVED_TO);
+    if (watch->parent < 0) {
+        close(watch->fd);
+        watch->fd = -1;
+        return -1;
+    }
+    watch_input_directory(watch);
+    if (watch->input < 0 && errno != ENOENT) {
+        close(watch->fd);
+        watch->fd = -1;
+        return -1;
+    }
+    return 0;
+}
+
+/* Watch before enumerating: an input node created during discovery cannot be missed. */
+static bool input_changed(struct input_watch *watch) {
+    char buffer[16384] __attribute__((aligned(__alignof__(struct inotify_event))));
+    bool changed = false;
+    for (;;) {
+        ssize_t got = read(watch->fd, buffer, sizeof(buffer));
+        if (got < 0) {
+            if (errno == EAGAIN || errno == EINTR)
+                return changed;
+            perror("read input hotplug events");
+            running = 0;
+            return changed;
+        }
+        if (got == 0)
+            return changed;
+        for (size_t at = 0; at < (size_t)got;) {
+            const struct inotify_event *event = (const void *)(buffer + at);
+            if (event->wd == watch->parent && event->len &&
+                    strcmp(event->name, "input") == 0) {
+                watch_input_directory(watch);
+                changed = true;
+            }
+            if (event->wd == watch->input) {
+                if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF)) {
+                    inotify_rm_watch(watch->fd, watch->input);
+                    watch->input = -1;
+                    changed = true;
+                } else if (event->mask & IN_IGNORED) {
+                    watch->input = -1;
+                }
+                changed |= (event->len && strncmp(event->name, "event", 5) == 0);
+            }
+            changed |= (event->mask & IN_Q_OVERFLOW) != 0;
+            at += sizeof(*event) + event->len;
+        }
+    }
+}
+
+static bool wait_input_change(struct input_watch *watch) {
+    struct pollfd source = {.fd = watch->fd, .events = POLLIN};
+    while (running) {
+        int ready = poll(&source, 1, -1);
+        if (ready < 0) {
+            if (errno == EINTR)
+                continue;
+            return false;
+        }
+        if (source.revents & (POLLERR | POLLHUP | POLLNVAL))
+            return false;
+        if (input_changed(watch))
+            return true;
+    }
+    return false;
+}
+
+static void reopen_consumer_input(struct pollfd *input) {
+    if (input->fd < 0) {
+        input->fd = open_consumer_input();
+        input->revents = 0;
+    }
 }
 
 static bool input_disconnected(struct pollfd *input, int source) {
@@ -347,7 +427,7 @@ static bool forward_ready_inputs(struct pollfd pollfds[2], int ufd,
     return true;
 }
 
-static int run_bridge(int pfd, const char *path) {
+static int run_bridge(int pfd, const char *path, struct input_watch *watch) {
     struct axis_map maps[12];
     int n = 0;
 
@@ -436,51 +516,65 @@ static int run_bridge(int pfd, const char *path) {
     }
 
     fprintf(stderr, "GameSir Xbox bridge active: %s -> %s\n", path, XBOX_NAME);
-    struct pollfd pollfds[2] = {
+    struct pollfd pollfds[3] = {
         {.fd = pfd, .events = POLLIN},
         {.fd = cfd, .events = POLLIN},
+        {.fd = watch->fd, .events = POLLIN},
     };
-    int64_t next_consumer_retry_ms = monotonic_ms() + 1000;
+    int result = 0;
     while (running) {
-        retry_consumer_input(&pollfds[1], &next_consumer_retry_ms);
-        int pr = poll(pollfds, 2, 1000);
+        int pr = poll(pollfds, 3, -1);
         if (pr < 0) {
             if (errno == EINTR) continue;
             break;
         }
         if (pr == 0) continue;
-        bool had_consumer = pollfds[1].fd >= 0;
         if (!forward_ready_inputs(pollfds, ufd, maps, n))
             break;
-        if (had_consumer && pollfds[1].fd < 0)
-            next_consumer_retry_ms = monotonic_ms() + 1000;
+        if (pollfds[2].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            fprintf(stderr, "input hotplug watcher failed; bridge exits\n");
+            result = -1;
+            break;
+        }
+        if (pollfds[2].revents & POLLIN && input_changed(watch))
+            reopen_consumer_input(&pollfds[1]);
     }
 
     ioctl(pfd, EVIOCGRAB, 0);
     close_consumer_input(&pollfds[1]);
     ioctl(ufd, UI_DEV_DESTROY);
     close(ufd);
-    return 0;
+    return result;
 }
 
 int main(void) {
     signal(SIGINT, stop_running);
     signal(SIGTERM, stop_running);
     fprintf(stderr, "waiting for %s over Bluetooth\n", PAD_NAME);
+    struct input_watch watch;
+    if (start_input_watch(&watch, "/dev/input", "/dev") < 0) {
+        perror("watch input hotplug");
+        return EXIT_FAILURE;
+    }
 
     while (running) {
         char path[64] = {0};
         int pfd = find_pad(path, sizeof(path));
         if (pfd < 0) {
-            sleep(1);
+            if (!wait_input_change(&watch))
+                break;
             continue;
         }
-        run_bridge(pfd, path);
+        int result = run_bridge(pfd, path, &watch);
         close(pfd);
+        if (result < 0) {
+            close(watch.fd);
+            return EXIT_FAILURE;
+        }
         if (running) {
             fprintf(stderr, "GameSir disconnected; waiting for it to return\n");
-            sleep(1);
         }
     }
+    close(watch.fd);
     return 0;
 }

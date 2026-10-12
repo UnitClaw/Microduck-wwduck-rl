@@ -291,6 +291,17 @@ impl Policy {
                 firmware_p = Some(c.firmware_p);
             }
         }
+        for path in &paths.skills {
+            if path.with_file_name("deployment-contract.json").exists() {
+                let c = crate::deployment::Contract::load(path).map_err(PolicyError::Inference)?;
+                if firmware_p.is_some_and(|p| p != c.firmware_p) {
+                    return Err(PolicyError::Inference(
+                        "BAM gains differ across loaded models and skills".into(),
+                    ));
+                }
+                firmware_p = Some(c.firmware_p);
+            }
+        }
 
         // Everything below calls into `ort`, and `ort` panics on failures it considers
         // unrecoverable — so the whole of it, and nothing else, goes inside the catch.

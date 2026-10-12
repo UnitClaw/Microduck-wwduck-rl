@@ -1,10 +1,20 @@
-Microduck 全套发布资料 — 2026-10-07
+Microduck 当前公开发布
 
-1. microduck-hd1910：用 VS Code 打开这个目录，上传 GitHub。
-   固件源码与机器人中控在 firmware；训练中控源码在 training-console。
-2. release-assets：里面的三个 ZIP 与 SHA256SUMS.txt 上传 GitHub Releases。
-3. GitHub 最短操作见 microduck-hd1910/docs/PUBLISH.md。
+项目：https://github.com/kissqy/Microduck-kissqy
+首页 README.md 提供系统镜像、两个中控 ZIP 和源码入口。
 
-版本：R17 v1.0.146 / control.29 / API40；训练中控 R1.5.17。
-个人非商业授权仅覆盖作者有权授权的原创部分；上游保持原许可。
-编译好的固件已经提供，普通使用无需先编译源码。
+机器人中控：R17 V164（1.0.164）
+机器人固件：官方 0.15.1 / control.40 / API40
+训练中控：R1.5.27
+系统镜像：Public Image R1；首次配网 R5
+
+固件源码：microduck-hd1910/firmware/
+机器人中控源码：microduck-hd1910/firmware/console/
+训练中控源码：microduck-hd1910/training-console/
+两个运行 ZIP：仓库根目录 release-assets/
+系统镜像：public-image-r1 Release
+
+V164 沿用 V163 编译的 control.40 固件；源码原包名中的 V163 是编译来源。
+日常使用无需编译；从源码编译见 microduck-hd1910/docs/BUILD.md。
+首次运动前核对本机标定，按 HOME → 保持 → 行走 使用。
+分项授权见 microduck-hd1910/LICENSE；第三方内容保留原许可。

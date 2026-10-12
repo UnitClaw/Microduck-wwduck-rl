@@ -19,7 +19,7 @@ def reference(task):
 
 
 class CurrentActionTests(unittest.TestCase):
-    def test_removed_new_recipe_keeps_historical_play_and_sitstand_mapping(self):
+    def test_rough_recipe_enabled_and_historical_play_keeps_sitstand_mapping(self):
         import training_console as tc
         with tempfile.TemporaryDirectory() as directory, patch.object(tc.BaseTrainingManager, '_run'):
             manager = tc.TrainingManager(Path(directory))
@@ -29,8 +29,9 @@ class CurrentActionTests(unittest.TestCase):
                 old = 'Mjlab-SitStand-Rough-MicroDuck'
                 with self.assertRaisesRegex(ValueError, '固定动作系数1.0'):
                     manager.launch('train', {'task':sit,'training_action_scale':.9})
-                with self.assertRaisesRegex(ValueError, '旧配方'):
-                    manager.launch('train', {'task':old})
+                rough_job = manager.jobs[manager.launch('train', {'task':old})['job_id']]
+                self.assertEqual(rough_job['request']['task'], old)
+                rough_job['status'] = 'completed'
                 job = manager.jobs[manager.launch('train', {'task':sit})['job_id']]
                 self.assertEqual(job['request']['training_action_scale'], 1)
                 # A genuine saved run from the old catalog keeps its original ID.
@@ -52,14 +53,18 @@ class CurrentActionTests(unittest.TestCase):
         roles = [p['role'] for p in CATALOG['profiles']]
         self.assertEqual(len(roles), len(set(roles)))
         self.assertEqual(set(roles), {'joint','sitstand','ground_pick','kick_left','kick_right',
-                                     'roulade','walk','stand','roller','crouch'})
+                                     'roulade','walk','stand','roller','crouch',
+                                     'swizzle','slope','roller_stand','spin'})
+        self.assertEqual(len(roles), 14)
+        self.assertEqual(len(TASKS), 35)
         self.assertEqual(DEFAULT_TASK, 'Mjlab-VelStand-Rough-Backlash-MicroDuck')
         for profile in CATALOG['profiles']:
             self.assertIn(profile['default_task'], profile['variants'])
             self.assertTrue(all(TASKS[t]['enabled'] for t in profile['variants']))
-        self.assertFalse(any(any(x in t for x in ('Swizzle','Slope','Spin','RollerStandUp')) for t in TASKS))
+        for family in ('Swizzle','Slope','Spin','RollerStandUp'):
+            self.assertTrue(any(family in task for task in TASKS))
         for t in ('Mjlab-SitStand-Rough-MicroDuck','Mjlab-GroundPick-Rough-MicroDuck'):
-            self.assertFalse(TASKS[t]['enabled'])
+            self.assertTrue(TASKS[t]['enabled'])
             self.assertEqual(reference(t)['task'], t)  # original history is not relabelled
 
     def test_exact_gear_play_and_teacher_matching(self):

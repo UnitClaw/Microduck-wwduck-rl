@@ -6,7 +6,9 @@ import threading
 PREFIX = 'MICRODUCK_ADAPTER '
 KINDS = frozenset(('log','task_config','effective_config','viewer_ready','sim_state',
                   'validation','training_view_ready','training_view_state',
-                  'training_view_error','training_curriculum_state','sample_clock'))
+                  'training_view_error','training_curriculum_state','sample_clock',
+                  'limit_comparison_state','limit_comparison_result',
+                  'friction_readback','adapter_correction'))
 _LOCK = threading.Lock()
 def _nonfinite(value):
     raise ValueError('JSON 含有非有限数值：'+value)

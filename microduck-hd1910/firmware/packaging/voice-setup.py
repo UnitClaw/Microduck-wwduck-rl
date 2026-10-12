@@ -16,7 +16,7 @@ def seed():
 def run(argv):
     return subprocess.run(argv,capture_output=True,text=True,check=True,timeout=5)
 
-def setup(params):
+def setup(params, prepare_only=False, system_only=False):
     data=tomllib.loads(params.read_text());audio=data.setdefault('audio',{})
     try:prior=json.loads((BASE/'voice-device.json').read_text())
     except (OSError,ValueError):prior={}
@@ -28,7 +28,18 @@ def setup(params):
     try:ready=(bank/'.seed').read_text().strip()==f'{selected}:5'
     except OSError:ready=False
     if prior.get('revision')==REVISION and prior.get('slave')==original and ready and audio.get('bank')==str(bank):
-        print('沿用现有原生音库与系统 ALSA 音量；不重复初始化。',flush=True);return
+        return
+    if not system_only:
+        if not ready:
+            subprocess.run([str(BASE/'sounds'),'ensure-bank','--dir',str(bank),'--seed',str(selected),'--force'],check=True,timeout=60)
+        audio.update(enabled=True,device=original,bank=str(bank))
+        text=dumps(data)
+        if params.read_text()!=text:
+            atomic_write(params,text)
+            atomic_write(params.with_name(params.stem+'.saved'+params.suffix),text)
+        if prepare_only:
+            print('[固件安装 / 准备音库文件] 成功 · robotd 使用的本机音库与音频参数已准备',flush=True)
+            return
     alsactl=shutil.which('alsactl')
     if not alsactl:raise ValueError('系统缺少 alsactl（alsa-utils）')
     operator=os.environ.get('SUDO_USER')
@@ -41,8 +52,6 @@ def setup(params):
     for unit in ('alsa-restore.service','alsa-state.service'):
         atomic_write(ROOT/f'etc/systemd/system/{unit}.d/microduck-audio.conf','[Unit]\nWants=aic3104-init.service\nAfter=aic3104-init.service\nBefore=robotd.service\n')
     run(['systemctl','--no-reload','add-wants','multi-user.target','alsa-restore.service','alsa-state.service'])
-    if not ready:
-        subprocess.run([str(BASE/'sounds'),'ensure-bank','--dir',str(bank),'--seed',str(selected),'--force'],check=True,timeout=60)
     if prior.get('revision')!=REVISION:
         value=None
         # One-time migration from the previous software attenuation preserves
@@ -60,11 +69,9 @@ def setup(params):
         (ROOT/'var/lib/alsa').mkdir(parents=True,exist_ok=True)
         run([alsactl,'store',card])
     device={'card':card,'slave':original,'control':voice_preferences.CONTROL,'revision':REVISION,'alsactl':alsactl,'seed':selected,'seed_origin':origin,'volume_backend':'system ALSA'}
-    audio.update(enabled=True,device=original,bank=str(bank))
-    atomic_write(params,dumps(data))
     atomic_write(BASE/'voice-device.json',json.dumps(device,ensure_ascii=False,indent=2)+'\n')
     (BASE/'voice-alsa.conf').unlink(missing_ok=True)
-    print('系统 PCM 音量已接入；alsactl 保存，Zero 开机由系统恢复；固件重启不调整音量。',flush=True)
+    print('[固件安装 / 配置系统音频] 成功 · 本机音库与系统 ALSA 保存恢复配置已安装',flush=True)
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('params',type=Path);args=parser.parse_args();setup(args.params)
+    parser=argparse.ArgumentParser();parser.add_argument('params',type=Path);parser.add_argument('--prepare',action='store_true');parser.add_argument('--system',action='store_true');args=parser.parse_args();setup(args.params,args.prepare,args.system)

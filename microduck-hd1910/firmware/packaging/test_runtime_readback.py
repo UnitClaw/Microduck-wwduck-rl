@@ -24,14 +24,14 @@ class ReadbackTests(unittest.TestCase):
    self.assertEqual(tomllib.loads(out.read_text())['policy'],policy)
  def test_confirmation_requires_actual_hash_and_official_global_readback(self):
   data={'policy':{'walk':str(ROOT/'policies/walk/policy.onnx'),'action_scale':.65,'head_lowpass':.5,'legs_lowpass':.7,'voltage_adapt':False}}
-  sha=hashlib.sha256(Path(data['policy']['walk']).read_bytes()).hexdigest();bus={'build':runtime.BUILD,'loaded_models':{'walk':{'sha256':sha}},'action_scale':.65,'head_lowpass':.5,'legs_lowpass':.7,'voltage_adapt':False}
+  sha=hashlib.sha256(Path(data['policy']['walk']).read_bytes()).hexdigest();bus={'build':runtime.BUILD,'loaded_models':{'walk':{'sha256':sha,'runtime_execution_profile':runtime.model_execution_profile(data['policy']['walk'])}},'action_scale':.65,'head_lowpass':.5,'legs_lowpass':.7,'voltage_adapt':False}
   with patch.object(runtime,'config',return_value=data),patch.object(runtime,'rpc',return_value=bus):self.assertTrue(runtime.verify_loaded_models()['loaded_models_verified'])
   for bad in ({**bus,'action_scale':.9},{**bus,'loaded_models':{'walk':{'sha256':'old-model'}}}):
    with patch.object(runtime,'config',return_value=data),patch.object(runtime,'rpc',return_value=bad),patch.object(runtime.time,'monotonic',side_effect=[0,0,9]),patch.object(runtime.time,'sleep'):
     with self.assertRaises(ValueError):runtime.verify_loaded_models()
  def test_all_four_slots_must_actually_load_including_roulade(self):
   policy={slot:str(ROOT/'policies'/slot/'policy.onnx') for slot in ('walk','sitstand','ground_pick','roulade')}
-  loaded={slot:{'sha256':hashlib.sha256(Path(path).read_bytes()).hexdigest()} for slot,path in policy.items()}
+  loaded={slot:{'sha256':hashlib.sha256(Path(path).read_bytes()).hexdigest(),'runtime_execution_profile':runtime.model_execution_profile(path)} for slot,path in policy.items()}
   policy['skill']=[{'name':'roulade','params':{'action_scale':1.0}}]
   bus={'model_action_scales':{'roulade':1.0},'build':runtime.BUILD,'loaded_models':loaded,'action_scale':.7,'head_lowpass':.5,'legs_lowpass':.7,'voltage_adapt':True}
   with patch.object(runtime,'config',return_value={'policy':policy}),patch.object(runtime,'rpc',return_value=bus):

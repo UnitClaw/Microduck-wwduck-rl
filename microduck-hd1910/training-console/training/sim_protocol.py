@@ -10,8 +10,11 @@ from collections import deque
 
 
 class SimulationControls:
-    def __init__(self, clock=time.time):
+    def __init__(self, clock=time.time, limits=None):
         self.clock = clock
+        self.limits = ((-.4, .4), (-.3, .3), (-1.0, 1.0)) if limits is None else tuple(tuple(pair) for pair in limits)
+        if len(self.limits) != 3 or any(len(pair) != 2 or any(type(v) not in (int, float) or not math.isfinite(v) for v in pair) or pair[0] > 0 or pair[1] < 0 for pair in self.limits):
+            raise ValueError('仿真控制范围必须有三组含0的有限上下限。')
         self.lock = threading.Lock()
         self.deadline = 0.0
         self.velocity = (0.0, 0.0, 0.0)
@@ -37,7 +40,7 @@ class SimulationControls:
                 if not isinstance(values, list) or len(values) != 3: return
                 if any(type(v) not in (float, int) or not math.isfinite(v) for v in values): return
                 if type(expiry) not in (float, int) or not math.isfinite(expiry): return
-                self.velocity = tuple(max(-limit, min(limit, v)) for v, limit in zip(values, (.4, .3, 1.0)))
+                self.velocity = tuple(max(lo, min(hi, v)) for v, (lo, hi) in zip(values, self.limits))
                 self.deadline = min(expiry, self.clock()+.8)
                 self.last_control = {'client':message.get('client'), 'sequence':message.get('sequence'),
                                      'received_at':self.clock()}
@@ -71,7 +74,7 @@ class SimulationControls:
     def status(self):
         """Adapter receipt, independent of the desktop HTTP acknowledgement."""
         with self.lock:
-            return {**self.last_control, 'expired':bool(self.last_control and self.clock() >= self.deadline),
+            return {**self.last_control, 'expired':bool(self.last_control and self.deadline > 0 and self.clock() >= self.deadline),
                     'requested':list(self.velocity), 'closed':self.closed}
 
 

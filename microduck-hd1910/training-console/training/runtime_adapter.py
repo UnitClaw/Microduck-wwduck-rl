@@ -16,9 +16,11 @@ from pathlib import Path
 if __package__:
     from .sim_protocol import OnnxPolicy, SimulationControls
     from .recipe import apply_overrides, apply_robot, inspect_configs, validate_training_action_scale, validate_training_firmware_p
+    from .config_audit import audit_configuration
 else:
     from sim_protocol import OnnxPolicy, SimulationControls
     from recipe import apply_overrides, apply_robot, inspect_configs, validate_training_action_scale, validate_training_firmware_p
+    from config_audit import audit_configuration
 
 if __package__:
     from .event_protocol import emit
@@ -28,9 +30,9 @@ else:
     import action_filter
 
 if __package__:
-    from .official_spec import TASKS, JOINT_TASKS, REVISION, RUNTIME_VERSION, RUNTIME_REVISION, new_training_action_scale
+    from .official_spec import TASKS, JOINT_TASKS, REVISION, RUNTIME_VERSION, RUNTIME_REVISION, TRAINING_ADAPTER_REVISION, new_training_action_scale
 else:
-    from official_spec import TASKS, JOINT_TASKS, REVISION, RUNTIME_VERSION, RUNTIME_REVISION, new_training_action_scale
+    from official_spec import TASKS, JOINT_TASKS, REVISION, RUNTIME_VERSION, RUNTIME_REVISION, TRAINING_ADAPTER_REVISION, new_training_action_scale
 WALK_TASKS = {name for name, info in TASKS.items() if info['role'] in ('walk', 'joint', 'roller')}
 
 
@@ -72,8 +74,11 @@ def describe(task, req=None):
     cfg, agent = load_env_cfg(task), load_rl_cfg(task)
     if req: apply_recipe(cfg,agent,req)
     locked = curriculum_rewards(cfg)
+    inspection = inspect_configs(task,cfg,agent)
     return {
-        'inspection':inspect_configs(task,cfg,agent),
+        'inspection':inspection,
+        'configuration_audit':audit_configuration(task,inspection,req),
+        'training_adapter_revision':TRAINING_ADAPTER_REVISION,
         'task':task, 'actor_dims':list(agent.actor.hidden_dims), 'critic_dims':list(agent.critic.hidden_dims),
         'activation':agent.actor.activation, 'learning_rate':agent.algorithm.learning_rate,
         'gamma':agent.algorithm.gamma, 'entropy':agent.algorithm.entropy_coef, 'clip':agent.algorithm.clip_param,
@@ -146,11 +151,16 @@ def train(req):
          (cfg.env.scene.num_envs,cfg.agent.max_iterations,cfg.agent.save_interval))
     filter_state = action_filter.describe(cfg.env.actions['joint_pos'], 1.0 / (cfg.env.sim.mujoco.timestep * cfg.env.decimation))
     emit('log', line='[训练动作滤波] ' + action_filter.note(filter_state) + ' 上一帧动作观测仍为原始策略输出；不改变Home和动作系数。')
+    resolved = inspect_configs(req['task'],cfg.env,cfg.agent)
+    audit = audit_configuration(req['task'],resolved,req)
+    audit['provenance']='effective_training_configuration_before_first_step'
+    emit('log', line='[配置审计] 已核对实际关节映射、观测与指令、执行器、地形、接触、齿隙、摩擦随机化和奖励索引；完整报告随训练记录保存。')
     emit('effective_config', data={
         'action_filter': filter_state,
         'curriculum_alignment': aligned,
         'joint':req.get('_joint_receipt'),
-        'resolved':inspect_configs(req['task'],cfg.env,cfg.agent),
+        'resolved':resolved,
+        'configuration_audit':audit,
         'num_envs':cfg.env.scene.num_envs,'iterations':cfg.agent.max_iterations,
         'training_action_scale':cfg.env.actions['joint_pos'].scale,
         'training_firmware_p':firmware_p,
@@ -234,6 +244,7 @@ def preflight(req):
     model=robot.spec.compile()
     if model.nu!=14:raise ValueError('当前策略要求14个驱动关节，实际为'+str(model.nu))
     result=inspect_configs(req['task'],cfg.env,cfg.agent)
+    result['configuration_audit']=audit_configuration(req['task'],result,req)
     result['checks']={'entity_compiled':True,'action_count':model.nu,'control_hz':1/(cfg.env.sim.mujoco.timestep*cfg.env.decimation),'cuda_training_tested':False}
     if req.get('_joint_receipt'):result['joint']=req['_joint_receipt']
     emit('validation',data=result)
@@ -312,6 +323,9 @@ def export(req):
     from mjlab.tasks.registry import load_env_cfg,load_rl_cfg
     cfg=load_env_cfg(req['task']);agent=apply_agent(load_rl_cfg(req['task']),req.get('policy_parameters',{}));apply_recipe(cfg,agent,req)
     resolved=inspect_configs(req['task'],cfg,agent)
+    configuration_audit=audit_configuration(req['task'],resolved,req)
+    configuration_audit['provenance']='export_reconstruction'
+    configuration_audit['note']='本报告审计导出时重建配置；原训练奖励、PPO与课程以training_snapshot为准。两者机器人物理与策略接口另经合同比较。'
     contract={'schema':'microduck-deployment-contract/v1','task':req['task'],'input_dim':61,'output_dim':14,'obs_normalizer':'baked_in_onnx','action_filter':action_filter.describe(cfg.actions['joint_pos']),'model':resolved['model'],'observations':resolved['full']['env']['observations']['actor'],'actions':resolved['full']['env']['actions'],'onnx_metadata':{x.key:x.value for x in model.metadata_props},'hardware_calibration':(req.get('studio_recipe') or {}).get('calibration'),'deployment_verified':False,'note':'目标固件0.15.1；按导出包的动作、观测和硬件约定部署。接口验证不等于实机步态验证。'}
     contract['task_adapter']=req.get('task_adapter')
     contract['training_adapter_revision']=req.get('training_adapter_revision')
@@ -322,6 +336,7 @@ def export(req):
     from importlib import import_module
     deployment=import_module((__package__+'.' if __package__ else '')+'deployment')
     contract.update(deployment.deployment_contract(req, resolved))
+    contract['configuration_audit']=configuration_audit
     snapshot = contract['training_snapshot']
     contract['model'] = snapshot['model']
     contract['observations'] = snapshot['full']['env']['observations']['actor']
@@ -378,7 +393,11 @@ def viewer_class(req):
     from mjlab.viewer import ViserPlayViewer
     from importlib import import_module
     recovery = import_module((__package__+'.' if __package__ else '')+'recovery_evaluation')
-    controls = SimulationControls()
+    # Only velocity roller's first slot is a push/coast/brake command [-0.5,+0.6].
+    # Other roller skills (swizzle, crouch, spin, slope) preserve their original command semantics.
+    controls = (SimulationControls(limits=((-0.5, 0.6), (0.0, 0.0), (0.0, 0.0)))
+                if TASKS.get(req.get('task'), {}).get('role') == 'roller'
+                else SimulationControls())
     def read_controls():
         try:
             for line in sys.stdin:
@@ -651,6 +670,13 @@ def play(req):
 
 
 def onnx(req):
+    from importlib import import_module
+    guard = import_module((__package__+'.' if __package__ else '')+'limit_comparison_request')
+    guard.validate_request(req,'onnx')
+    if 'target_limit_comparison' in req:
+        from importlib import import_module
+        comparison = import_module((__package__+'.' if __package__ else '')+'limit_comparison')
+        return comparison.run(req, emit)
     import torch
     from mjlab.envs import ManagerBasedRlEnv
     from mjlab.rl import RslRlVecEnvWrapper
@@ -684,6 +710,11 @@ def onnx(req):
 
 
 def main(req):
+    from importlib import import_module
+    guard = import_module((__package__+'.' if __package__ else '')+'limit_comparison_request')
+    guard.validate_request(req)
+    if 'target_limit_comparison' in req and req.get('op') != 'onnx':
+        raise ValueError('目标限幅对照只允许ONNX评估，不可用于训练、导出或PT观看。')
     import mjlab.tasks  # Registers the installed official task package.
     if req.get('engine')=='official_0151':
         from importlib import import_module

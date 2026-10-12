@@ -545,7 +545,11 @@ impl Bus {
 
     /// One request verifies every requested switch; missing/nonzero replies fail.
     pub fn verify_torque(&mut self, ids: &[u8], on: bool) -> Result<()> {
-        let states = self.sync_read(40, 1, ids)?;
+        let states = self.sync_read(40, 1, ids).map_err(|problem| {
+            error(format!("torque readback at register 40: {problem}; request_sent={}, rx_bytes={}, elapsed_us={}, bad_checksums={}",
+                self.last_sync.request_sent, self.last_sync.rx_bytes,
+                self.last_sync.elapsed_us, self.last_sync.bad_checksums))
+        })?;
         for id in ids {
             if states.get(id).map(Vec::as_slice) != Some(&[u8::from(on)][..]) {
                 return Err(error(format!("ID {id} torque state {on} not confirmed")));
@@ -1170,8 +1174,30 @@ impl FeetechIo {
                 "ID 200 requires FT6 firmware (06 00 00 00 f2); flash FT6 before enabling IMU",
             ));
         }
+        let mut io = Self::for_startup(bus, calibration)?;
+        // The generic backend open preserves upstream's read-only behaviour.
+        // robotd uses confirm_startup_limp before handing ownership to its loop.
+        let states = io.bus.sync_read(40, 1, &io.ids())?;
+        let all_on = states.values().all(|v| v == &[1]);
+        let all_off = states.values().all(|v| v == &[0]);
+        io.torque_enabled = all_on;
+        io.torque_state_confirmed = if all_on {
+            Some(true)
+        } else if all_off {
+            Some(false)
+        } else {
+            None
+        };
+        io.hd1910.inspect(&mut io.bus, &io.calibration)?;
+        Ok(io)
+    }
+
+    /// Construct without UART traffic, keeping targets disabled until explicit
+    /// bring-up. The daemon can retry startup against this one open UART.
+    pub fn for_startup(bus: Bus, calibration: Calibration) -> Result<Self> {
+        calibration.validate()?;
         let decoder = SflpDecoder::new(calibration.imu_mount_quat);
-        let mut io = Self {
+        Ok(Self {
             bus,
             calibration,
             decoder,
@@ -1199,25 +1225,26 @@ impl FeetechIo {
             telemetry_sync: SyncTrace::default(),
             hd1910: crate::hd1910::State::default(),
             snapshot_metadata: std::sync::OnceLock::new(),
-        };
-        // Opening a device is read-only, as on the upstream Dynamixel backend.
-        // A daemon restart must not drop a standing robot. Report actual torque;
-        // only an explicit init/enable may begin position writes in this process.
-        let states = io.bus.sync_read(40, 1, &io.ids())?;
-        let all_on = states.values().all(|v| v == &[1]);
-        let all_off = states.values().all(|v| v == &[0]);
-        io.torque_enabled = all_on;
-        io.torque_state_confirmed = if all_on {
-            Some(true)
-        } else if all_off {
-            Some(false)
-        } else {
-            None
-        };
-        {
-            io.hd1910.inspect(&mut io.bus, &io.calibration)?;
+        })
+    }
+
+    /// Reboot recovery is always limp, including when the IMU is still booting.
+    /// Only register 40 is written here; a failed attempt never opens the goal
+    /// channel or writes gains/positions. This is a startup-only operation.
+    pub fn confirm_startup_limp(&mut self) -> Result<()> {
+        self.command_enabled = false;
+        self.torque_state_confirmed = None;
+        let ids = self.ids();
+        self.bus.torque(&ids, false)?;
+        self.bus.verify_torque(&ids, false)?;
+        self.torque_enabled = false;
+        self.torque_state_confirmed = Some(false);
+        if self.bus.read(IMU_ID, 0, 5)? != IMU_IDENTITY {
+            return Err(error(
+                "ID 200 requires FT6 firmware (06 00 00 00 f2); flash FT6 before enabling IMU",
+            ));
         }
-        Ok(io)
+        Ok(())
     }
     fn ids(&self) -> Vec<u8> {
         self.calibration
@@ -1242,10 +1269,6 @@ impl FeetechIo {
 }
 impl FeetechIo {
     /// Optional temporary test settings, kept outside the official pad config.
-    pub fn configure_servo_test(&mut self, calibration_path: &std::path::Path) -> Result<()> {
-        self.hd1910.test_parameters = crate::hd1910_test::load(calibration_path)?;
-        Ok(())
-    }
     fn joint_holding(&self, i: usize, now: Instant) -> bool {
         self.joint_feedback[i].as_ref().is_some_and(|previous| {
             self.joint_missing[i] > JOINT_COAST_TICKS
@@ -1617,11 +1640,7 @@ impl RobotIo for FeetechIo {
             imu_mount_verified: self.calibration.imu_mount_verified,
             torque_enabled: self.torque_enabled,
             torque_state_confirmed: self.torque_state_confirmed,
-            gain_mode: if self.hd1910.test_parameters.is_some() {
-                "hd1910_console_servo_test_restore_on_relax"
-            } else {
-                "hd1910_bam_p_d20_mouth_p10_restore_on_relax"
-            },
+            gain_mode: "hd1910_model_contract_p_restore_on_relax_native_d_torque_limit_preserved",
             velocity_source: crate::hd1910::VELOCITY_SOURCE,
             velocity_rad_s_per_count: self.calibration.feedback_speed_scale(),
             current_available: self.calibration.units_verified,
@@ -1725,11 +1744,7 @@ impl RobotIo for FeetechIo {
             dynamic: snapshot::Dynamic {
                 torque_enabled: self.torque_enabled,
                 torque_state_confirmed: self.torque_state_confirmed,
-                gain_mode: if self.hd1910.test_parameters.is_some() {
-                    "hd1910_console_servo_test_restore_on_relax"
-                } else {
-                    "hd1910_bam_p_d20_mouth_p10_restore_on_relax"
-                },
+                gain_mode: "hd1910_model_contract_p_restore_on_relax_native_d_torque_limit_preserved",
                 sample_age_ms: self
                     .latest_sample_at
                     .map(|at| now.saturating_duration_since(at).as_millis() as u64),
@@ -1920,7 +1935,8 @@ mod tests {
                             writes.fetch_add(1, Ordering::Relaxed);
                         }
                         if address == 50 {
-                            gains[row[0] as usize].copy_from_slice(&row[1..3]);
+                            assert_eq!(length, 1, "only P may be written");
+                            gains[row[0] as usize][0] = row[1];
                         }
                     }
                     continue;
@@ -1950,7 +1966,10 @@ mod tests {
                             data[1..3].copy_from_slice(&positions[id as usize].to_le_bytes())
                         }
                         (_, 42) => data.copy_from_slice(&positions[id as usize].to_le_bytes()),
-                        (_, 50) => data[..2].copy_from_slice(&gains[id as usize]),
+                        (_, 50) => {
+                            let gain_length = length.min(2);
+                            data[..gain_length].copy_from_slice(&gains[id as usize][..gain_length]);
+                        }
                         (_, 56) => {
                             data[..2].copy_from_slice(&2048u16.to_le_bytes());
                             data[6] = 73;
@@ -2467,6 +2486,8 @@ mod hd1910_transport_tests {
         checksum_id: Option<u8>,
         status_id: Option<u8>,
         imu_stale: bool,
+        identity_missing_reads: usize,
+        reject_torque_off_id: Option<u8>,
     }
     struct Emulator {
         faults: Arc<Mutex<Faults>>,
@@ -2519,10 +2540,13 @@ mod hd1910_transport_tests {
                     for row in body[3..body.len() - 1].chunks_exact(len + 1) {
                         let id = row[0];
                         w.lock().unwrap().push((id, addr, row[1..].to_vec()));
-                        if reject_gain
-                            && id == 22
-                            && ((addr == 50 && row[1] == 5) || (addr == 48 && row[3] == 3))
+                        if addr == 40
+                            && row[1] == 0
+                            && fault_source.lock().unwrap().reject_torque_off_id == Some(id)
                         {
+                            continue;
+                        }
+                        if reject_gain && id == 22 && addr == 50 && row[1] == 5 {
                             continue;
                         }
                         r.lock().unwrap()[id as usize][addr as usize..addr as usize + len]
@@ -2537,6 +2561,13 @@ mod hd1910_transport_tests {
                 };
                 seq = seq.wrapping_add(1);
                 let mut replies = Vec::new();
+                if addr == 0 && header[2] == IMU_ID {
+                    let mut fault = fault_source.lock().unwrap();
+                    if fault.identity_missing_reads > 0 {
+                        fault.identity_missing_reads -= 1;
+                        continue;
+                    }
+                }
                 let fault = fault_source.lock().unwrap().clone();
                 for id in ids {
                     if addr == 56 && fault.missing.contains(&id) {
@@ -2597,6 +2628,64 @@ mod hd1910_transport_tests {
         c.motion_enabled = true;
         c.imu_mount_verified = true;
         c
+    }
+
+    #[test]
+    fn startup_identity_timeout_keeps_servos_limp_and_goal_channel_closed() {
+        // A brownout can leave powered servos alive while ID 200 restarts. The
+        // identity timeout must neither preserve that torque nor preload a goal.
+        // robotd handles the failed owner by dropping it before a fresh open.
+        let (bus, device) = emulator(false);
+        for id in crate::model::JOINT_IDS {
+            device.regs.lock().unwrap()[id as usize][40] = 1;
+        }
+        device.faults.lock().unwrap().identity_missing_reads = 1;
+        let mut io = FeetechIo::for_startup(bus, calibration()).unwrap();
+        assert!(device.writes.lock().unwrap().is_empty());
+        let problem = io.confirm_startup_limp().unwrap_err().to_string();
+        assert!(problem.contains("ID 200 response timeout"), "{problem}");
+        assert_eq!(io.torque_state_confirmed, Some(false));
+        io.write(&JointTargets::new([0.0; NUM_JOINTS])).unwrap();
+        assert!(!io.command_enabled);
+        assert!(
+            device
+                .writes
+                .lock()
+                .unwrap()
+                .iter()
+                .all(|(_, addr, data)| *addr == 40 && data == &[0])
+        );
+        for id in crate::model::JOINT_IDS {
+            assert_eq!(device.regs.lock().unwrap()[id as usize][40], 0);
+        }
+    }
+
+    #[test]
+    fn startup_unconfirmed_torque_never_proceeds_to_imu_or_goals() {
+        let (bus, device) = emulator(false);
+        device.regs.lock().unwrap()[22][40] = 1;
+        let mut faults = device.faults.lock().unwrap();
+        faults.reject_torque_off_id = Some(22);
+        faults.identity_missing_reads = 1;
+        drop(faults);
+        let mut io = FeetechIo::for_startup(bus, calibration()).unwrap();
+        let problem = io.confirm_startup_limp().unwrap_err().to_string();
+        assert!(
+            problem.contains("ID 22 torque state false not confirmed"),
+            "{problem}"
+        );
+        assert_eq!(io.torque_state_confirmed, None);
+        assert_eq!(device.faults.lock().unwrap().identity_missing_reads, 1);
+        assert!(!io.command_enabled);
+        io.write(&JointTargets::new([0.0; NUM_JOINTS])).unwrap();
+        assert!(
+            device
+                .writes
+                .lock()
+                .unwrap()
+                .iter()
+                .all(|(_, addr, _)| *addr == 40)
+        );
     }
 
     #[test]
@@ -2986,12 +3075,16 @@ mod hd1910_transport_tests {
         assert!(bus.last_sync.complete_but_late);
     }
     #[test]
-    fn hd1910_arm_goals_and_relax_preserve_acceleration_and_eeprom() {
+    fn hd1910_contract_p_arm_and_relax_preserve_d_limit_acceleration_and_eeprom() {
         let (mut bus, device) = emulator(false);
         // Same writer used by commissioning before switching to the motion loop.
         // Every servo retains its own existing acceleration, not a fixed test value.
         for id in crate::model::JOINT_IDS {
-            device.regs.lock().unwrap()[id as usize][41] = id * 3;
+            let mut registers = device.regs.lock().unwrap();
+            registers[id as usize][41] = id * 3;
+            registers[id as usize][51] = id * 2;
+            registers[id as usize][48..50].copy_from_slice(&(800u16 + id as u16).to_le_bytes());
+            drop(registers);
             bus.positions(&[(id, 2048)]).unwrap();
         }
         let mut io = FeetechIo::from_bus(bus, calibration()).unwrap();
@@ -3003,8 +3096,9 @@ mod hd1910_transport_tests {
         io.write(&JointTargets::new([0.1; NUM_JOINTS])).unwrap();
         for id in crate::model::JOINT_IDS {
             let reg = device.regs.lock().unwrap()[id as usize];
-            assert_eq!(reg[50], if id == 34 { 10 } else { 5 });
-            assert_eq!(reg[51], 20);
+            assert_eq!(reg[50], crate::deployment::firmware_p());
+            assert_eq!(reg[51], id * 2);
+            assert_eq!(&reg[48..50], &(800u16 + id as u16).to_le_bytes());
         }
         io.set_torque(false).unwrap();
         for id in crate::model::JOINT_IDS {
@@ -3012,11 +3106,19 @@ mod hd1910_transport_tests {
             assert_eq!(reg[40], 0);
             assert_eq!(reg[41], id * 3);
             assert_eq!(&reg[21..24], &[32, 40, 0]);
-            assert_eq!(&reg[50..53], &[32, 40, 0]);
+            assert_eq!(&reg[50..53], &[32, id * 2, 0]);
+            assert_eq!(&reg[48..50], &(800u16 + id as u16).to_le_bytes());
             assert_eq!(&reg[46..48], &[0, 0]);
         }
         let writes = device.writes.lock().unwrap();
         assert!(writes.iter().all(|(_, a, _)| [40, 42, 50].contains(a)));
+        assert!(
+            writes
+                .iter()
+                .filter(|(_, a, _)| *a == 50)
+                .all(|(_, _, p)| p.len() == 1),
+            "both applying and restoring P must leave register 51 untouched"
+        );
         assert!(
             writes
                 .iter()
@@ -3026,35 +3128,31 @@ mod hd1910_transport_tests {
         assert!(!io.hd1910.diagnostics().restore_pending);
     }
     #[test]
-    fn console_servo_test_writes_all_fifteen_then_restores_without_eeprom_or_motion_changes() {
+    fn model_contract_p_is_not_replaced_by_xl330_gain_requests() {
         let (bus, device) = emulator(false);
         let mut io = FeetechIo::from_bus(bus, calibration()).unwrap();
-        let parameters = crate::hd1910_test::Parameters {
-            kp: 3,
-            kd: 0,
-            torque_limit: 681,
-        };
-        io.hd1910.test_parameters = Some(parameters);
         assert!(
             device.writes.lock().unwrap().is_empty(),
-            "editing/loading settings must not write motors"
+            "opening the backend must not write gains or targets"
         );
         for _ in 0..30 {
             io.read().unwrap();
         }
         for _ in 0..2 {
             io.set_torque(true).unwrap();
-            // The official gain caller and model switches must not overwrite HD1910 test values.
+            // XL330's gain units do not override the exported HD1910 BAM P.
             io.set_gain(200).unwrap();
             for id in crate::model::JOINT_IDS {
                 let reg = device.regs.lock().unwrap()[id as usize];
-                assert_eq!(&reg[48..52], &[0xa9, 0x02, 3, 0]);
+                assert_eq!(
+                    &reg[48..52],
+                    &[0xe8, 0x03, crate::deployment::firmware_p(), 40]
+                );
                 assert_eq!(&reg[21..24], &[32, 40, 0]);
                 assert_eq!(reg[52], 0);
                 assert_eq!(reg[41], 64);
             }
             let diagnostic = io.hd1910.diagnostics();
-            assert_eq!(diagnostic.servo_parameters, Some(parameters));
             assert!(diagnostic.temporary_gains_applied);
             io.set_torque(false).unwrap();
             for id in crate::model::JOINT_IDS {
@@ -3069,44 +3167,8 @@ mod hd1910_transport_tests {
                 .lock()
                 .unwrap()
                 .iter()
-                .all(|(_, a, _)| [40, 42, 48].contains(a))
+                .all(|(_, a, p)| [40, 42, 50].contains(a) && (*a != 50 || p.len() == 1))
         );
-    }
-
-    #[test]
-    fn console_servo_test_partial_write_remains_restorable() {
-        let (bus, device) = emulator(true);
-        let mut io = FeetechIo::from_bus(bus, calibration()).unwrap();
-        io.hd1910.test_parameters = Some(crate::hd1910_test::Parameters {
-            kp: 3,
-            kd: 0,
-            torque_limit: 681,
-        });
-        for _ in 0..30 {
-            io.read().unwrap();
-        }
-        assert!(
-            io.set_torque(true)
-                .unwrap_err()
-                .to_string()
-                .contains("ID 22")
-        );
-        assert!(io.hd1910.diagnostics().restore_pending);
-        assert!(
-            !device
-                .writes
-                .lock()
-                .unwrap()
-                .iter()
-                .any(|(_, a, v)| *a == 40 && v[0] == 1)
-        );
-        io.set_torque(false).unwrap();
-        for id in crate::model::JOINT_IDS {
-            assert_eq!(
-                &device.regs.lock().unwrap()[id as usize][48..53],
-                &[0xe8, 0x03, 32, 40, 0]
-            );
-        }
     }
 
     #[test]
@@ -3368,8 +3430,8 @@ mod hd1910_transport_tests {
         for id in crate::model::JOINT_IDS {
             let mut regs = device.regs.lock().unwrap();
             regs[id as usize][40] = 1;
-            regs[id as usize][50] = if id == 34 { 10 } else { 5 };
-            regs[id as usize][51] = 20;
+            regs[id as usize][50] = crate::deployment::firmware_p();
+            regs[id as usize][51] = id * 2;
         }
         let mut io = FeetechIo::from_bus(bus, calibration()).unwrap();
         assert_eq!(io.torque_state_confirmed, Some(true));

@@ -334,7 +334,7 @@ fn requested_ground_pick_infers_at_official_one_and_returns_to_walk_at_phase_cut
     model_paths.ground_pick = Some(
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../policies/ground_pick/policy.onnx"
+            "/../test-data/ground-pick-legacy/policy.onnx"
         )
         .into(),
     );
@@ -495,7 +495,7 @@ fn roll_controller(walk_scale: f64) -> Controller {
     model_paths.skills = vec![
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../policies/roulade/policy.onnx"
+            "/../test-data/roulade-legacy/policy.onnx"
         )
         .into(),
     ];

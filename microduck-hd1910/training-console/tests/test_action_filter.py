@@ -43,7 +43,7 @@ class ActionFilterContractTests(unittest.TestCase):
         self.assertIn('action_filter', tc.PARAMETER_KEYS)
 
     def test_selected_scale_reaches_new_training_request(self):
-        self.assertEqual(tc.validate_parameters({'task': WALK}, {'tasks': [WALK]})['training_action_scale'], .9)
+        self.assertEqual(tc.validate_parameters({'task': WALK}, {'tasks': [WALK]})['training_action_scale'], 1.0)
         for scale in (.7, .9, 1.0):
             with self.subTest(scale=scale), tempfile.TemporaryDirectory() as d:
                 manager=tc.BaseTrainingManager(Path(d))
@@ -75,9 +75,11 @@ class ActionFilterContractTests(unittest.TestCase):
 
     def test_task_scales_and_profiles_do_not_change_unrelated_runtime_branches(self):
         keys={'walk':'action_scale','stand':'action_scale','joint':'action_scale',
-              'ground_pick':'ground_pick_action_scale','roulade':'roulade_action_scale',
-              'kick_right':'standing_action_scale','kick_left':'standing_action_scale',
-              'roller':'action_scale','crouch':'ground_pick_action_scale','sitstand':None}
+              'ground_pick':'ground_pick_action_scale','roulade':None,
+              'kick_right':None,'kick_left':None,
+              'roller':'action_scale','crouch':'ground_pick_action_scale','sitstand':None,
+              'swizzle':'action_scale','slope':'action_scale',
+              'roller_stand':None,'spin':'ground_pick_action_scale'}
         for task,info in TASKS.items():
             resolved=inspection(task,True)
             expected=new_training_action_scale(task)
@@ -86,11 +88,18 @@ class ActionFilterContractTests(unittest.TestCase):
             required=c['required_policy_settings']
             key=keys[info['role']]
             for other in ('action_scale','standing_action_scale','ground_pick_action_scale','roulade_action_scale'):
-                if other==key:self.assertEqual(required[other],expected)
+                if other==key:self.assertEqual(required[other],.8 if info['role'] in ('roller','crouch') else expected)
                 else:self.assertNotIn(other,required)
+            if info['role'] in ('roulade','kick_left','kick_right'):
+                self.assertEqual(c['required_skill_settings']['params'], {'action_scale':expected})
+                self.assertEqual(c['required_skill_settings']['name'], info['role'])
+            else:
+                self.assertIsNone(c['required_skill_settings'])
+            self.assertEqual(required['head_lowpass'],.5)
+            self.assertEqual(required['legs_lowpass'],.7)
             self.assertEqual(c['trained_action_scale'],expected)
             from training.deployment import manifest_for
-            self.assertEqual(manifest_for({'task':task},c,'fixture')['action_scale'],expected)
+            self.assertEqual(manifest_for({'task':task},c,'fixture')['action_scale'],.8 if info['role'] in ('roller','crouch') else expected)
 
     def test_joint_teachers_must_match_filter_semantics(self):
         target = contract(inspection(JOINT, True))

@@ -21,6 +21,9 @@ use crate::model::NUM_JOINTS;
 /// Bytes of the v2 board's block consumed per tick.
 pub const IMU_BLOCK_LEN: usize = 12;
 
+/// Accepted fused quaternion samples required before orientation is ready.
+pub const SFLP_READY_SAMPLES: u32 = 25;
+
 /// What the control loop knows about the robot's orientation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ImuData {
@@ -97,7 +100,7 @@ impl SflpDecoder {
     /// Until this is true the orientation is a default, not a measurement. Slice 2's fall
     /// detection must not run before it.
     pub fn ready(&self) -> bool {
-        self.quat_samples >= 25
+        self.quat_samples >= SFLP_READY_SAMPLES
     }
 
     pub fn decode(&mut self, raw: &[u8; IMU_BLOCK_LEN]) -> ImuData {

@@ -20,26 +20,26 @@ class RollbackScaleTests(unittest.TestCase):
             data=tomllib.loads((ROOT/'packaging/robotd-profile.toml').read_text());data['policy']['r17_inference_scale']=0.7;config.write_text(dumps(data));cal.write_bytes(b'current mounted calibration')
             old_models={k:data['policy'][k] for k in ('walk','stand','sitstand','ground_pick')}
             with patch.object(runtime,'CONFIG',config),patch('model_packages.verify_directory',return_value={}):
-                result=runtime.set_action_scale(CURRENT_WALK,'0.6',3,0,681)
+                result=runtime.set_action_scale(CURRENT_WALK,'0.6')
                 self.assertEqual(result['action_scale'],0.6);self.assertNotIn('r17_inference_scale',result)
                 self.assertEqual(tomllib.loads(config.read_text())['policy']['action_scale'],0.6)
-                result=runtime.set_action_scale('1c94934c6421ec72ed48079cea749668','0.9',3,0,681)
+                result=runtime.set_action_scale('1c94934c6421ec72ed48079cea749668','0.9')
                 self.assertEqual(result['sitstand_base_action_scale'],1.0)
-                runtime.set_action_scale(CURRENT_WALK,'0.65',3,0,681)
+                runtime.set_action_scale(CURRENT_WALK,'0.65')
                 self.assertEqual(tomllib.loads(config.read_text())['policy']['action_scale'],0.65)
                 for value in ('nan','inf','0','1.1','0.651'):
                     before=config.read_bytes()
-                    with self.assertRaises(ValueError):runtime.set_action_scale(CURRENT_WALK,value,3,0,681)
+                    with self.assertRaises(ValueError):runtime.set_action_scale(CURRENT_WALK,value)
                     self.assertEqual(config.read_bytes(),before)
             result=tomllib.loads(config.read_text());self.assertNotIn('r17_inference_scale',result['policy']);self.assertEqual(result['policy']['action_scale'],0.65)
             self.assertNotIn('head_lowpass',result['policy']);self.assertNotIn('legs_lowpass',result['policy'])
             self.assertEqual({k:result['policy'][k] for k in old_models},old_models)
             self.assertEqual(config.read_bytes(),config.with_name('robotd.saved.toml').read_bytes());self.assertEqual(cal.read_bytes(),b'current mounted calibration')
     def test_console_validates_and_dispatches_scaling(self):
-        self.assertEqual(validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.7,'supported':True,'kp':3,'kd':0,'torque_limit':681})['scale'],0.7)
-        self.assertEqual(validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.65,'supported':True,'kp':3,'kd':0,'torque_limit':681})['scale'],0.65)
+        self.assertEqual(validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.7,'supported':True})['scale'],0.7)
+        self.assertEqual(validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.65,'supported':True})['scale'],0.65)
         for value in (True,float('nan'),0,1.1,0.651):
-            with self.assertRaises(ControlError):validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':value,'supported':True,'kp':3,'kd':0,'torque_limit':681})
+            with self.assertRaises(ControlError):validate({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':value,'supported':True})
         class Store:
             service_operation=True
             def record_service_command(self,job):pass
@@ -47,8 +47,8 @@ class RollbackScaleTests(unittest.TestCase):
             def __init__(self):self.calls=[]
             def manage(self,*args,**kwargs):self.calls.append((args,kwargs));return {'action_scale':0.7}
         transport=Transport();c=ServiceController(Store(),transport=transport);job={'action':'set-action-scale','status':'running'}
-        c._execute({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.7,'supported':True,'kp':3,'kd':0,'torque_limit':681},job,0)
-        self.assertEqual(job['status'],'completed');self.assertEqual(transport.calls[0][0],('action-scale','9e3ff8bde021be28a728c02dbd8e7aaf','0.7','3','0','681'))
+        c._execute({'action':'set-action-scale','model':'9e3ff8bde021be28a728c02dbd8e7aaf','scale':0.7,'supported':True},job,0)
+        self.assertEqual(job['status'],'completed');self.assertEqual(transport.calls[0][0],('action-scale','9e3ff8bde021be28a728c02dbd8e7aaf','0.7'))
         self.assertFalse(c.store.service_operation)
     def test_current_reassembled_calibration_is_kept_including_saved_copy(self):
         with tempfile.TemporaryDirectory() as t:
@@ -68,7 +68,7 @@ class RollbackScaleTests(unittest.TestCase):
             for slot,ident in {'walk':CURRENT_WALK,'sitstand':'1c94934c6421ec72ed48079cea749668'}.items():self.assertIn('/'+ident+'/',p[slot])
 
             self.assertEqual(p['stand'],'none')
-            self.assertIn('2b69fa681ed06f7ded9e2a2d12ba5c67',p['ground_pick'])
+            self.assertIn('b14e3a8b56ddbb8d2d831e727774a168',p['ground_pick'])
             # Exercise the installer merge from a previously shipped bad binding:
             # the model slot is sitstand, but the daemon's built-in action is sit_toggle.
             old.write_text(old.read_text()+'[pad]\ndpad_down="sitstand"\n')

@@ -1,3 +1,5 @@
+> **当前公开源码：Microduck 0.15.1 / HD1910 control.40，配套 R17 V164 中控。** V164 沿用 V163 编译的固件。请先看 [当前固件与中控说明](README-R17.zh-CN.md)、[源码编译](../docs/BUILD.md) 和 [发布基线](../docs/BASELINE.md)。下面保留上游项目介绍。
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/c2f7c245-8217-46a1-8d1e-e0ba967cd969" alt="microduck" width="820">
 </p>

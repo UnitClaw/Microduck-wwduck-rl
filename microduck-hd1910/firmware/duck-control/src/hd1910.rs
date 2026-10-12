@@ -1,4 +1,4 @@
-//! HD1910 a6dc9f9 position payload and temporary gains. No EEPROM writes.
+//! HD1910 a6dc9f9 position payload and model-contract P. No EEPROM writes.
 //! Local joint calibration and FT6/SFLP body frame remain authoritative.
 use crate::feetech::{Bus, Calibration};
 use crate::io::{IoError, Result, Sensors};
@@ -29,7 +29,6 @@ pub struct RegisterSnapshot {
     pub acceleration_raw: u8,
     pub goal_current_raw: u16,
     pub goal_speed_raw: u16,
-    pub torque_limit_raw: Option<u16>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -43,7 +42,6 @@ pub struct Diagnostics {
     pub restore_pending: bool,
     #[serde(serialize_with = "serialize_register_snapshots")]
     pub registers_before_arm: Arc<[RegisterSnapshot]>,
-    pub servo_parameters: Option<crate::hd1910_test::Parameters>,
 }
 
 fn serialize_register_snapshots<S: Serializer>(
@@ -61,8 +59,6 @@ pub struct State {
     restore: Option<Vec<(u8, Vec<u8>)>>,
     applied: bool,
     velocity_delay: Option<(Instant, [f64; NUM_JOINTS])>,
-    pub(crate) test_parameters: Option<crate::hd1910_test::Parameters>,
-    test_restore: Option<Vec<(u8, Vec<u8>)>>,
 }
 
 impl State {
@@ -72,11 +68,6 @@ impl State {
         let modes = bus.sync_read(33, 1, &ids)?;
         let temporary = bus.sync_read(50, 3, &ids)?;
         let motion = bus.sync_read(41, 7, &ids)?;
-        let torque_limits = if self.test_parameters.is_some() {
-            Some(bus.sync_read(48, 2, &ids)?)
-        } else {
-            None
-        };
         let mut snapshots = Vec::with_capacity(ids.len());
         for joint in &calibration.joints {
             let id = joint.id;
@@ -96,9 +87,6 @@ impl State {
                 acceleration_raw: m[0],
                 goal_current_raw: u16::from_le_bytes([m[3], m[4]]),
                 goal_speed_raw: u16::from_le_bytes([m[5], m[6]]),
-                torque_limit_raw: torque_limits
-                    .as_ref()
-                    .map(|v| u16::from_le_bytes([v[&id][0], v[&id][1]])),
             });
         }
         self.snapshots = snapshots.into();
@@ -109,7 +97,7 @@ impl State {
         if self.applied {
             return Ok(());
         }
-        if self.restore.is_some() || self.test_restore.is_some() {
+        if self.restore.is_some() {
             return Err(error(
                 "HD1910 temporary gain restoration pending; relax first",
             ));
@@ -120,38 +108,12 @@ impl State {
             bus.verify_torque(&ids, true)?;
         }
         self.inspect(bus, calibration)?;
-        if let Some(parameters) = self.test_parameters {
-            let desired = crate::hd1910_test::rows(&self.snapshots, parameters);
-            if off {
-                self.test_restore = Some(crate::hd1910_test::original_rows(&self.snapshots));
-                bus.sync_write(48, &desired)?;
-            }
-            crate::hd1910_test::verify(bus, &desired)?;
-            self.applied = true;
-            tracing::info!(
-                ?parameters,
-                "temporary servo test parameters confirmed on all joints"
-            );
-            return Ok(());
-        }
+        let desired: Vec<_> = self
+            .snapshots
+            .iter()
+            .map(|s| (s.id, vec![crate::deployment::firmware_p()]))
+            .collect();
         if !off {
-            let desired: Vec<_> = self
-                .snapshots
-                .iter()
-                .map(|s| {
-                    (
-                        s.id,
-                        vec![
-                            if s.name == "mouth" {
-                                10
-                            } else {
-                                crate::deployment::firmware_p()
-                            },
-                            20,
-                        ],
-                    )
-                })
-                .collect();
             verify_gains(bus, &desired)?;
             // Existing gains are already correct; do not interrupt torque to
             // reapply them, and do not invent restoration data from another run.
@@ -162,24 +124,7 @@ impl State {
         let restore: Vec<_> = self
             .snapshots
             .iter()
-            .map(|s| (s.id, s.temporary_pdi[..2].to_vec()))
-            .collect();
-        let desired: Vec<_> = self
-            .snapshots
-            .iter()
-            .map(|s| {
-                (
-                    s.id,
-                    vec![
-                        if s.name == "mouth" {
-                            10
-                        } else {
-                            crate::deployment::firmware_p()
-                        },
-                        20,
-                    ],
-                )
-            })
+            .map(|s| (s.id, vec![s.temporary_pdi[0]]))
             .collect();
         // Retain the rollback data BEFORE the first write. A partial write or failed
         // readback cannot discard the information required by the relax path.
@@ -188,7 +133,7 @@ impl State {
         verify_gains(bus, &desired)?;
         self.applied = true;
         tracing::warn!(
-            "HD1910 temporary firmware P confirmed from BAM contract, D20; mouth P10/D20; acceleration unchanged"
+            "HD1910 temporary P confirmed from model contract on all joints; native D, torque limit and acceleration preserved"
         );
         Ok(())
     }
@@ -196,11 +141,6 @@ impl State {
     pub fn disarm(&mut self, bus: &mut Bus) -> Result<()> {
         self.applied = false;
         self.velocity_delay = None;
-        if let Some(rows) = &self.test_restore {
-            bus.sync_write(48, rows)?;
-            crate::hd1910_test::verify(bus, rows)?;
-            self.test_restore = None;
-        }
         if let Some(rows) = &self.restore {
             bus.sync_write(50, rows)?;
             verify_gains(bus, rows)?;
@@ -236,8 +176,7 @@ impl State {
             goal_speed_raw: 0,
             acceleration_policy: "preserve_register_41_never_written",
             temporary_gains_applied: self.applied,
-            restore_pending: self.restore.is_some() || self.test_restore.is_some(),
-            servo_parameters: self.test_parameters,
+            restore_pending: self.restore.is_some(),
             registers_before_arm: self.snapshots.clone(),
         }
     }
@@ -245,11 +184,11 @@ impl State {
 
 fn verify_gains(bus: &mut Bus, rows: &[(u8, Vec<u8>)]) -> Result<()> {
     let ids: Vec<_> = rows.iter().map(|(id, _)| *id).collect();
-    let values = bus.sync_read(50, 2, &ids)?;
+    let values = bus.sync_read(50, 1, &ids)?;
     for (id, expected) in rows {
         if values.get(id) != Some(expected) {
             return Err(error(format!(
-                "ID {id}: temporary P/D readback mismatch; torque-on refused"
+                "ID {id}: temporary P readback mismatch; torque-on refused"
             )));
         }
     }

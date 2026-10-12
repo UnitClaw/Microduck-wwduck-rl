@@ -10,13 +10,14 @@ import time
 import secrets
 import tempfile
 import tarfile
+import posixpath
 from pathlib import Path
 
 from service_channel import ServiceChannel
 from controls import ControlError
 from session_sequences import SequenceWindow
 from service_data import BUILD
-from management_profile import SLOTS, ACTION_INFO, supports_feature
+from management_profile import supports_feature
 from ssh_connect import ssh_command, ssh_process_options
 from sudo_credential import SudoCredential
 from telemetry import IDS
@@ -24,8 +25,7 @@ from firmware_packages import PreparedFirmware, bundle_info
 
 ROOT = Path(__file__).resolve().parent
 STOP_ACTIONS = {"relax", "reboot", "shutdown"}
-MANAGEMENT_ACTIONS = {"set-pad-settings", "set-action-scale", "switch-mode", "reconnect-service", "upgrade-service", "reboot", "shutdown"}
-MAX_MODEL = 64 * 1024 * 1024
+MANAGEMENT_ACTIONS = {"repair-gamepad", "set-pad-settings", "set-action-scale", "switch-mode", "reconnect-service", "upgrade-service", "reboot", "shutdown"}
 HOME_TIMEOUT = 12.0
 HOME_RESTORE_TIMEOUT = 5.0
 HOME_POLL_INTERVAL = .1
@@ -86,8 +86,9 @@ def validate(command):
               "init": {"action", "supported"},
               "switch-mode": {"action", "target", "supported"},
               "reconnect-service": {"action", "supported"},
+              "repair-gamepad": {"action", "supported", "address", "operation"},
               "upgrade-service": {"action", "supported", "firmware"},
-              "set-action-scale": {"action", "model", "scale", "kp", "kd", "torque_limit", "supported"},
+              "set-action-scale": {"action", "model", "scale", "supported"},
               "set-pad-settings": {"action", "mouth_percent", "head_rad", "supported"},
               "move": {"action", "id", "position", "duration_ms"},
               "center": {"action", "unassembled", "duration_ms"},
@@ -99,7 +100,11 @@ def validate(command):
         raise ControlError("指令或参数不受支持", 400)
     if "id" in command and (type(command["id"]) is not int or command["id"] not in IDS): raise ControlError("只能控制官方 15 个关节 ID", 400)
     if "duration_ms" in command: numeric(command["duration_ms"], 500, 10000, True)
-    if action in ("init", "switch-mode", "set-pad-settings", "set-action-scale", "reconnect-service", "upgrade-service") and command["supported"] is not True: raise ControlError("请先确认服务操作", 400)
+    if action in ("init", "switch-mode", "set-pad-settings", "set-action-scale", "reconnect-service", "upgrade-service", "repair-gamepad") and command["supported"] is not True: raise ControlError("请先确认服务操作", 400)
+    if action == 'repair-gamepad':
+        if not isinstance(command['address'], str) or command['address'] and not re.fullmatch(r'(?:[0-9A-F]{2}:){5}[0-9A-F]{2}', command['address']):
+            raise ControlError('手柄 MAC 格式无效', 400)
+        if command['operation'] not in ('repair', 'pair'): raise ControlError('手柄操作无效', 400)
     if action == "switch-mode" and command["target"] not in ("commissioning", "motion"):
         raise ControlError("模式只能选择标定或运动", 400)
     if action == 'upgrade-service' and (not isinstance(command['firmware'],str)
@@ -109,9 +114,6 @@ def validate(command):
             or not re.fullmatch(r"official|[a-f0-9]{32}", command["model"])):
         raise ControlError("模型标识无效，请刷新列表", 400)
     if action in ("set-action-scale",):
-        numeric(command["kp"],0,255,True)
-        numeric(command["kd"],0,255,True)
-        numeric(command["torque_limit"],0,1000,True)
         numeric(command["scale"], 0.1, 1.0)
         if command["scale"] not in tuple(round(n/100,2) for n in range(10,101)):raise ControlError("请选择 0.10 到 1.00 的缩放值，步长 0.01",400)
     if action == "set-pad-settings":
@@ -165,26 +167,39 @@ class ServiceTransport:
             raise ControlError(reply["result"].get("reason") or "robotd 拒绝了站姿请求", 409)
         return reply["result"]
 
-    def manage(self, *args, password=None, privileged=True):
+    def manage(self, *args, password=None, privileged=True, record_output=True):
         """One fixed installed helper; shell arguments are quoted, credentials use stdin."""
-        return self._manage(["/bin/bash", "/opt/robot/feetech-ft5-r5/service.sh", *args], password, privileged)
+        return self._manage(["/bin/bash", "/opt/robot/feetech-ft5-r5/service.sh", *args], password, privileged, record_output=record_output)
 
-    def _manage(self, command, password=None, privileged=True, progress=None):
+    def repair_gamepad(self, address, operation, password=None, progress=None):
+        source = ROOT.joinpath('gamepad_repair.py').read_text(encoding='utf-8')
+        return self._manage(['python3', '-u', '-c', source,
+                             json.dumps({'address': address, 'operation': operation})],
+                            password, record_output=False, output_handler=progress)
+
+    def diagnose_service(self, password=None):
+        source = ROOT.joinpath('startup_diagnostic.py').read_text(encoding='utf-8')
+        return self._manage(['python3', '-u', '-c', source], password)
+
+    def _manage(self, command, password=None, privileged=True, progress=None, record_output=True, output_handler=None, result_format='auto'):
         supplied = password is not None
         password = (password if supplied else self.credential.get()) if privileged else None
         if privileged:
             command = ["sudo", "-n" if password is None else "-S", *([] if password is None else ["-p", ""]), "--", *command]
         if self.log:
             self.log.hide(password)
-            self.log.add('SSH 命令', shlex.join(command))
+            if record_output and not output_handler:self.log.add('SSH 命令', shlex.join(command))
         def clean(data):
             text = data
             if password: text = text.replace(password, "[已隐藏]")
             return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
-        streaming = bool(progress or self.log)
+        # Automatic JSON queries are data for their owning module. That module
+        # logs the outcome; explicit operations still stream their full output.
+        streaming = bool(progress or output_handler or self.log and record_output)
         def output_line(line):
             line=clean(line)
-            if self.log: self.log.add('SSH 输出',line)
+            if output_handler:output_handler(line)
+            elif self.log: self.log.add('SSH 输出',line)
             if progress: progress(line)
         try:
             result = self.channel.request({'kind':'manage', 'argv':command,
@@ -196,7 +211,7 @@ class ServiceTransport:
             if self.log: self.log.add('SSH 错误','服务操作等待超时；指令未重发')
             raise ControlError("服务操作等待超时；请查看实时状态，未自动重试", 503) from None
         stderr, stdout = clean(result['stderr']).strip(), clean(result['stdout']).strip()
-        if self.log:
+        if self.log and not output_handler and (record_output or result['returncode']):
             if not streaming and stdout: self.log.add('SSH 输出',stdout)
             if not streaming and stderr: self.log.add('SSH stderr',stderr)
             self.log.add('SSH 命令结束',f'退出码 {result["returncode"]}')
@@ -210,28 +225,22 @@ class ServiceTransport:
             # Keep the actual failure ahead of verbose calibration/progress output.
             detail = stderr[-2400:] if stderr else stdout[-2400:]
             raise ControlError("服务操作失败：" + (detail or "未返回原因"), 503)
-        if supplied: self.credential.remember(password)
+        if privileged and supplied: self.credential.remember(password)
         output = stdout
+        if result_format == 'text':return {'message':output}
         try: return json.loads(output)
         except ValueError:
+            if not record_output and not output_handler:
+                if self.log:
+                    if stdout:self.log.add('SSH 输出',stdout)
+                    if stderr:self.log.add('SSH stderr',stderr)
+                raise ControlError('查询回执不是有效 JSON；原始输出已保留在系统日志',503) from None
             for line in reversed(output.splitlines()):
                 try: receipt=json.loads(line)
                 except ValueError:continue
-                if isinstance(receipt,dict) and (isinstance(receipt.get('model_assignment'),dict) or receipt.get('upgrade_installed') is True):return receipt
+                if isinstance(receipt,dict) and receipt.get('upgrade_installed') is True:return receipt
             return {"message": output[-2000:], "verified_by": "service.sh"}
 
-    def _ssh_run(self, command, timeout):
-        if self.log: self.log.add('SSH 命令', self.target+' '+shlex.join(command))
-        try:
-            result=subprocess.run(ssh_command(self.target)+command,**ssh_process_options(self.target),capture_output=True,timeout=timeout)
-            if self.log:
-                for channel,output in [('stdout',result.stdout),('stderr',result.stderr)]:
-                    if output: self.log.add('SSH '+channel,output.decode(errors='replace'))
-                self.log.add('SSH 命令结束',f'退出码 {result.returncode}')
-            return result
-        except Exception as exc:
-            if self.log: self.log.add('SSH 错误',str(exc))
-            raise
 
     def power(self, action, password=None):
         """Send one OS command through the existing SSH management channel."""
@@ -247,59 +256,100 @@ class ServiceTransport:
         bundle_info()
         archive = Path(archive) if archive else ROOT / 'updates' / (name + '.tar.gz')
         if not archive.is_file(): raise ControlError('中控缺少配套 R17 服务包，请重新解压完整中控', 409)
+        def report(event):
+            if self.log and event['status'] in {'成功','失败','提示'}:
+                status='失败' if event['status']=='提示' else event['status']
+                self.log.add('固件安装 / '+event['step'],status+' · '+event['detail'])
+            if progress:progress(event)
+        latest_startup={}
+        def installer_line(line):
+            nonlocal latest_startup
+            line=line.strip()
+            if not line:return
+            try:receipt=json.loads(line)
+            except ValueError:receipt=None
+            if isinstance(receipt,dict):
+                from startup_gate import ready
+                if isinstance(receipt.get('robotd_startup'),dict):
+                    latest_startup=receipt['robotd_startup']
+                    if progress:progress({'startup':latest_startup})
+                    return
+                if receipt.get('robotd_ready') is True:
+                    if not ready(latest_startup):raise ControlError('安装脚本未提供完整四步就绪状态',503)
+                    if progress:progress({'robotd_ready':True,'startup':latest_startup})
+                    return
+                if receipt.get('upgrade_installed') is True:return
+            match=re.fullmatch(r'\[固件安装 / ([^\]]+)\] (开始|成功|失败|提示) · (.*)',line)
+            if match:report({'step':match[1],'status':match[2],'detail':match[3]})
+            else:
+                if self.log:self.log.add('固件安装详情',line)
+        def step(label, detail, command, privileged=False, validate=None):
+            report({'step':label,'status':'开始','detail':detail})
+            diagnostics=[]
+            try:
+                result=self._manage(command,password,privileged=privileged,record_output=False,
+                                    result_format='text',output_handler=diagnostics.append)
+                if validate:validate(result)
+            except Exception as exc:
+                if self.log:
+                    for line in diagnostics:
+                        if line.strip():self.log.add('固件安装 / '+label+'错误',line.strip())
+                report({'step':label,'status':'失败','detail':str(exc)});raise
+            report({'step':label,'status':'成功','detail':detail})
+            return result
+        def install(directory, remote=False):
+            # A remote Linux path must not inherit the PC's Windows separators.
+            script=posixpath.join(directory,name,'service.sh') if remote else str(Path(directory)/name/'service.sh')
+            try:
+                answer=self._manage(['/bin/bash',script,'upgrade'],password,
+                                    output_handler=installer_line,record_output=False,progress=lambda _:None)
+            except Exception as exc:
+                report({'step':'执行安装脚本','status':'失败','detail':str(exc)});raise
+            if not isinstance(answer,dict) or answer.get('upgrade_installed') is not True:
+                exc=ControlError('固件安装未返回成功回执；未重新连接 robotd 数据通道',503)
+                report({'step':'执行安装脚本','status':'失败','detail':str(exc)})
+                raise exc
+            return answer
         if not self.target:
             with tempfile.TemporaryDirectory(prefix='microduck-upgrade-') as directory:
-                with tarfile.open(archive) as package: package.extractall(directory, filter='data')
-                return self._manage(['/bin/bash', str(Path(directory)/name/'service.sh'), 'upgrade'], password,progress=progress)
+                report({'step':'创建暂存目录','status':'成功','detail':'已创建本次安装的独立临时目录'})
+                report({'step':'解压固件','status':'开始','detail':'解压已校验的固件包'})
+                try:
+                    with tarfile.open(archive) as package: package.extractall(directory, filter='data')
+                except Exception as exc:
+                    report({'step':'解压固件','status':'失败','detail':str(exc)});raise
+                report({'step':'解压固件','status':'成功','detail':'固件包已解压'})
+                return install(directory)
         from staging_upload import StagingUpload
-        if progress:progress('正在上传已校验的 R17 固件包到 Zero…\n')
         remote = StagingUpload(self.target,self.log)
         # mktemp owns an exclusive staging directory; only this directory is cleaned up.
-        result = self._manage(['mktemp','-d','/tmp/microduck-upgrade-XXXXXXXXXXXX'],privileged=False)
+        def valid_directory(result):
+            if not re.fullmatch(r'/tmp/microduck-upgrade-[A-Za-z0-9]{12}',result.get('message','').strip()):
+                raise ControlError('无法建立服务更新暂存目录：Zero 返回的路径无效',503)
+        result = step('创建暂存目录','在 Zero 创建本次安装的独立随机目录',
+                      ['mktemp','-d','/tmp/microduck-upgrade-XXXXXXXXXXXX'],validate=valid_directory)
         directory = result.get('message','').strip()
-        if not re.fullmatch(r'/tmp/microduck-upgrade-[A-Za-z0-9]{12}', directory):
-            raise ControlError('无法建立服务更新暂存目录', 503)
         try:
             remote_archive = directory + '/package.tar.gz'
-            with archive.open('rb') as stream: remote.upload(remote_archive, stream, archive.stat().st_size)
-            self._manage(['tar','-xzf',remote_archive,'-C',directory],privileged=False)
-            return self._manage(['/bin/bash',directory+'/'+name+'/service.sh','upgrade'],password,progress=progress)
+            try:
+                with archive.open('rb') as stream:
+                    remote.upload(remote_archive,stream,archive.stat().st_size,progress=report,record_output=False)
+            except Exception as exc:
+                raise ControlError('固件传输或上传校验失败：'+str(exc),503) from exc
+            step('解压固件','在 Zero 解压已通过上传校验的固件包',
+                 ['tar','-xzf',remote_archive,'-C',directory])
+            return install(directory,remote=True)
         finally:
             # Delete only our validated exclusive staging tree with the same
             # sudo authorization. Cleanup failure must not mask the install result.
-            try:self._manage(['/bin/rm','-rf','--',directory],password)
+            try:step('清理暂存目录','删除本次安装的临时文件',
+                     ['/bin/rm','-rf','--',directory],privileged=True)
             except (ControlError,OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
-                if self.log:self.log.add('升级暂存清理','清理未完成：'+str(exc))
+                pass
 
     def switch_mode(self, target, password=None):
         return {**self.manage("enable" if target == "motion" else "disable", password=password), "mode": target}
 
-    def import_model(self, name, stream, size, password=None,slot=None):
-        remote_path = "/tmp/microduck-policy-" + secrets.token_hex(16) + ".zip"
-        if self.target:
-            from staging_upload import StagingUpload
-            remote = StagingUpload(self.target,self.log)
-            try:
-                remote.upload(remote_path, stream, size)
-                return self.manage("model-import", remote_path, name, slot, password=password)
-            finally:
-                # Only our randomly named staging file; never delete a user path here.
-                try:
-                    cleanup=self._ssh_run([shlex.join(["rm", "-f", "--", remote_path])],15)
-                    if cleanup.returncode:raise OSError(cleanup.stderr.decode(errors='replace')[-500:])
-                except (OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
-                    if self.log:self.log.add('模型暂存清理','清理未完成：'+str(exc))
-        else:
-            path = Path(remote_path)
-            try:
-                with path.open("xb") as output:
-                    left = size
-                    while left:
-                        data = stream.read(min(left, 65536))
-                        if not data: raise ControlError("模型上传中断", 400)
-                        output.write(data); left -= len(data)
-                return self.manage("model-import", str(path), name, slot, password=password)
-            finally: path.unlink(missing_ok=True)
 
 
 class ServiceController:
@@ -307,6 +357,9 @@ class ServiceController:
         self.store, self.transport = store, transport or ServiceTransport(target, socket_path, getattr(store,'system_log',None))
         self.controls=controls
         self.lock = threading.RLock()
+        self.diagnostic_lock = threading.Lock()
+        self.connection_lock = threading.Lock()
+        self.connection_cache = None
         self.sequences = SequenceWindow(limit=32)
         self.busy = False
         self.stopping = False
@@ -318,6 +371,24 @@ class ServiceController:
         self.prepared_firmware = None
         if transport is None and warm:
             threading.Thread(target=self.transport.channel.warm, daemon=True).start()
+
+    def diagnose(self, payload):
+        if not isinstance(payload, dict) or set(payload) - {'sudo_password'}:
+            raise ControlError('启动诊断参数无效', 400)
+        password = payload.get('sudo_password')
+        if password is not None and (not isinstance(password, str) or not 0 < len(password) <= 256
+                                    or any(c in password for c in '\r\n\0')):
+            raise ControlError('Zero sudo 密码格式无效', 400)
+        with self.lock:
+            if self.closed or self.busy or self.stopping:
+                raise ControlError('请等待当前服务操作完成后导出诊断', 409)
+        if not self.diagnostic_lock.acquire(blocking=False):
+            raise ControlError('启动诊断正在收集，请等待', 409)
+        try:
+            # Read-only: no motion intent, input suspension, service job or UART open.
+            return self.transport.diagnose_service(password=password)
+        finally:
+            self.diagnostic_lock.release()
 
     def status(self, snapshot=None):
         with self.lock:
@@ -497,7 +568,7 @@ class ServiceController:
                 if self.busy or self.stopping and action != 'upgrade-service': raise ControlError("已有操作执行中，请等待反馈或停止并松开")
                 snapshot = self.store.snapshot()
                 report = snapshot.get("bus", {})
-                recovery = action in {"reconnect-service", "upgrade-service", "set-action-scale"} or action == 'switch-mode'
+                recovery = action in {"repair-gamepad", "reconnect-service", "upgrade-service", "set-action-scale"} or action == 'switch-mode'
                 if not recovery and not supports_feature(report, "supported"): raise ControlError("等待适配的正式服务提供状态")
                 # HAT recovery and deployment must work without motor feedback.
                 if not recovery and not snapshot.get("service_sample_fresh"):
@@ -525,9 +596,10 @@ class ServiceController:
                     if action == 'set-pad-settings' and not supports_feature(report, 'live_pad_settings'):raise ControlError('请先安装本版配套服务，再使用运行中幅度设置',409)
                     if action != 'upgrade-service'  and supports_feature(report, "supported") and not supports_feature(report, "management"):
                         raise ControlError("连接与模型管理需要配套 R17 服务", 409)
+                elif action == 'repair-gamepad':
+                    pass  # Bluetooth recovery needs SSH, not fresh motor/IMU telemetry.
                 elif action == "init":
                     self._validate_home(snapshot)
-
                 else:
                     if report.get("mode") != "commissioning": raise ControlError("逐关节操作需要服务处于 commissioning 模式")
                     if report.get("phase") != "ready" or report.get("torque_state") != "off": raise ControlError("请先停止并松开，等待服务确认停扭矩")
@@ -556,7 +628,17 @@ class ServiceController:
 
     def _execute(self, command, job, epoch, sudo_password=None):
         recover_input = False
+        restarting=getattr(self.store,'robotd_restarting',None)
+        restart=command['action'] in {'switch-mode','upgrade-service','reconnect-service','set-action-scale'}
+        log=getattr(self.store,'system_log',None)
+        labels={'switch-mode':'服务模式切换','upgrade-service':'固件安装','reconnect-service':'重启固件','set-action-scale':'动作缩放','set-pad-settings':'手柄幅度设置','init':'回 HOME','repair-gamepad':'手柄连接修复','relax':'停止并松开','reboot':'重启 Zero','shutdown':'关闭 Zero','move':'关节移动','center':'整组居中','capture':'关节标定','verify-imu':'IMU 方向保存'}
+        label=labels.get(command['action'],command['action'])
+        if restart and restarting is not None:restarting.set()
         try:
+            if restart and self.controls and hasattr(self.controls,'pause_input'):
+                try:self.controls.pause_input()
+                except Exception as exc:
+                    if log:log.add('手柄输入清除',str(exc))
             with self.lock:
                 if command["action"] not in STOP_ACTIONS and (self.closed or epoch != self.cancel_epoch):
                     raise ControlError("指令在发送前已取消")
@@ -564,14 +646,38 @@ class ServiceController:
                 answer = self.transport.switch_mode(command["target"], sudo_password)
             elif command["action"] == "upgrade-service":
                 prepared=self.prepared_firmware if command['firmware']!='bundled' else None
-                def progress(line):
+                handoff=getattr(self.store,'install_handoff',None)
+                if handoff:
+                    handoff.begin()
+                    reset={'channel':'robotd_stream','data':{'status':'waiting'}}
+                    self.store.ingest(reset)
+                    hub=getattr(self.store,'raw_hub',None)
+                    if hub:hub.event(reset)
+                    if log:log.add('服务交接','成功 · 旧 robotd 数据与启动状态连接已关闭；等待安装完成通知')
+                data_resumed=False
+                def progress(event):
+                    nonlocal data_resumed
+                    if isinstance(event,dict) and isinstance(event.get('startup'),dict):
+                        report={'channel':'startup','data':event['startup']}
+                        self.store.ingest(report)
+                        hub=getattr(self.store,'raw_hub',None)
+                        if hub:hub.event(report)
+                        if event.get('robotd_ready') and handoff and not data_resumed:
+                            data_resumed=True
+                            paused=getattr(self.store,'connection_paused',None)
+                            if paused is not None:paused.clear()
+                            if log:log.add('服务交接','成功 · robotd 四步完成；已通知实时数据连接接入')
+                            handoff.complete(after_install=True,startup_report=event['startup'])
+                        return
                     with self.lock:
-                        log=job.get('log','')
-                        if len(log)<512*1024:job['log']=(log+line)[:512*1024]
-                        if len(log)+len(line)>512*1024:job['log_truncated']=True
-                        job['log_revision']=job.get('log_revision',0)+1
-                progress('开始升级 R17 / 0.15.1；保留本机标定，不自动 HOME 或启用策略。\n')
+                        if isinstance(event,dict):
+                            job['install_progress']=dict(event)
+                            if 'percent' in event:job['transfer_progress']=dict(event)
+                            job['phase']=event['step'];job['message']=event['status']+' · '+event['detail']
                 answer = self.transport.upgrade(sudo_password,archive=prepared.path if prepared else None,progress=progress)
+                if handoff and not data_resumed:
+                    if log:log.add('服务交接','固件安装成功；接收四步启动状态，确认就绪后接入实时数据')
+                    handoff.complete(after_install=True)
                 with self.lock:
                     if epoch == self.cancel_epoch:
                         self.stopping=False
@@ -580,10 +686,40 @@ class ServiceController:
                         if paused is not None:paused.clear()
             elif command["action"] == "reconnect-service":
                 answer = self.transport.manage('reconnect', password=sudo_password)
+            elif command['action'] == 'repair-gamepad':
+                def pad_progress(line):
+                    try: detail = json.loads(line).get('pad_repair_progress')
+                    except (ValueError, AttributeError):
+                        if log and line.strip():log.add('手柄 / 详情',line)
+                        return
+                    if isinstance(detail, dict):
+                        phase=str(detail.get('phase',''))[:80]
+                        status=str(detail.get('status','waiting'))
+                        message=str(detail.get('message',''))[:2000]
+                        with self.lock:
+                            job.update(phase=phase,message=message)
+                            job.setdefault('pad_steps',{})[phase]={'status':status,'message':message}
+                            if isinstance(detail.get('evidence'),dict):job['pad_evidence']=dict(detail['evidence'])
+                        if log and status in {'success','failed','warning'}:
+                            names={'checking':'目标核对','pause_input':'暂停输入','forget':'删除目标旧配对','adapter':'蓝牙适配器',
+                                   'scanning':'发现手柄','pairing':'配对与信任','bluetooth':'蓝牙连接','physical':'实体输入',
+                                   'bridge':'Xbox 桥接','padd':'padd 接入','phone_pause':'暂停手机连接服务','phone_restore':'恢复手机连接服务',
+                                   'connect_failed':'蓝牙连接','physical_unready':'实体输入','bridge_unready':'Xbox 桥接','padd_unready':'padd 接入',
+                                   'adapter_failed':'蓝牙适配器','scan_busy':'发现手柄','scan_failed':'发现手柄','not_found':'发现手柄',
+                                   'missing_service':'目标核对','wrong_device':'目标核对','choose_device':'目标核对','busy':'目标核对',
+                                   'relax_unconfirmed':'停止并松开','bridge_service':'恢复桥接服务','padd_service':'恢复 padd 服务','connection_changed':'结束核对'}
+                            log.add('手柄 / '+names.get(phase,'操作结果'),{'success':'成功','failed':'失败','warning':'提示'}[status]+' · '+message)
+                answer = self.transport.repair_gamepad(command['address'], command['operation'],
+                                                      password=sudo_password, progress=pad_progress)
+                if not isinstance(answer, dict) or answer.get('status') != 'completed':
+                    with self.lock:
+                        job['result'] = answer
+                        if isinstance(answer, dict): job['phase'] = answer.get('phase', 'failed')
+                    raise ControlError(answer.get('message', '手柄修复回执无效') if isinstance(answer, dict) else '手柄修复回执无效', 503)
             elif command["action"] == "set-pad-settings":
                 answer = self.transport.manage("pad-settings", str(command["mouth_percent"]), str(command["head_rad"]), password=sudo_password)
             elif command["action"] == "set-action-scale":
-                answer = self.transport.manage("action-scale", command["model"], str(command["scale"]), str(command["kp"]), str(command["kd"]), str(command["torque_limit"]), password=sudo_password)
+                answer = self.transport.manage("action-scale", command["model"], str(command["scale"]), password=sudo_password)
             elif command["action"] in {"reboot", "shutdown"}:
                 answer = self.transport.power(command["action"], password=sudo_password)
                 if not isinstance(answer,dict) or answer.get('scheduled') is not True :
@@ -610,15 +746,20 @@ class ServiceController:
                 if command["action"] == "init" and (self.closed or epoch != self.cancel_epoch):
                     raise ControlError("Home 已取消")
                 job.update(status="completed", result=answer)
+                if log:
+                    message='安装成功；四步结果见 robotd 启动 1/4～4/4；后续模块失败不停止机器人服务' if command['action']=='upgrade-service' else '请求已完成；服务启动结果见 robotd 启动 1/4～4/4' if command['action'] in {'reconnect-service','switch-mode','set-action-scale'} else '完成；'+str(answer.get('message','') if isinstance(answer,dict) else '')
+                    log.add('服务操作',label+'：'+message)
+                if command['action'] == 'repair-gamepad': job['phase'] = answer.get('phase', 'ready')
             if isinstance(answer, dict) and isinstance(answer.get("calibration"), dict):
                 data = answer if "joints" in answer["calibration"] else answer["calibration"]
                 self.store.ingest({"channel": "calibration", "data": data})
         except Exception as exc:
             with self.lock:
                 job.update(status="error", error=str(exc))
-                if getattr(self.store,'system_log',None): self.store.system_log.add('服务操作错误',str(exc))
+                if getattr(self.store,'system_log',None): self.store.system_log.add('服务操作错误',label+'：'+str(exc))
                 if self.job is job: self.error = str(exc)
         finally:
+            if restart and restarting is not None:restarting.clear()
             with self.lock: cancelled = epoch != self.cancel_epoch or self.closed
             if ((cancelled or job["status"] == "error") and command["action"] in ("move", "center")):
                 try: self.transport.call({"action": "relax"})
@@ -642,7 +783,8 @@ class ServiceController:
         # mode/model/install command or carries held input into a new daemon.
         def recover():
             error=''
-            for attempt in range(5):
+            attempts=1 if job.get('action')=='upgrade-service' else 5
+            for attempt in range(attempts):
                 with self.lock:
                     if self.closed or epoch!=self.cancel_epoch or self.stopping or self.job is not None and self.job is not job:return
                 try:
@@ -658,10 +800,10 @@ class ServiceController:
                     if self.closed or epoch!=self.cancel_epoch or self.job is not None and self.job is not job:return
                     job['result']={**job['result'],'input':state}
                 if not error:return
-                if attempt<4:time.sleep(min(.25*2**attempt,2))
+                if attempt<attempts-1:time.sleep(min(.25*2**attempt,2))
             with self.lock:
                 if self.closed or epoch!=self.cancel_epoch or self.job is not None and self.job is not job:return
-                job['result']={**job['result'],'input':{'status':'error','webpad_reconnected':False,'error':error,'message':'主操作已完成；手柄暂不可用，页面会继续恢复连接'}}
+                job['result']={**job['result'],'input':{'status':'error','webpad_reconnected':False,'error':error,'message':'主操作已完成；手柄恢复失败，请手动重新连接' if job.get('action')=='upgrade-service' else '主操作已完成；手柄暂不可用，页面会继续恢复连接'}}
                 self.store.record_service_command(job)
             if getattr(self.store,'system_log',None):self.store.system_log.add('手柄恢复',error)
         threading.Thread(target=recover,daemon=True).start()
@@ -669,14 +811,47 @@ class ServiceController:
     def models(self):
         if getattr(self.store,'connection_paused',None) and self.store.connection_paused.is_set():raise ControlError('Zero 关机后自动连接已暂停',409)
         if not supports_feature(self.store.snapshot().get("bus", {}), "management"):
-            connection=self.transport.manage('connection', privileged=False)
+            connection=self.connection()
             if connection.get('management_revision') != 'R17':
                 raise ControlError("模型管理需要配套 R17 服务", 409)
-        return self.transport.manage("models", privileged=False)
+        log=getattr(self.store,'system_log',None)
+        try:
+            result=self.transport.manage('models',privileged=False,record_output=False)
+            if not isinstance(result,dict) or not isinstance(result.get('models'),list):
+                raise ControlError(str(result.get('error') or result.get('message') or '模型目录回执无效') if isinstance(result,dict) else '模型目录回执无效',503)
+        except Exception as exc:
+            if log:log.add('模型配置','失败 · '+str(exc))
+            raise
+        if log:
+            missing=[row.get('label') or row.get('slot') for row in result.get('slots',[]) if not row.get('model')]
+            names=[str(row.get('name') or row.get('slot') or '未命名') for row in result['models']]
+            log.add('模型配置',f'成功 · 已读取 {len(names)} 个模型配置：'+'、'.join(names)+('；未配置：'+'、'.join(missing) if missing else ''))
+            rollers=result.get('roller_models',[])
+            if rollers:
+                installed=[str(row.get('name') or row.get('id')) for row in rollers if row.get('available')]
+                unavailable=[str(row.get('name') or row.get('id')) for row in rollers if not row.get('available')]
+                manual=[str(row.get('name') or row.get('id')) for row in rollers if row.get('available') and row.get('trigger_bound') is False]
+                route='；滑行、蹲下、原地转由实体手柄切换后加载；'+'、'.join(manual)+'仅安装，未绑定触发' if manual else '；由实体手柄切换后加载'
+                if any(row.get('available') and row.get('trigger')=='L3' for row in rollers):
+                    route+='；L3 滑轮起身测试：仅滑轮模式且 IMU 确认倒地，最多 5 秒'
+                log.add('滑轮模型',f'已安装 {len(installed)} 个：'+'、'.join(installed)+('；未安装：'+'、'.join(unavailable) if unavailable else '')+route)
+        return result
 
     def connection(self):
         if getattr(self.store,'connection_paused',None) and self.store.connection_paused.is_set():raise ControlError('Zero 关机后自动连接已暂停',409)
-        return self.transport.manage('connection', privileged=False)
+        with self.connection_lock:
+            key=(id(self.transport),getattr(self.store,'robotd_epoch',0))
+            if self.connection_cache and self.connection_cache[0]==key:return dict(self.connection_cache[1])
+            log=getattr(self.store,'system_log',None)
+            try:result=self.transport.manage('connection',privileged=False,record_output=False)
+            except Exception as exc:
+                if log:log.add('服务进程','读取失败 · '+str(exc))
+                raise
+            if log:
+                matching=result.get('process_matches') is True
+                log.add('服务进程',('成功 · ' if matching else '失败 · 进程与启动配置不一致；')+str(result.get('management_revision','未知版本'))+' · '+str(result.get('actual_mode') or '未运行')+' · '+str(result.get('actual_port') or '未报告串口'))
+            self.connection_cache=(key,dict(result))
+            return result
 
     def firmware_info(self):
         return bundle_info()
@@ -701,39 +876,6 @@ class ServiceController:
             with self.lock:
                 self.busy=False;self.store.service_operation=self.stopping
 
-    def import_model(self, name, stream, size, password=None,slot=None):
-        if slot not in SLOTS:raise ControlError('请先选择官方动作，再导入对应模型',400)
-        if not ACTION_INFO[slot]['import_supported']:raise ControlError(ACTION_INFO[slot]['support_message'],400)
-        if not isinstance(name, str) or Path(name).name != name or not name.lower().endswith('.zip') or len(name) > 180:
-            raise ControlError("请选择训练台导出的完整 .zip 模型包", 400)
-        if not 0 < size <= MAX_MODEL: raise ControlError("完整模型 ZIP 上限 64 MiB", 400)
-        if password is not None and (not 0 < len(password) <= 256 or any(c in password for c in "\r\n\0")):
-            raise ControlError("Zero sudo 密码格式无效", 400)
-        with self.lock:
-            if self.closed or self.busy or self.stopping: raise ControlError("请等待当前服务操作完成", 409)
-            if not supports_feature(self.store.snapshot().get("bus", {}), "management"):
-                raise ControlError("请先安装 R17 自训服务", 409)
-            self.busy = self.store.service_operation = True
-            job = {"action":"import-model", "status":"running", "at":time.time(), "command":{"name":name,"slot":slot}}
-            self.job = job
-        try:
-            result = self.transport.import_model(name, stream, size, password,slot=slot)
-            receipt=result.get('model_assignment') if isinstance(result,dict) else None
-            if not isinstance(receipt,dict) or receipt.get('slot')!=slot or receipt.get('saved_verified') is not True or receipt.get('mode') not in ('motion','commissioning') or receipt.get('mode')=='motion' and receipt.get('running_verified') is not True:
-                raise ControlError('未确认所选动作模型的绑定及运行加载；请安装本版随包固件并查看日志',503)
-            if self.controls:result=self._with_input_pending(result)
-            job.update(status="completed", result=result)
-            return result
-        except Exception as exc:
-            job.update(status="error", error=str(exc))
-            if getattr(self.store,'system_log',None): self.store.system_log.add('服务操作错误',str(exc))
-            raise
-        finally:
-            with self.lock:
-                self.busy = False
-                self.store.service_operation = self.stopping
-                self.store.record_service_command(job)
-            if self.controls and job.get('status')=='completed':self._start_input_recovery(job,self.cancel_epoch)
 
     def close(self):
         with self.lock:

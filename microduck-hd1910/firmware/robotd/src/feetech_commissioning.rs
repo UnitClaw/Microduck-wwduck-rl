@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::oneshot;
 
-pub const BUILD: &str = "1fa8438-feetech-ft6-control.29";
+pub const BUILD: &str = "1fa8438-feetech-ft6-control.40";
 const MAX_PENDING: usize = 16;
 const POSITION_TOLERANCE: u16 = 8;
 const SETTLE_TIMEOUT: Duration = Duration::from_secs(4);
@@ -287,6 +287,14 @@ fn save_calibration(path: &Path, calibration: &Calibration) -> Result<(), String
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
     let encoded = toml::to_string_pretty(calibration).map_err(|e| e.to_string())?;
+    if let Ok(previous) = std::fs::read(path) {
+        if previous == encoded.as_bytes() { return Ok(()); }
+        let backup = path.with_extension("previous.toml");
+        let temporary = backup.with_extension(format!("toml.tmp.{}",std::process::id()));
+        std::fs::write(&temporary, &previous).map_err(|e| e.to_string())?;
+        std::fs::File::open(&temporary).and_then(|f| f.sync_all()).map_err(|e| e.to_string())?;
+        std::fs::rename(&temporary,&backup).map_err(|e| e.to_string())?;
+    }
     for target in [path.to_path_buf(), path.with_extension("saved.toml")] {
         let temporary: PathBuf = target.with_extension(format!("toml.tmp.{}", std::process::id()));
         let result = (|| -> std::io::Result<()> {
@@ -807,29 +815,11 @@ pub struct Status {
     updated_at_us: u64,
 }
 
-/// An installation-only barrier: no periodic polling after startup. The helper
-/// applies FIFO/IRQ settings while this UART is open and completely idle.
-pub async fn await_uart_setup(state: &RobotState, port: &str, mode: &str) -> Result<(), String> {
-    state.uart_setup_ready.store(false, Ordering::Release);
-    state.bus_status.store(Some(Arc::new(
-        json!({"build":BUILD,"mode":mode,"phase":"configuring_uart","port":port}),
-    )));
-    let until = Instant::now() + Duration::from_secs(8);
-    while !state.uart_setup_ready.load(Ordering::Acquire) {
-        if state.shutdown.load(Ordering::Relaxed) || Instant::now() >= until {
-            return Err("UART startup configuration did not complete".into());
-        }
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
-    Ok(())
-}
-
 pub async fn run(
     port: &str,
     state: &RobotState,
     period: Duration,
     calibration_path: &Path,
-    uart_setup: bool,
 ) {
     state.imu_ready.store(false, Ordering::Relaxed);
     let mut calibration = match read_calibration(calibration_path) {
@@ -840,13 +830,6 @@ pub async fn run(
             return;
         }
     };
-    if !calibration_path.exists() {
-        if let Err(error) = save_calibration(calibration_path, &calibration) {
-            state.bus_status.store(Some(Arc::new(json!({"build":BUILD,"mode":"commissioning","phase":"configuration_error","error":error}))));
-            state.startup_bus_failures.store(1, Ordering::Relaxed);
-            return;
-        }
-    }
     state
         .bus_calibration
         .store(Some(Arc::new(calibration_status(
@@ -854,28 +837,28 @@ pub async fn run(
             calibration_path,
         ))));
     let ids = calibration.joints.iter().map(|j| j.id).collect::<Vec<_>>();
-    let connect = async {
-        let mut bus = Bus::open(port).map_err(|e| e.to_string())?;
-        if uart_setup {
-            await_uart_setup(state, port, "commissioning").await?;
-        }
-        if bus.read(IMU_ID, 0, 5).map_err(|e| e.to_string())? != IMU_IDENTITY {
-            return Err("IMU200 requires FT6 firmware (06 00 00 00 f2)".into());
-        }
-        torque_off(&mut bus, &ids)?;
-        Ok::<Bus, String>(bus)
-    }
-    .await;
-    let mut bus = match connect {
-        Ok(bus) => bus,
-        Err(error) => {
-            state.startup_bus_failures.store(1, Ordering::Relaxed);
-            state.bus_status.store(Some(Arc::new(json!({"build":BUILD,"mode":"commissioning","phase":"configuration_error","error":error}))));
-            state.bus_commands.cancel_all(&error);
-            tracing::error!(%error,"bus initialization failed; restart after correcting the fault");
-            return;
+    state.startup_step(2, "starting", "标定模式：读取已有标定，关闭并确认扭矩，初始化 IMU");
+    let mut bus = loop {
+        if state.shutdown.load(Ordering::Relaxed) { return; }
+        let connect = (|| -> Result<Bus, String> {
+            let mut bus = Bus::open(port).map_err(|e| e.to_string())?;
+            torque_off(&mut bus, &ids)?;
+            if bus.read(IMU_ID, 0, 5).map_err(|e| e.to_string())? != IMU_IDENTITY {
+                return Err("IMU200 requires FT6 firmware (06 00 00 00 f2)".into());
+            }
+            Ok(bus)
+        })();
+        match connect {
+            Ok(bus) => break bus,
+            Err(error) => {
+                state.startup_bus_failures.fetch_add(1, Ordering::Relaxed);
+                state.startup_step(2, "waiting", &error);
+                state.bus_status.store(Some(Arc::new(json!({"build":BUILD,"mode":"commissioning","phase":"waiting_for_bus","error":error}))));
+                tokio::time::sleep(super::STARTUP_RETRY_INTERVAL).await;
+            }
         }
     };
+    state.startup_step(3, "success", "标定模式不加载策略模型");
     state.startup_bus_failures.store(0, Ordering::Relaxed);
     let mut ticker = super::control_ticker(period);
     // Tokio intervals tick immediately on creation. Start periodic telemetry one
@@ -1072,6 +1055,12 @@ pub async fn run(
             .moving
             .store(motion.is_some() || off_pending.is_some(), Ordering::Relaxed);
         state.ticks.store(cycle, Ordering::Relaxed);
+        if error.is_none() && total_success == 1 {
+            state.startup_step(2, "success", "标定采集第一份有效反馈已读取");
+        } else if total_success == 0 {
+            state.startup_step(2, "waiting", error.as_deref().unwrap_or("等待第一份有效反馈"));
+        }
+        if cycle == 1 { state.startup_step(4, "success", "标定采集首个周期完成；运动策略关闭"); }
         state.last_tick_us.store(
             state.started.elapsed().as_micros() as u64,
             Ordering::Relaxed,

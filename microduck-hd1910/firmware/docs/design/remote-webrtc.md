@@ -10,6 +10,18 @@ case is defined in terms of.
 
 ## 0. Status: working on hardware
 
+### 按需采集（R157-Fix10）
+
+本次采集生命周期改动已在本机 GStreamer 图上验证，尚未在真实 Zero/IMX219 上验证。原有硬件性能记录属于此前管线，不能作为本次休眠或温度改善的实测结果。
+
+`mediad::capture::Capture` 是真实源的唯一需求入口：WebRTC consumer 的 peer ID 去重计数，截图持有短期 lease，连续流持有整个流期间的 lease。最后一个需求消失时真实源回到 NULL；mediad、webrtcsink 和信令保持 PLAYING。自动曝光和检测用条件变量被动等待，不产生需求，也没有新增定时检测、重试或查询循环。
+
+webrtcsink 注册 producer 前需要原始帧完成 codec discovery，因此启动时用同尺寸同格式的临时黑色 videotestsrc，真实源锁定在 NULL。观察 signaller 的 start emission 后立即停止临时源。上游 0.15.3 的 start 信号采用 first-handler-wins accumulator；使用 GLib emission hook 观察它，避免普通前置处理器吞掉默认启动动作，或后置处理器根本未执行。hook 只匹配本管线 signaller，使用弱引用，释放时移除。
+
+input-selector 保持原始相机缓冲区与分配路径；唤醒时继承运行中管线的时钟与 base time。休眠时先选择已停止的临时分支再关闭真实源，以隔离源的 flush，避免停止信令。旋转、编码器、摄像头模式、V4L2 缓冲区配置、TURN 和控制通道不改变。
+
+`/run/mediad/capture.json` 仅在初始状态和采集转换时写入。R17 中控在已有系统采样中读取它。视频页没有自动连接，pagehide/beforeunload 只释放本页视频会话，不调用机器人控制接口。
+
 A Radxa Zero 3W streams `videotestsrc` through the hardware encoder to a browser on the LAN, and
 the browser gets a `control` datachannel alongside it. Proven end to end on 2026-08-25:
 

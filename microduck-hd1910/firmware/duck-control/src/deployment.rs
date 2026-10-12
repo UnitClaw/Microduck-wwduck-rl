@@ -16,6 +16,8 @@ pub struct Contract {
     pub target_filter_passthrough: bool,
     /// A separately declared deployment override; never rewrites the training contract.
     pub runtime_execution_profile: Option<RuntimeExecutionProfile>,
+    /// Runtime coefficients declared by this roller export, separate from training EMA.
+    pub roller_execution: Option<(f64, f64, f64)>,
     pub body_padding: bool,
     pub head_padding: bool,
     pub firmware_p: u8,
@@ -100,7 +102,9 @@ pub fn task_slot(task: &str) -> Result<&'static str, String> {
         Ok("sitstand")
     } else if task.starts_with("Mjlab-StandUp-") {
         Ok("stand")
-    } else if task.starts_with("Mjlab-GroundPick-") {
+    } else if task.starts_with("Mjlab-GroundPick-")
+        || matches!(task, "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck" | "Mjlab-Spin-Flat-MicroDuck")
+    {
         Ok("ground_pick")
     } else if task.starts_with("Mjlab-Roulade-") {
         Ok("roulade")
@@ -211,25 +215,54 @@ impl Contract {
         Ok(())
     }
     pub fn parse(v: &Value) -> Result<Self, String> {
-        let current_target_contract = matches!(
+        // Target-filter format and encoder-side backlash observations are independent.
+        // Roulade has both an older EMA export and a newer target-filter export under
+        // the same task name, but neither one declares backlash observations.
+        let backlash_observations = matches!(
             v["task"].as_str(),
             Some(
                 "Mjlab-Velocity-Rough-Backlash-MicroDuck"
                     | "Mjlab-StandUp-Rough-Backlash-MicroDuck"
                     | "Mjlab-VelStand-Rough-Backlash-MicroDuck"
+                    | "Mjlab-GroundPick-Flat-Backlash-MicroDuck"
+                    | "Mjlab-Velocity-Swizzle-Backlash-MicroDuck"
+                    | "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck"
+                    | "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck"
             )
         ) && v["task_adapter"] == "hd1910-official0151";
+        let ball_kick = matches!(v["task"].as_str(), Some(
+            "Mjlab-BallKick-Flat-MicroDuck" | "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck"
+        ));
+        let roller_export = matches!(v["task"].as_str(), Some(
+            "Mjlab-Velocity-Swizzle-Backlash-MicroDuck"
+                | "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck"
+                | "Mjlab-Spin-Flat-MicroDuck"
+        )) && v["task_adapter"] == "hd1910-official0151";
+        let roller_crouch = v["task"] == "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck";
+        let roller_stand = v["task"] == "Mjlab-RollerStandUp-Flat-MicroDuck";
+        let current_target_contract = roller_export || roller_stand || backlash_observations
+            || (v["task_adapter"] == "hd1910-official0151"
+                && (v["task"] == "Mjlab-Roulade-Flat-MicroDuck" || ball_kick)
+                && (v.get("action_filter").is_some()
+                    || v.get("export_contract_revision").is_some()));
         let official_supported = v["task_adapter"] == "hd1910-official0151"
             && matches!(
                 v["task"].as_str(),
                 Some(
                     "Mjlab-VelStand-Flat-MicroDuck"
                         | "Mjlab-GroundPick-Flat-MicroDuck"
+                        | "Mjlab-GroundPick-Flat-Backlash-MicroDuck"
                         | "Mjlab-Roulade-Flat-MicroDuck"
                         | "Mjlab-StandUp-Flat-MicroDuck"
                         | "Mjlab-Velocity-Rough-Backlash-MicroDuck"
                         | "Mjlab-StandUp-Rough-Backlash-MicroDuck"
                         | "Mjlab-VelStand-Rough-Backlash-MicroDuck"
+                        | "Mjlab-BallKick-Flat-MicroDuck"
+                        | "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck"
+                        | "Mjlab-Velocity-Swizzle-Backlash-MicroDuck"
+                        | "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck"
+                        | "Mjlab-Spin-Flat-MicroDuck"
+                        | "Mjlab-RollerStandUp-Flat-MicroDuck"
                 )
             )
             && v["target_firmware"]["version"] == "0.15.1"
@@ -254,7 +287,55 @@ impl Contract {
             );
         }
         let task = v["task"].as_str().ok_or("missing task")?.to_string();
-        let slot = task_slot(&task)?.to_string();
+        let slot = if roller_stand {
+            // No automatic stand slot or invented execution window: this export only
+            // permits a separately configured zero-command skill.
+            if !v["slot"].is_null() || v["role"] != "roller_stand"
+                || v["robot_mode"] != "roller"
+                || !v["required_skill_settings"].is_null()
+                || v["runtime_compatibility"]["native_runtime"]["route"] != "manual_skill"
+                || v["command_contract"] != serde_json::json!({
+                    "encoding":"constant", "idle":[0,0,0],
+                    "twist":"zeros", "head":"zeros", "body":"zeros"
+                })
+            {
+                return Err("roller stand requires its unbound manual zero-command contract".into());
+            }
+            "roller_stand".to_string()
+        } else if ball_kick {
+            let slot = v["slot"].as_str().ok_or("missing ball kick slot")?;
+            if !matches!(slot, "kick_left" | "kick_right") || v["role"].as_str() != Some(slot)
+                || (task == "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck" && slot != "kick_left") {
+                return Err("ball kick slot and role must agree on kick_left or kick_right".into());
+            }
+            let skill = &v["required_skill_settings"];
+            let zero_command = |value: &Value| {
+                value.as_array().is_some_and(|values| {
+                    values.len() == 3 && values.iter().all(|v| v.as_f64() == Some(0.0))
+                })
+            };
+            if v["command_encoding"] != "constant"
+                || v["command_contract"]["encoding"] != "constant"
+                || v["command_contract"]["twist"] != "zeros"
+                || v["command_contract"]["head"] != "zeros"
+                || v["command_contract"]["body"] != "zeros"
+                || !zero_command(&v["command_contract"]["idle"])
+                || skill["name"].as_str() != Some(slot)
+                || skill["duration"].as_f64() != Some(0.5)
+                || skill["chain"] != false
+                || !zero_command(&skill["command"])
+                || !zero_command(&skill["unwind"])
+                || skill["unwind_s"].as_f64() != Some(0.0)
+                || skill["params"]["action_scale"].as_f64() != Some(1.0)
+            {
+                return Err(
+                    "ball kick requires its exported 0.5-second zero-command one-shot".into(),
+                );
+            }
+            slot.to_string()
+        } else {
+            task_slot(&task)?.to_string()
+        };
         let names: Vec<_> = JOINT_NAMES
             .iter()
             .enumerate()
@@ -301,7 +382,7 @@ impl Contract {
             return Err("this profile requires inference scale 1.0, outside ONNX".into());
         }
         // This export trains the existing target filter, with no separate raw-action EMA.
-        let ema = if current_target_contract && v["action_ema_old_weight"].is_null() {
+        let ema = if current_target_contract && v.get("action_ema_old_weight").is_none() {
             0.0
         } else {
             number(v.get("action_ema_old_weight"), "action EMA")?
@@ -314,6 +395,21 @@ impl Contract {
         if current_target_contract {
             let filter = &v["action_filter"];
             let required = &v["required_policy_settings"];
+            let scale_setting = match slot.as_str() {
+                "roulade" => "roulade_action_scale",
+                "ground_pick" => "ground_pick_action_scale",
+                _ => "action_scale",
+            };
+            let required_scale = if roller_stand {
+                number(v.get("runtime_action_scale"), "roller stand runtime scale")?
+            } else if ball_kick {
+                number(
+                    v["required_skill_settings"]["params"].get("action_scale"),
+                    "required skill action scale",
+                )?
+            } else {
+                number(required.get(scale_setting), "required action scale")?
+            };
             if !filter["enabled"].is_boolean()
                 || filter["version"] != 1
                 || filter["control_hz"] != 50.0
@@ -322,7 +418,8 @@ impl Contract {
                 || filter["update"] != "once_per_policy_step"
                 || filter["previous_action_observation"] != "raw_policy_output"
                 || filter["onnx"] != "external_filter_not_baked_into_graph"
-                || number(required.get("action_scale"), "global action scale")? != training_scale
+                || (required_scale != training_scale
+                    && !(roller_crouch && required_scale == 0.8 && training_scale == 1.0))
                 || ema != 0.0
             {
                 return Err("unsupported current target-filter mapping".into());
@@ -334,7 +431,13 @@ impl Contract {
                 let value = number(filter.get(alpha), "target filter alpha")?;
                 if value <= 0.0
                     || value > 1.0
-                    || number(required.get(name), "required target filter")? != value
+                    || (number(required.get(name), "required target filter")? != value
+                        && !(roller_crouch
+                            && match name {
+                                "head_lowpass" => number(required.get(name), "required target filter")? == 0.5,
+                                "legs_lowpass" => number(required.get(name), "required target filter")? == 0.7,
+                                _ => false,
+                            }))
                     || (target_filter_passthrough && value != 1.0)
                     || (!target_filter_passthrough
                         && number(action.get(alpha), "trained target filter")? != value)
@@ -346,6 +449,20 @@ impl Contract {
                 }
             }
         }
+        let roller_execution = if roller_export || roller_stand {
+            let required = &v["required_policy_settings"];
+            let scale_key = if slot == "ground_pick" { "ground_pick_action_scale" } else { "action_scale" };
+            let scale = if roller_stand { number(v.get("runtime_action_scale"), "roller scale")? }
+                else { number(required.get(scale_key), "roller scale")? };
+            let head = number(required.get("head_lowpass"), "roller head filter")?;
+            let legs = number(required.get("legs_lowpass"), "roller leg filter")?;
+            if !(0.0..=2.0).contains(&scale) || scale == 0.0
+                || !(0.0..=1.0).contains(&head) || head == 0.0
+                || !(0.0..=1.0).contains(&legs) || legs == 0.0 {
+                return Err("invalid roller execution coefficients".into());
+            }
+            Some((scale, head, legs))
+        } else { None };
         let terms = v["observations"]["terms"]
             .as_object()
             .ok_or("missing observations")?;
@@ -362,16 +479,22 @@ impl Contract {
         if terms.len() != expected.len() || expected.iter().any(|n| !terms.contains_key(*n)) {
             return Err("unsupported observation terms".into());
         }
-        for (name, function) in [
-            ("joint_pos", "joint_pos_rel_backlash"),
-            ("joint_vel", "joint_vel_rel_backlash"),
+        for (name, ordinary, backlash) in [
+            ("joint_pos", "joint_pos_rel", "joint_pos_rel_backlash"),
+            ("joint_vel", "joint_vel_rel", "joint_vel_rel_backlash"),
         ] {
+            let expected = if backlash_observations {
+                backlash
+            } else {
+                ordinary
+            };
             if current_target_contract
                 && terms[name]["func"]["callable"]
                     .as_str()
-                    .is_none_or(|s| !s.ends_with(function))
+                    .and_then(|s| s.rsplit('.').next())
+                    != Some(expected)
             {
-                return Err("requires encoder-side backlash observations".into());
+                return Err(format!("requires {expected} observation for {name}"));
             }
         }
         for t in terms.values() {
@@ -401,6 +524,34 @@ impl Contract {
         }
         if body_padding && terms["body_command"]["params"]["dim"] != 6 {
             return Err("requires six body padding slots".into());
+        }
+        if roller_export {
+            // A model trained for wheels cannot silently occupy a walking/other skill slot.
+            let expected = if v["task"] == "Mjlab-Velocity-Swizzle-Backlash-MicroDuck" {
+                "walk"
+            } else { "ground_pick" };
+            if v["slot"].as_str() != Some(expected)
+                || v["robot_mode"] != "roller"
+                || (v["task"] == "Mjlab-Velocity-Swizzle-Backlash-MicroDuck"
+                    && (v["commands"]["twist"]["ranges"]["ang_vel_z"]
+                        != serde_json::json!([-0.5, 0.5])
+                        || v["commands"]["twist"]["ranges"]["lin_vel_y"]
+                            != serde_json::json!([0.0, 0.0])))
+            {
+                return Err("roller contract has unexpected mode, slot or heading range".into());
+            }
+        }
+        if ball_kick
+            && (!head_padding
+                || !body_padding
+                || terms["command"]["func"]["callable"]
+                    .as_str()
+                    .and_then(|s| s.rsplit('.').next())
+                    != Some("generated_commands"))
+        {
+            return Err(
+                "ball kick requires zero head/body padding and its constant twist command".into(),
+            );
         }
         let acts = v["model"]["actuators"]
             .as_array()
@@ -459,6 +610,15 @@ impl Contract {
         {
             return Err("ground pick requires a phase command and positive cycle period".into());
         }
+        if current_target_contract
+            && slot == "ground_pick"
+            && Some(number(
+                v["required_policy_settings"].get("ground_pick_period"),
+                "required ground pick period",
+            )?) != command_period_s
+        {
+            return Err("ground pick period differs from training".into());
+        }
         Ok(Self {
             task,
             slot,
@@ -474,6 +634,7 @@ impl Contract {
             ema_old_weight: ema,
             target_filter_passthrough,
             runtime_execution_profile: None,
+            roller_execution,
             body_padding,
             head_padding,
             firmware_p: p as u8,
@@ -502,6 +663,113 @@ mod tests {
     }
 
     #[test]
+    fn v160_roller_models_keep_original_training_contracts() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../packaging/roller");
+        for (name, task, slot, period) in [
+            ("swizzle", "Mjlab-Velocity-Swizzle-Backlash-MicroDuck", "walk", None),
+            ("crouch", "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck", "ground_pick", Some(5.0)),
+            ("spin", "Mjlab-Spin-Flat-MicroDuck", "ground_pick", Some(4.0)),
+        ] {
+            let parsed = Contract::load(&root.join(name).join("policy.onnx"))
+                .expect("V160 roller export must pass native deployment adapter");
+            assert_eq!(parsed.task, task);
+            assert_eq!(parsed.slot, slot);
+            assert_eq!(parsed.command_period_s, period);
+            assert_eq!(parsed.training_action_scale, 1.0);
+            assert!(parsed.target_filter_passthrough);
+            assert_eq!(parsed.roller_execution, Some(if name == "crouch" {
+                (0.8, 0.5, 0.7)
+            } else { (1.0, 1.0, 1.0) }));
+        }
+    }
+
+    #[test]
+    fn roller_stand_keeps_manual_contract_and_rejects_an_invented_slot() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../packaging/roller/standup/policy.onnx");
+        let parsed = Contract::load(&path).unwrap();
+        assert_eq!(parsed.slot, "roller_stand");
+        assert_eq!(parsed.roller_execution, Some((1.0, 1.0, 1.0)));
+        assert!(parsed.head_padding && parsed.body_padding);
+        let mut original = read_json(&path.with_file_name("deployment-contract.json")).unwrap();
+        original["slot"] = serde_json::json!("stand");
+        assert!(Contract::parse(&original).is_err());
+    }
+
+    fn right_kick_contract() -> Value {
+        serde_json::from_str(include_str!(
+            "../../packaging/models/67ad09d82f4865d222a7ae06f250cf9f/deployment-contract.json"
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn exported_left_kick_loads_original_backlash_one_shot_and_rejects_wrong_foot() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../packaging/models/ee0376c927044cdece056ba1d3e6eac7/policy.onnx");
+        let contract = Contract::load(&path).unwrap();
+        assert_eq!(contract.task, "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck");
+        assert_eq!(contract.slot, "kick_left");
+        assert_eq!(contract.firmware_p, 5);
+        assert_eq!(contract.training_action_scale, 1.0);
+        assert_eq!(contract.scale, 1.0);
+        assert!(contract.target_filter_passthrough && contract.head_padding && contract.body_padding);
+        let mut wrong: Value = serde_json::from_slice(
+            &std::fs::read(path.with_file_name("deployment-contract.json")).unwrap()
+        ).unwrap();
+        wrong["slot"] = serde_json::json!("kick_right");
+        wrong["role"] = serde_json::json!("kick_right");
+        wrong["required_skill_settings"]["name"] = serde_json::json!("kick_right");
+        assert!(Contract::parse(&wrong).is_err());
+    }
+
+    #[test]
+    fn exported_right_kick_loads_original_bytes_as_unfiltered_one_shot() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../packaging/models/67ad09d82f4865d222a7ae06f250cf9f/policy.onnx");
+        let contract = Contract::load(&path).unwrap();
+        assert_eq!(contract.task, "Mjlab-BallKick-Flat-MicroDuck");
+        assert_eq!(contract.slot, "kick_right");
+        assert_eq!(contract.firmware_p, 5);
+        assert_eq!(contract.training_action_scale, 1.0);
+        assert_eq!(contract.scale, 1.0);
+        assert_eq!(contract.ema_old_weight, 0.0);
+        assert!(contract.target_filter_passthrough);
+        assert!(contract.head_padding && contract.body_padding);
+        assert!(contract.runtime_execution_profile.is_none());
+    }
+
+    #[test]
+    fn right_kick_rejects_changed_role_timing_command_or_filter_contract() {
+        let original = right_kick_contract();
+        for (field, value) in [
+            ("role", serde_json::json!("kick_left")),
+            ("slot", serde_json::json!("walk")),
+            ("command_encoding", serde_json::json!("phase")),
+        ] {
+            let mut bad = original.clone();
+            bad[field] = value;
+            assert!(Contract::parse(&bad).is_err(), "accepted invalid {field}");
+        }
+        for (field, value) in [
+            ("duration", serde_json::json!(4.0)),
+            ("chain", serde_json::json!(true)),
+            ("command", serde_json::json!([1.0, 0.0, 0.0])),
+        ] {
+            let mut bad = original.clone();
+            bad["required_skill_settings"][field] = value;
+            assert!(Contract::parse(&bad).is_err(), "accepted changed {field}");
+        }
+        let mut bad = original.clone();
+        bad["action_filter"]["head_alpha"] = serde_json::json!(0.5);
+        bad["required_policy_settings"]["head_lowpass"] = serde_json::json!(0.5);
+        assert!(Contract::parse(&bad).is_err());
+        let mut bad = original;
+        bad["required_skill_settings"]["params"]["action_scale"] = serde_json::json!(0.7);
+        assert!(Contract::parse(&bad).is_err());
+    }
+
+    #[test]
     fn joint_rough_export_remains_unfiltered_training_data_with_separate_uniform_override() {
         let c = joint_contract();
         assert_eq!(c.slot, "walk");
@@ -520,7 +788,7 @@ mod tests {
         assert_eq!(p.mode, "uniform");
         assert_eq!(
             (p.action_scale, p.head_lowpass, p.legs_lowpass),
-            (0.9, 0.5, 0.7)
+            (1.0, 0.5, 0.7)
         );
         assert_eq!(loaded.home, c.home);
         assert_eq!(
@@ -666,7 +934,7 @@ mod tests {
     #[test]
     fn official0151_adapter_requires_matching_task_and_runtime() {
         let mut v: Value = serde_json::from_str(include_str!(
-            "../../policies/ground_pick/deployment-contract.json"
+            "../../test-data/ground-pick-legacy/deployment-contract.json"
         ))
         .unwrap();
         v["task"] = serde_json::json!("Mjlab-VelStand-Flat-MicroDuck");
@@ -743,5 +1011,119 @@ mod tests {
         assert!(c.head_padding && c.body_padding);
         let walk = Contract::parse(&contract()).unwrap();
         assert_eq!(c.home, walk.home);
+    }
+
+    fn new_skill_contract(slot: &str) -> Value {
+        let json = match slot {
+            "roulade" => include_str!("../../policies/roulade/deployment-contract.json"),
+            "ground_pick" => include_str!("../../policies/ground_pick/deployment-contract.json"),
+            _ => unreachable!(),
+        };
+        serde_json::from_str(json).unwrap()
+    }
+
+    /// New target contracts do not require the legacy EMA field or the gait's
+    /// action_scale key. Their original source JSON is sufficient to load.
+    #[test]
+    fn unfiltered_skills_load_original_contracts_with_slot_specific_scale() {
+        for (slot, task) in [
+            ("roulade", "Mjlab-Roulade-Flat-MicroDuck"),
+            ("ground_pick", "Mjlab-GroundPick-Flat-Backlash-MicroDuck"),
+        ] {
+            let v = new_skill_contract(slot);
+            assert!(v.get("action_ema_old_weight").is_none());
+            assert!(v["required_policy_settings"].get("action_scale").is_none());
+            let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../policies")
+                .join(slot)
+                .join("policy.onnx");
+            let c = Contract::load(&path).unwrap();
+            assert_eq!(c.task, task);
+            assert_eq!(c.slot, slot);
+            assert_eq!(c.training_action_scale, 1.0);
+            assert_eq!(c.scale, 1.0);
+            assert_eq!(c.ema_old_weight, 0.0);
+            assert!(c.target_filter_passthrough);
+            assert!(c.head_padding && c.body_padding);
+            assert!(c.runtime_execution_profile.is_none());
+            assert!(!c.uses_global_action_scale());
+            assert_eq!(c.home, joint_contract().home);
+        }
+    }
+
+    /// Action-filter format must not silently imply backlash sensing, and task
+    /// names must not accept an unrelated function merely sharing a suffix.
+    #[test]
+    fn current_skill_contracts_validate_observations_independently_of_target_format() {
+        for (slot, expected) in [
+            ("roulade", "joint_pos_rel"),
+            ("ground_pick", "joint_pos_rel_backlash"),
+        ] {
+            let v = new_skill_contract(slot);
+            Contract::parse(&v).unwrap();
+            for callable in [
+                "fake_joint_pos_rel",
+                "fake_joint_pos_rel_backlash",
+                if slot == "roulade" {
+                    "joint_pos_rel_backlash"
+                } else {
+                    "joint_pos_rel"
+                },
+            ] {
+                let mut bad = v.clone();
+                bad["observations"]["terms"]["joint_pos"]["func"]["callable"] =
+                    serde_json::json!(format!("module.{callable}"));
+                assert!(
+                    Contract::parse(&bad).is_err(),
+                    "{slot} accepted {callable}, expected {expected}"
+                );
+            }
+            let mut bad = v.clone();
+            bad["observations"]["terms"]["joint_vel"]["func"]["callable"] =
+                serde_json::json!("module.joint_vel");
+            assert!(Contract::parse(&bad).is_err());
+            let scale_key = format!("{slot}_action_scale");
+            let mut bad = v.clone();
+            bad["required_policy_settings"][&scale_key] = serde_json::json!(0.7);
+            assert!(Contract::parse(&bad).is_err());
+            let mut bad = v.clone();
+            bad["action_filter"]["head_alpha"] = serde_json::json!(0.5);
+            bad["required_policy_settings"]["head_lowpass"] = serde_json::json!(0.5);
+            assert!(Contract::parse(&bad).is_err());
+            let mut bad = v.clone();
+            bad.as_object_mut().unwrap().remove("action_filter");
+            bad["action_ema_old_weight"] = serde_json::json!(0.0);
+            assert!(
+                Contract::parse(&bad).is_err(),
+                "{slot} must not downgrade revision 2 to legacy EMA"
+            );
+            let mut bad = v.clone();
+            bad["action_filter"] = Value::Null;
+            assert!(Contract::parse(&bad).is_err());
+            for invalid in [Value::Null, Value::Bool(true), serde_json::json!(0.2)] {
+                let mut bad = v.clone();
+                bad["action_ema_old_weight"] = invalid;
+                assert!(Contract::parse(&bad).is_err());
+            }
+        }
+        let mut bad = new_skill_contract("ground_pick");
+        bad["required_policy_settings"]["ground_pick_period"] = serde_json::json!(2.0);
+        assert!(Contract::parse(&bad).is_err());
+    }
+
+    /// The older exports retain their old target filtering behavior; moving them
+    /// into regression fixtures must not rewrite their numerical meaning.
+    #[test]
+    fn legacy_flat_skill_contracts_keep_existing_ema_semantics() {
+        for slot in ["roulade", "ground_pick"] {
+            let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../test-data")
+                .join(format!("{}-legacy/policy.onnx", slot.replace('_', "-")));
+            let c = Contract::load(&path).unwrap();
+            assert_eq!(c.scale, 1.0);
+            assert_eq!(c.ema_old_weight, 0.0);
+            assert!(!c.target_filter_passthrough);
+            assert!(c.runtime_execution_profile.is_none());
+        }
     }
 }

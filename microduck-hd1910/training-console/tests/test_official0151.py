@@ -24,7 +24,7 @@ def reference(task):
 class CatalogAndContractTests(unittest.TestCase):
     def test_one_source_current_profiles_and_native_physical_variants(self):
         self.assertEqual(list(PINS), [ENGINE])
-        self.assertEqual(len(TASKS), 27)
+        self.assertEqual(len(TASKS), 35)
         catalog=json.loads((ROOT/'data/tasks.json').read_text())
         self.assertEqual({x['id'] for x in catalog['tasks']}, set(TASKS))
         for task, info in TASKS.items():
@@ -51,8 +51,8 @@ class CatalogAndContractTests(unittest.TestCase):
             c=deployment_contract({'task':task},reference(task)['inspection'])
             m=manifest_for({'task':task},c,'a'*64)
             self.assertEqual((m['schema_version'],m['model_api'],m['obs_len'],m['action_len']), (2,1,61,14))
-            self.assertEqual(c['required_policy_settings']['head_lowpass'],1)
-            self.assertEqual(c['required_policy_settings']['legs_lowpass'],1)
+            self.assertEqual(c['required_policy_settings']['head_lowpass'], .5 if info['role'] in ('roller','crouch') else 1)
+            self.assertEqual(c['required_policy_settings']['legs_lowpass'], .7 if info['role'] in ('roller','crouch') else 1)
             self.assertNotIn('voltage_adapt', c['required_policy_settings'])
             if info['role']=='stand':
                 self.assertTrue(m['teacher_only']);self.assertNotIn('slot',m)
@@ -114,7 +114,7 @@ class MigrationAndLaunchTests(unittest.TestCase):
         self.assertEqual(m.recipe['calibration'],old['calibration'])
         self.assertEqual(m.recipe['robot'],old['robot'])
         self.assertEqual(m.recipe['baseline'],ENGINE)
-        self.assertEqual(m.recipe['training_action_scale'],.9)
+        self.assertEqual(m.recipe['training_action_scale'],1.0)
         self.assertEqual(m.recipe['overrides'],[])
         self.assertEqual(json.loads((self.root/'recipe-before-official0151.json').read_text()),old)
         self.assertEqual(m.launch('probe',{}),{'cached':True})
@@ -129,7 +129,7 @@ class MigrationAndLaunchTests(unittest.TestCase):
             self.assertEqual(j['request']['num_envs'],4096)
             self.assertEqual(j['request']['iterations'],TASKS[task]['iterations'])
             self.assertEqual(j['request']['save_interval'],1000)
-            self.assertEqual(j['request']['training_action_scale'], .9 if TASKS[task]['role'] in ('walk','stand','joint') else 1)
+            self.assertEqual(j['request']['training_action_scale'], 1.0)
             self.assertTrue(m.snapshot()['jobs'][0]['target_compatible'])
             j['status']='completed'
         self.assertFalse(any(j['op'] in ('probe','preflight') for j in m.jobs.values()))

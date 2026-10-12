@@ -54,6 +54,21 @@ class ZeroCalibrationTests(unittest.TestCase):
         self.manager.save_recipe({'recipe':self.before})
         self.assertEqual(self.manager.recipe['calibration'],result['calibration'])
 
+    def test_change_contract_marks_only_modified_fields_and_never_the_zero_for_direction(self):
+        before=copy.deepcopy(self.before['calibration']['data'])
+        after=copy.deepcopy(before)
+        after['joints'][0]['direction']*=-1
+        after['joints'][1]['min_rad']+=0.1
+        after['joints'][2]['max_rad']-=0.1
+        changes=zero.calibration_changes(before,after)
+        self.assertEqual(len(changes['joints']),3)
+        self.assertEqual(list(changes['joints'][0]['fields']),['direction'])
+        self.assertEqual(changes['joints'][0]['fields']['direction']['before'],before['joints'][0]['direction'])
+        self.assertNotIn('zero_raw',changes['joints'][0]['fields'])
+        self.assertEqual(list(changes['joints'][1]['fields']),['min_rad'])
+        self.assertEqual(list(changes['joints'][2]['fields']),['max_rad'])
+        self.assertFalse(changes['imu_changed'])
+
     def test_reuses_runtime_console_target_with_own_saved_target_taking_priority(self):
         console=self.root/'MicroduckConsole';console.mkdir()
         (console/'connection.json').write_text(json.dumps({'last_target':'radxa@192.168.6.151'}))

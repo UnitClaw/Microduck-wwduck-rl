@@ -48,6 +48,34 @@ class UpgradeUnitTests(unittest.TestCase):
    return result,rows,json.loads(state.read_text())
  def active(self,**extra):return {'load':'loaded','active':'active',**extra}
  def missing(self):return {'load':'not-found','active':'inactive','query_rc':4}
+ def test_restart_success_requires_control_readiness_without_retrying_process(self):
+  # A live IPC socket alone must not report a dead control loop as recovered.
+  for ready_rc in (0,19):
+   with self.subTest(ready_rc=ready_rc):
+    body='python3() { [[ ${1##*/} == startup_gate.py ]] || return 90; echo READINESS-CHECK; return '+str(ready_rc)+'; }\nrestart_service\necho RESTART-COMPLETED\n'
+    result,calls,_=self.run_script({'robotd.service':self.active()},body)
+    self.assertEqual(result.returncode,0 if ready_rc==0 else 78,result.stderr)
+    self.assertEqual(calls.count(['restart','robotd.service']),1)
+    self.assertEqual(result.stdout.count('READINESS-CHECK'),1)
+    self.assertEqual('RESTART-COMPLETED' in result.stdout,ready_rc==0)
+ def test_corrupt_bundle_is_rejected_before_stopping_any_service(self):
+  body=r'''bundle_dir="$TEST_ROOT"
+identity() { echo IDENTITY-CHECK; }
+python3() {
+ [[ ${1##*/} == elf_integrity.py ]] || return 90
+ echo ELF-REJECTED
+ return 23
+}
+install_bundle upgrade
+echo UNEXPECTED-INSTALL
+'''
+  units={u:self.active() for u in ('robotd.service','padd.service','gamesir-xboxd.service','microduck-webpad.service','microduck-webpad.socket')}
+  result,calls,state=self.run_script(units,body)
+  self.assertEqual(result.returncode,23,result.stderr)
+  self.assertIn('IDENTITY-CHECK',result.stdout);self.assertIn('ELF-REJECTED',result.stdout)
+  self.assertNotIn('UNEXPECTED-INSTALL',result.stdout)
+  self.assertFalse(any(c[0] in ('stop','start','restart') for c in calls))
+  self.assertTrue(all(u['active']=='active' for u in state.values()))
  def test_complete_installer_recovers_missing_input_units_without_motion(self):
   body=r'''bundle_dir="$TEST_ROOT"
 install_dir="$TEST_ROOT"
@@ -58,6 +86,7 @@ service_user=$(id -un)
 service_group=$(id -gn)
 touch "$install_dir/robotd" "$install_dir/service.sh"
 cp "$SERVICE_SRC/configure.py" "$bundle_dir/configure.py"
+cp "$SERVICE_SRC/management_profile.py" "$bundle_dir/management_profile.py"
 cp "$SERVICE_SRC/robotd-profile.toml" "$bundle_dir/robotd-profile.toml"
 cp "$SERVICE_SRC/management-profile.json" "$bundle_dir/management-profile.json"
 identity() { :; }
@@ -67,10 +96,11 @@ request_relax_service() { echo RELAX-REQUEST; }
 python3() {
  case "${1##*/}" in
  package-preflight.py) echo UNEXPECTED-PREFLIGHT; return 87 ;;
+ elf_integrity.py) echo ELF-INTEGRITY-CHECK ;;
  rebuild-config.py) printf '[policy]\n' > "$3/robotd.toml"; printf 'motion_enabled = false\n' > "$3/hd1910-calibration.toml" ;;
  configure.py) "$REAL_PYTHON" "$@" ;;
  calibration-config.py) cp "$3" "$5" ;;
- runtime.py) [[ $2 == configure-startup ]] || { echo UNEXPECTED-READBACK; return 88; } ;;
+ runtime.py) [[ $2 == configure-startup || $2 == disable-automatic-recovery ]] || { echo UNEXPECTED-READBACK; return 88; } ;;
  voice-setup.py) : ;;
  gamepad.py) [[ $2 == prepare-all ]] || return 89 ;;
  *) "$REAL_PYTHON" "$@" ;;
@@ -85,16 +115,18 @@ echo FULL-INSTALL-FINISHED
     units['robotd.service']={'load':'loaded','active':robot_active,'exec':'official robotd'}
     result,calls,state=self.run_script(units,body)
     self.assertEqual(result.returncode,0,result.stderr);self.assertIn('FULL-INSTALL-FINISHED',result.stdout)
-    # The input binary and NETLINK unit fix must both take effect on upgrade.
-    for unit in ('microduck-webpad.socket','padd.service','gamesir-xboxd.service'):
+    for unit in ('padd.service','gamesir-xboxd.service'):
      self.assertTrue(any(c[0]=='stop' and unit in c for c in calls))
-     self.assertEqual(sum(c[0]=='start' and unit in c for c in calls),1);self.assertEqual(state[unit]['active'],'active')
-    self.assertTrue(any(c[0]=='stop' and 'microduck-webpad.service' in c for c in calls))
-    self.assertFalse(any(c[0] in ('start','restart') and 'microduck-webpad.service' in c for c in calls))
+     self.assertEqual(sum(c[0]=='restart' and unit in c for c in calls),1)
+     self.assertEqual(state[unit]['active'],'active')
+    self.assertFalse(any('microduck-webpad.service' in c or 'microduck-webpad.socket' in c for c in calls))
     self.assertIn(['stop','robotd.service'],calls);self.assertIn(['restart','robotd.service'],calls)
-    self.assertIn('安装不自动开始运动',result.stdout)
-    self.assertEqual(calls.count(['daemon-reload']),1)
+    main=calls.index(['restart','robotd.service'])
+    self.assertTrue(all(calls.index(c)>main for c in calls if c[0]=='restart' and 'padd.service' in c))
+    self.assertIn('未请求运动',result.stdout)
+    self.assertEqual(calls.count(['daemon-reload']),2)
     self.assertFalse(any(x[0]=='show' and any(v in ('LoadState','ActiveState','MainPID','ControlPID') for v in x) for x in calls))
+
 
 
 if __name__=='__main__':unittest.main()

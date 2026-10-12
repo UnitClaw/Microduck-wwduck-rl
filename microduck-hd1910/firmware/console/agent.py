@@ -237,6 +237,11 @@ def system_loop(emit, stop):
                     d["camera_age_ms"] = max(0, round((time.time()-p.stat().st_mtime)*1000))
             except (OSError, ValueError):
                 pass
+            try:
+                capture = json.loads(Path("/run/mediad/capture.json").read_text())
+                if isinstance(capture, dict): d["camera_capture"] = capture
+            except (OSError, ValueError):
+                pass
             emit({"channel": "system", "data": d})
         except Exception as exc:
             emit({"channel": "system", "error": str(exc)})

@@ -183,6 +183,36 @@ class AtomicInstallTests(unittest.TestCase):
    with patch.object(installer.shutil,'copy2',side_effect=OSError('disk full')):
     with self.assertRaises(OSError):installer.install(bundle,installed)
    self.assertEqual((installed/'padd').read_bytes(),b'old');self.assertFalse(list(installed.glob('.r17-stage-*')))
+ def test_silent_short_copy_does_not_replace_any_installed_file(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);bundle=self.bundle(root);installed=root/'installed';installed.mkdir()
+   (installed/'padd').write_bytes(b'previous executable')
+   (installed/'install-files.json').write_bytes(b'previous inventory')
+   (installed/'SHA256SUMS').write_bytes(b'previous checksums')
+   before={p.name:(p.stat().st_ino,p.read_bytes()) for p in installed.iterdir()}
+   copy=installer.shutil.copy2
+   def short_copy(source,target):
+    result=copy(source,target)
+    if Path(source).name=='padd':
+     with Path(target).open('r+b') as stream:stream.truncate(16)
+    return result
+   with patch.object(installer.shutil,'copy2',side_effect=short_copy):
+    with self.assertRaisesRegex(ValueError,'SHA256'):installer.install(bundle,installed)
+   self.assertEqual({p.name:(p.stat().st_ino,p.read_bytes()) for p in installed.iterdir()},before)
+   self.assertFalse(list(installed.glob('.r17-stage-*')))
+ def test_same_length_corrupt_copy_is_rejected_before_replacement(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);bundle=self.bundle(root);installed=root/'installed';installed.mkdir()
+   (installed/'padd').write_bytes(b'previous executable');copy=installer.shutil.copy2
+   def corrupt_copy(source,target):
+    result=copy(source,target)
+    if Path(source).name=='padd':
+     with Path(target).open('r+b') as stream:
+      byte=stream.read(1);stream.seek(0);stream.write(bytes([byte[0]^1]))
+    return result
+   with patch.object(installer.shutil,'copy2',side_effect=corrupt_copy):
+    with self.assertRaisesRegex(ValueError,'SHA256'):installer.install(bundle,installed)
+   self.assertEqual((installed/'padd').read_bytes(),b'previous executable')
  def test_linked_destination_is_rejected_without_touching_external_file(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);bundle=self.bundle(root);installed=root/'installed';installed.mkdir();external=root/'external';external.write_bytes(b'untouched');(installed/'padd').symlink_to(external)

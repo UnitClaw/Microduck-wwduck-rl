@@ -32,6 +32,24 @@ def preflight(bundle):
         model=bundle/'models'/ident;verify_directory(model)
         result=subprocess.run([str(bundle/'robotd'),'validate-policy',str(model/'policy.onnx')],env=env,capture_output=True,text=True,timeout=45)
         if result.returncode:raise ValueError('新版模型或 ONNX Runtime 预检查失败；原服务尚未停止：'+(result.stderr or result.stdout)[-1500:])
+    for subdir,task in (
+        ('swizzle','Mjlab-Velocity-Swizzle-Backlash-MicroDuck'),
+        ('crouch','Mjlab-RollerCrouch-Flat-Backlash-MicroDuck'),
+        ('spin','Mjlab-Spin-Flat-MicroDuck'),
+    ):
+        directory=bundle/'roller'/subdir
+        model=directory/'policy.onnx'
+        manifest=json.loads((directory/'manifest.json').read_text())
+        contract=json.loads((directory/'deployment-contract.json').read_text())
+        if (manifest.get('task')!=task or contract.get('task')!=task
+            or manifest.get('onnx_sha256')!=hashlib.sha256(model.read_bytes()).hexdigest()
+            or contract.get('input_dim')!=61 or contract.get('output_dim')!=14
+            or contract.get('robot_mode')!='roller'):
+            raise ValueError('轮滑模型的合同、模式或 SHA256 不匹配：'+subdir)
+        result=subprocess.run([str(bundle/'robotd'),'validate-policy',str(model)],
+            env=env,capture_output=True,text=True,timeout=45)
+        if result.returncode:
+            raise ValueError('轮滑模型不能在当前固件加载：'+subdir+' '+(result.stderr or result.stdout)[-1500:])
     walk_id=metadata['models']['walk']['id']
     contract=json.loads((bundle/'models'/walk_id/'deployment-contract.json').read_text())
     snapshot=tomllib.loads((bundle/'hd1910-calibration.robot.toml').read_text())

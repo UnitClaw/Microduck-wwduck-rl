@@ -21,7 +21,7 @@ from urllib.parse import urlparse, unquote, quote, parse_qs
 from telemetry import BASELINE, VERSION, HOME, IDS, NAMES, LABELS, Store
 from controls import Controller, ControlError
 from ssh_connect import normalize_target, ssh_command, ssh_process_options, SSHConnectError
-from process_lifecycle import retire_process
+from process_lifecycle import retire_process, spawn_process, close_owned_processes
 from agent import MAX_LINE, MAX_COLLECTOR_LINE
 
 ROOT = Path(__file__).resolve().parent
@@ -77,7 +77,7 @@ def ssh_loop(target, config, emit, stop, system_log=None, connection_pause=None)
         generation_done = threading.Event()
         try:
             if system_log: system_log.add('采集 SSH',f'建立持久连接 {target} → agent.py；持续接收遥测')
-            proc = subprocess.Popen(args, **ssh_process_options(target), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = spawn_process(args, **ssh_process_options(target), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             def stderr_reader(child=proc, messages=errors):
                 try:
                     for line in iter(child.stderr.readline, b""):
@@ -151,7 +151,7 @@ def handler_for(store, config, controller=None, service_controller=None, connect
                 self.close_connection = True
 
         def do_POST(self):
-            endpoint = connection if self.path == "/api/connection" else store if self.path == "/api/inspection" and config.get("service_enabled") else service_controller if self.path in ("/api/service", "/api/service/connection", "/api/service/models", "/api/service/models/upload", "/api/service/firmware", "/api/service/firmware/upload") else controller if self.path == "/api/control" else None
+            endpoint = connection if self.path == "/api/connection" else store if self.path == "/api/inspection" and config.get("service_enabled") else service_controller if self.path in ("/api/service", "/api/service/connection", "/api/service/models", "/api/service/firmware", "/api/service/firmware/upload", "/api/service/diagnostic") else controller if self.path == "/api/control" else None
             if endpoint is None:
                 return self.reply({"error": "当前模式不提供此控制接口"}, 405)
             host = self.headers.get("Host", "")
@@ -162,21 +162,14 @@ def handler_for(store, config, controller=None, service_controller=None, connect
             token = config.get("control_token", "")
             if not token or not secrets.compare_digest(self.headers.get("X-Control-Token", ""), token):
                 return self.reply({"error": "页面控制凭据无效，请刷新本页"}, 403)
-            if connection and not connection.active and self.path == '/api/service/models/upload':
-                return self.reply({'error':'SSH 尚未连接，请在摄像头上方连接 Zero'}, 503)
-            if self.path in ("/api/service/models/upload", "/api/service/firmware/upload"):
+            if self.path == "/api/service/firmware/upload":
                 try:
                     if self.headers.get_content_type() != "application/octet-stream" or self.headers.get("Transfer-Encoding"):
                         raise ControlError("上传须提供文件及准确长度", 400)
                     size = int(self.headers.get("Content-Length", "-1"))
                     self.connection.settimeout(60)
-                    if self.path == '/api/service/firmware/upload':
-                        return self.reply(service_controller.prepare_firmware(unquote(self.headers.get('X-Firmware-Name','')),
-                            self.rfile,size,self.headers.get('X-Firmware-Client','')))
-                    if self.path == "/api/service/models/upload":
-                        password = self.headers.get("X-Sudo-Password")
-                        return self.reply(service_controller.import_model(unquote(self.headers.get("X-Model-Name", "")),
-                                          self.rfile, size, unquote(password) if password else None,slot=self.headers.get("X-Model-Slot")))
+                    return self.reply(service_controller.prepare_firmware(unquote(self.headers.get('X-Firmware-Name','')),
+                        self.rfile,size,self.headers.get('X-Firmware-Client','')))
 
                 except (ControlError, ValueError, OSError) as exc:
                     return self.reply({"error":str(exc)}, getattr(exc, "status", 503))
@@ -190,10 +183,11 @@ def handler_for(store, config, controller=None, service_controller=None, connect
             except (ValueError, OSError):
                 return self.reply({"error": "无法读取控制请求"}, 400)
             try:
-                if connection and not connection.active and self.path in ('/api/control', '/api/service', '/api/service/models', '/api/service/models/upload', '/api/service/connection'):
+                if connection and not connection.active and self.path in ('/api/control', '/api/service', '/api/service/models', '/api/service/connection', '/api/service/diagnostic'):
                     if self.path != '/api/service' or payload.get('command', {}).get('action') != 'forget-sudo-password':
                         return self.reply({'error':'SSH 尚未连接，请在摄像头上方连接 Zero'}, 503)
                 if self.path == "/api/service/models": return self.reply(service_controller.models())
+                if self.path == "/api/service/diagnostic": return self.reply(service_controller.diagnose(payload))
                 if self.path == "/api/service/connection": return self.reply(service_controller.connection())
                 if self.path == "/api/service/firmware": return self.reply(service_controller.firmware_info())
                 return self.reply(endpoint.handle(payload))
@@ -330,7 +324,7 @@ def main(argv=None):
     store, stop = Store(mode, control_enabled=control_enabled), threading.Event()
     from system_log import SystemLog
     store.system_log=SystemLog(ROOT/'logs')
-    store.system_log.add('中控启动',f'R17 v{VERSION} · {mode} · 本次会话全部 SSH 指令与输出')
+    store.system_log.add('中控启动',f'R17 v{VERSION} · {mode} · 默认显示启动四步、操作结果与失败原因')
     controller = Controller(store, args.ssh, args.robotd_socket) if control_enabled else None
     service_controller = None
     if mode == "service":
@@ -350,6 +344,8 @@ def main(argv=None):
         from raw_telemetry import Hub, raw_loop
         store.raw_hub = Hub()
         agent_config['hub'] = store.raw_hub
+        agent_config['robotd_restarting'] = store.robotd_restarting
+        agent_config['install_handoff'] = store.install_handoff
         config['raw_telemetry'] = True
         connection = Connection(store, config, controller, service_controller, raw_loop, agent_config)
     else:
@@ -380,11 +376,14 @@ def main(argv=None):
         pass
     finally:
         stop.set()
-        if connection: connection.close()
-        if controller: controller.close()
-        if service_controller: service_controller.close()
-        if server: server.server_close()
-        store.system_log.close()
+        store.connection_paused.set()
+        # One failed teardown must not retain another connection or the log file.
+        cleanups = [owner.close for owner in (service_controller, connection, controller) if owner]
+        if server: cleanups.append(server.server_close)
+        cleanups.extend((close_owned_processes, store.system_log.close))
+        for close in cleanups:
+            try: close()
+            except Exception as exc: print(f'退出清理未完成：{exc}', file=sys.stderr)
 
 
 if __name__ == "__main__":

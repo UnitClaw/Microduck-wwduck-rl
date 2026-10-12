@@ -22,16 +22,15 @@ class RecoveryTests(unittest.TestCase):
             with self.subTest(old_lb=old_lb):
                 data=tomllib.loads((ROOT/'packaging/robotd-profile.toml').read_text())
                 data['policy'].update(custom_only=True,action_scale=.63,head_lowpass=.5,legs_lowpass=.7,walk=base+'5c019c3d3d2c490947f21974f3947506/policy.onnx',stand=base+old_lb+'/policy.onnx')
-                skill=next(s for s in data['policy']['skill'] if s['name']=='stand_test')
-                skill['path']=base+old_lb+'/policy.onnx';skill['duration_s']=9.0
+                data['policy']['skill'].append({'name':'stand_test','path':base+old_lb+'/policy.onnx','duration_s':9.0})
+                data['pad'].update(lb='stand_test',rb='')
                 source=self.base/'old.toml';source.write_text(dumps(data));output=self.base/'new.toml'
                 subprocess.run([sys.executable,str(ROOT/'packaging/configure.py'),'--source',str(source),'--previous-overrides',str(ROOT/'packaging/robotd-profile.toml'),'--overrides',str(ROOT/'packaging/robotd-profile.toml'),'--output',str(output)],check=True,capture_output=True,text=True)
                 result=tomllib.loads(output.read_text());policy=result['policy']
                 self.assertEqual(policy['stand'],'none');self.assertIn('1cbf8730eadd75a5704332c9f3c10f60',policy['walk'])
                 self.assertEqual(policy['action_scale'],.63);self.assertEqual(policy['head_lowpass'],.5);self.assertEqual(policy['legs_lowpass'],.7)
-                skill=next(s for s in policy['skill'] if s['name']=='stand_test')
-                self.assertIn('a481d9f211f31d9476ab1a319fe362a2',skill['path']);self.assertEqual(skill['duration_s'],9.0);self.assertEqual(skill['params']['action_scale'],1.0)
-                self.assertEqual(result['pad'],data['pad']);self.assertEqual(self.cal.read_bytes(),self.raw_cal)
+                self.assertNotIn('stand_test',[s['name'] for s in policy['skill']])
+                self.assertEqual(result['pad'],{**data['pad'],'lb':'kick_left','rb':'kick_right'});self.assertEqual(self.cal.read_bytes(),self.raw_cal)
 
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.base=Path(self.temp.name)
@@ -70,7 +69,10 @@ class RecoveryTests(unittest.TestCase):
             systemctl.write_text('#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\np=Path('+repr(str(counter))+')\nif sys.argv[1]=="restart":\n n=int(p.read_text()) if p.exists() else 0\n p.write_text(str(n+1))\n sys.exit('+repr(outcomes)+'[n])\n')
             systemctl.chmod(0o755)
             journal=self.base/'journalctl';journal.write_text('#!/bin/sh\necho actual-startup-error\n');journal.chmod(0o755)
-            result=subprocess.run(['bash','-c',function+'\nrestart_service'],env={**os.environ,'PATH':str(self.base)+':'+os.environ['PATH']},capture_output=True,text=True)
+            # UART/startup readiness is tested separately; this fixture validates
+            # the finite restart and its one post-start readiness invocation.
+            (self.base/'runtime.py').write_text('import sys\nassert sys.argv[1:]==["verify-ready"]\n')
+            result=subprocess.run(['bash','-c','install_dir='+str(self.base)+'\n'+function+'\nrestart_service'],env={**os.environ,'PATH':str(self.base)+':'+os.environ['PATH']},capture_output=True,text=True)
             self.assertEqual(result.returncode,expected);self.assertEqual(int(counter.read_text()),1)
 
 if __name__=='__main__':unittest.main()

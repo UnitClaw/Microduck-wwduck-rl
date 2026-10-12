@@ -170,6 +170,6 @@
   "notes": "官方0.15.1对应训练流程；HD1910、官方骨架和820g适配。标定只作部署快照，不改变训练机械零位。",
   "version": 1,
   "task_overrides": {},
-  "training_action_scale": 0.9,
+  "training_action_scale": 1.0,
   "task": "Mjlab-VelStand-Rough-Backlash-MicroDuck"
 }

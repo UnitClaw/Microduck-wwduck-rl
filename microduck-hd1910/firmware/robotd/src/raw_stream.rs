@@ -159,7 +159,6 @@ impl Bus {
             loaded: ptr(&self.loaded_models),
             active: ptr(&self.active_model),
             skills: self.skills,
-            parameters: self.native.hd1910.servo_parameters,
         }
     }
 }
@@ -201,7 +200,6 @@ struct BusKey {
     loaded: usize,
     active: usize,
     skills: Skills,
-    parameters: Option<duck_control::hd1910_test::Parameters>,
 }
 #[derive(PartialEq, Eq)]
 struct MetaKey {
@@ -538,7 +536,6 @@ pub(crate) mod tests {
             temporary_gains_applied: true,
             restore_pending: false,
             registers_before_arm: Arc::from([]),
-            servo_parameters: None,
         };
         let native = feetech_snapshot::Snapshot {
             metadata: metadata.clone(),
@@ -546,7 +543,7 @@ pub(crate) mod tests {
             dynamic: Native {
                 torque_enabled: true,
                 torque_state_confirmed: Some(true),
-                gain_mode: "hd1910_bam_p_d20_mouth_p10_restore_on_relax",
+                gain_mode: "hd1910_model_contract_p_restore_on_relax_native_d_torque_limit_preserved",
                 sample_age_ms: Some(0),
                 imu_ready: true,
                 imu_sequence: Some(123),
@@ -771,20 +768,32 @@ pub(crate) mod tests {
         assert_eq!(reply["id"], "查询");
         assert!(!state.raw.subscribed());
         assert_eq!(state.raw.encoded.load(Ordering::Relaxed), 0);
-        // A legacy startup report is retired by a live snapshot; commissioning is
-        // still checked first by the existing typed branch in handle().
+        // A startup phase remains authoritative even if a numeric snapshot
+        // already exists. The control loop retires it after usable feedback.
         state
             .bus_status
             .store(Some(Arc::new(json!({"phase":"configuring_uart"}))));
         let line = crate::tests::ipc_response(
-            state,
+            state.clone(),
             json!({"jsonrpc":"2.0","id":2,"method":"robot.busStatus"}),
+        )
+        .await;
+        assert_eq!(
+            serde_json::from_str::<Value>(&line).unwrap()["result"],
+            json!({"phase":"configuring_uart"})
+        );
+        state.bus_status.store(None);
+        let line = crate::tests::ipc_response(
+            state.clone(),
+            json!({"jsonrpc":"2.0","id":3,"method":"robot.busStatus"}),
         )
         .await;
         assert_eq!(
             serde_json::from_str::<Value>(&line).unwrap()["result"],
             expected
         );
+        assert!(!state.raw.subscribed());
+        assert_eq!(state.raw.encoded.load(Ordering::Relaxed), 0);
     }
 
     async fn wire_record(reader: &mut BufReader<tokio::net::UnixStream>) -> Vec<u8> {

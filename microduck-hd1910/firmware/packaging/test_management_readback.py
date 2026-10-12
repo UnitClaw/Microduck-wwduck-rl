@@ -13,8 +13,7 @@ from system_log import SystemLog
 class ManagementReadbackTests(unittest.TestCase):
     def test_catalog_json_survives_stderr_and_same_warm_process_reads_again(self):
         catalog = {'models': [{'slot': 'walk', 'id': 'walk-id'}],
-                   'management_actions': ['advanced-parameters'],
-                   'default_servo_parameters': {'kp': 3, 'kd': 0, 'torque_limit': 681}}
+                   'management_actions': ['action-scale','joint-action-scale']}
         script = "import sys;print('startup diagnostic',file=sys.stderr);print(sys.argv[1])"
         with tempfile.TemporaryDirectory() as directory:
             log = SystemLog(directory)

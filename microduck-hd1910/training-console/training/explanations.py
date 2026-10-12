@@ -3,6 +3,23 @@ from .official_spec import RUNTIME_JOINTS
 
 # label | meaning | unit. Context below makes repeated fields specific to their term.
 TEXT = '''
+bidirectional|按指令双向滚动奖励 / Bidirectional rolling reward|开启后轮速奖励跟随前进或后退指令的方向；关闭时只奖励前向滚动。|开关
+flat_length|坡前平地长度 / Entry flat length|斜坡地形入口平台沿行进方向的长度。|m
+ramp_length_range|斜坡水平长度范围 / Ramp length range|每块坡面沿水平方向抽取的长度范围，不是坡面斜边长度。|m
+runout_length|坡后平地长度 / Runout length|斜坡末端缓冲平台的水平长度。|m
+spawn_on_ramp|起点进入坡面距离 / Spawn distance onto ramp|从坡面上端沿水平方向进入的距离，用于让重力产生滚动。|m
+deg_min|最低坡角 / Minimum ramp angle|地形难度最低端对应的下坡角度。|度
+deg_max|最高坡角 / Maximum ramp angle|地形难度最高端对应的下坡角度。|度
+thickness|地形实体厚度 / Terrain thickness|平台和斜坡碰撞实体的厚度。|m
+speed_range|初始滚动速度范围 / Rolling entry speed|复位时同步设置机身和滑轮速度，轮速按线速度除以轮半径计算。|m/s
+cap_speed|滚动奖励速度上限 / Glide reward cap|轮子滚动折算出的线速度超过此值后，奖励不再增加；不直接限制真实速度。|m/s
+min_height|最低允许世界高度 / Minimum world height|根部世界高度低于此值时终止回合；下坡任务按最低坡尾位置留余量。|m
+rate_max|旋转目标峰值 / Peak spin rate|相位轨迹中的目标机身偏航角速度峰值，不是动作或电机速度硬限位。|rad/s
+accel_end|加速阶段结束相位 / Acceleration end phase|旋转动作从零加速至目标峰值的阶段终点，按一个周期的比例表示。|相位0到1
+brake_end|制动阶段结束相位 / Braking end phase|旋转动作目标角速度减至零的阶段终点，按一个周期的比例表示。|相位0到1
+launch_scale|启动段漂移惩罚倍率 / Launch drift penalty scale|只在启动加速阶段乘到水平漂移惩罚上；之后恢复完整惩罚。|倍率
+omega_scale|轮速差奖励饱和尺度 / Wheel differential scale|左右轮角速度差经此尺度归一化后进入tanh奖励，控制奖励饱和速度。|rad/s
+joint_bases|左右关节配对名称 / Paired joint bases|按同一关节类型配对左右腿，用于计算旋转中的反向对称奖励。|关节类型列表
 target_height_min|最低目标重心高度 / Minimum target CoM height|高度范围奖励的下限；读取躯干根刚体相对地形原点的高度，低于本值会受罚。|m
 target_height_max|最高目标重心高度 / Maximum target CoM height|高度范围奖励的上限；高于本值会受罚，处在上下限之间得到正奖励。|m
 action_name|动作项名称 / Action term name|选择要读取实际处理后目标角的动作项；超限奖励使用它检查目标是否超过关节硬限位。|名称
@@ -316,7 +333,7 @@ TERM={
 'projected_gravity':('投影重力','把世界重力方向表达在机器人坐标中，用来判断倾斜','无量纲'),
 'joint_pos':('相对Home的关节角','各策略关节角减去其默认Home角','rad'),'joint_vel':('关节角速度','各策略关节转动的快慢','rad/s'),
 'actions':('上一轮动作','上一轮策略的动作向量，供网络了解自己刚才做了什么','动作单位'),
-'command':('行走指令','目标前后速度、横向速度、转向角速度','m/s、rad/s'),
+'command':('任务三槽指令','行走任务为前后/横向速度与转向角速度；轮滑类命令的具体含义由所选训练任务定义。','按任务协议'),
 'head_command':('头部姿态指令','目标头部姿态命令，供策略跟随','rad'),
 'body_command':('身体姿态指令','目标身体位移与转角','m、rad'),
 'foot_height':('脚离地高度','脚相对地面的高度','m'),'foot_air_time':('脚离地时间','脚连续离地的时长','s'),
@@ -349,7 +366,7 @@ def context(path):
  if p[:2]==['env','events']:return '随机化/复位／'+EVENT.get(p[2],p[2])
  if p[:2]==['env','curriculum']:return '课程／'+CURR.get(p[2],p[2])
  if p[:2]==['env','commands']:return '指令／'+{'twist':'行走速度','head_pose':'头部姿态','body_pose':'身体姿态'}.get(p[2],p[2])
- if p[:2]==['env','terminations']:return '结束回合／'+{'time_out':'时间用尽','fell_over':'摔倒','out_of_terrain_bounds':'超出地形','nan_state':'异常数值'}.get(p[2],p[2])
+ if p[:2]==['env','terminations']:return '结束回合／'+{'time_out':'时间用尽','fell_over':'摔倒','out_of_terrain_bounds':'超出地形','nan_state':'异常数值','trunk_too_low':'躯干过低',}.get(p[2],p[2])
  if p[:2]==['agent','actor']:return '策略网络（输出动作）'
  if p[:2]==['agent','critic']:return '价值网络（评价状态）'
  if p[:2]==['agent','algorithm']:return 'PPO学习算法'

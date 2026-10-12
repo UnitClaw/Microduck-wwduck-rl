@@ -8,7 +8,7 @@ obs_groups:
   - critic
 save_interval: 1000
 experiment_name: microduck_roulade
-run_name: console_20261004_132912_c5e62d
+run_name: console_20261007_232135_76625d
 logger: tensorboard
 wandb_project: mjlab_microduck
 wandb_tags: !!python/tuple []

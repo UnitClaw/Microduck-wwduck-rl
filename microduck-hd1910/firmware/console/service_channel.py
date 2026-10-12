@@ -8,7 +8,7 @@ import sys
 import threading
 
 from ssh_connect import ssh_command, ssh_process_options
-from process_lifecycle import retire_process
+from process_lifecycle import retire_process, spawn_process
 
 
 class ServiceChannel:
@@ -25,6 +25,10 @@ class ServiceChannel:
     def warm(self):
         try:
             with self.lock: self._ensure()
+            if self.log:
+                reply=self.request({'kind':'manage','argv':['journalctl','-b','-u','robotd.service','-n','80','--no-pager','-o','cat']},timeout=15)
+                for line in (reply.get('stdout','')+'\n'+reply.get('stderr','')).splitlines():
+                    if line.strip():self.log.add('robotd 本次开机日志',line)
         except Exception:
             pass  # The next explicit operation reports connection failures.
 
@@ -38,7 +42,7 @@ class ServiceChannel:
         command = ['python3' if self.target else sys.executable, '-u', '-c', source, self.path, '--stream']
         argv = ssh_command(self.target) + [shlex.join(command)] if self.target else command
         if self.log: self.log.add('服务 SSH',f'建立持久连接 {self.target or '本机'} → service_rpc / {self.path}')
-        proc = subprocess.Popen(argv, **ssh_process_options(self.target), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = spawn_process(argv, **ssh_process_options(self.target), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         def drain():
             try:
                 for line in proc.stderr:

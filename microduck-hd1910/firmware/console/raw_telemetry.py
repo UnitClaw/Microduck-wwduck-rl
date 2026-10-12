@@ -4,6 +4,7 @@ The PC keeps a 10 Hz compatibility mirror for existing maintenance checks. Displ
 adaptation and the bounded recording live in the browser; no observer runs on Zero.
 """
 import base64
+from contextlib import ExitStack
 import hashlib
 import json
 import math
@@ -15,7 +16,8 @@ import threading
 import time
 
 from telemetry import TTL
-from ssh_connect import SSHConnectError
+from startup_gate import receive as startup_receive, ready as startup_ready, StartupFailure
+from ssh_connect import SSHConnectError, failure_message
 
 MAX_FRAME = 8 * 1024 * 1024
 PROTOCOL = 'r17-telemetry'
@@ -149,7 +151,12 @@ class Hub:
     def event(self, event, generation=None):
         with self.lock:
             if generation is not None and generation != self.generation: return
-            self._publish(1, json.dumps({'event':event}, ensure_ascii=False, allow_nan=False).encode())
+            payload=json.dumps({'event':event}, ensure_ascii=False, allow_nan=False).encode()
+            if event.get('channel')=='robotd_stream':
+                self.cache.pop(1,None)
+                if not (event.get('data') or {}).get('preserve_startup'):self.cache.pop('startup',None)
+            if event.get('channel')=='startup':self.cache['startup']=payload
+            self._publish(1, payload)
     def subscribe(self):
         client = queue.Queue(maxsize=128)
         with self.lock:
@@ -159,6 +166,7 @@ class Hub:
             for kind in (1, 3):
                 if kind in self.cache:
                     client.put_nowait((2, self.cache[kind]))
+            if 'startup' in self.cache:client.put_nowait((1,self.cache['startup']))
             self.clients.add(client)
         return client
     def unsubscribe(self, client):
@@ -190,10 +198,26 @@ def line(stream, stop, limit=262144):
     raise ValueError('IPC 消息超出上限')
 
 
+def endpoint_error(endpoint, exc, target):
+    """A reset on an authenticated forward is an endpoint failure, not a login."""
+    detail = str(exc)
+    if isinstance(exc, SSHConnectError) or isinstance(exc, TimeoutError) and detail.startswith('SSH 接口连接超时：'):
+        return {'error': failure_message(detail, target) + '；原始错误：' + detail,
+                'error_source': 'ssh'}
+    label = 'robotd' if endpoint == 'robotd' else '测距服务'
+    return {'error': label + ' 数据连接失败；原始错误：' + detail,
+            'error_source': endpoint}
+
+
 def raw_loop(target, config, emit, stop, system_log=None, connection_pause=None):
     from socket_transport import open_remote_socket
     hub = config['hub']
     generation = hub.generation
+    handoff = config.get('install_handoff')
+    def transport_status(endpoint, connected):
+        # open_remote_socket returns only after OpenSSH authenticated and set up
+        # its listener. Report lifecycle transitions, with no extra polling.
+        emit({'channel':'ssh_transport', 'data':{'endpoint':endpoint, 'connected':connected}})
     def tof_loop():
         refreshed = False
         while not stop.is_set():
@@ -202,6 +226,7 @@ def raw_loop(target, config, emit, stop, system_log=None, connection_pause=None)
                 continue
             try:
                 with open_remote_socket(target, config['tofd_socket'], system_log, stop=stop) as stream:
+                    transport_status('tof', True)
                     stream.settimeout(.5)
                     stream.sendall(b'{"jsonrpc":"2.0","id":1,"method":"tof.stream","params":{}}\n')
                     # A buffered reader preserves a partial line across socket
@@ -245,41 +270,82 @@ def raw_loop(target, config, emit, stop, system_log=None, connection_pause=None)
                         if len(pending) > 262144: raise ValueError('测距帧过长')
             except (ValueError, OSError, EOFError, SSHConnectError) as exc:
                 if not stop.is_set():
-                    event = {'channel':'tof', 'error':str(exc)}
+                    event = {'channel':'tof', **endpoint_error('tof', exc, target)}
                     emit(event); hub.event(event, generation)
+            finally:
+                transport_status('tof', False)
             stop.wait(2)
     worker = threading.Thread(target=tof_loop, daemon=True)
     worker.start()
     try:
         while not stop.is_set():
+            if handoff and not handoff.wait(stop):break
             if connection_pause is not None and connection_pause.is_set():
                 stop.wait(.2)
                 continue
+            expected_close=False
+            stream=None
             try:
-                with open_remote_socket(target, config['robotd_socket'], system_log, stop=stop) as stream:
-                    stream.settimeout(.5)
-                    stream.sendall(b'{"jsonrpc":"2.0","id":1,"method":"robot.rawSubscribe","params":{}}\n')
-                    response = json_object(line(stream, stop))
-                    result = response.get('result')
-                    if not isinstance(result, dict): result = {}
-                    if response.get('id') != 1 or response.get('error') or result.get('accepted') is not True or result.get('schema') != 'r17.raw.v1' or result.get('framing') != 'u32le':
-                        raise ValueError('固件未提供 R17 原始遥测流，请安装同版固件')
-                    mirror = Mirror(emit)
-                    while not stop.is_set() and not (connection_pause and connection_pause.is_set()):
-                        header = exact(stream, 4, stop, connection_pause)
-                        size = struct.unpack('<I', header)[0]
-                        if not 1 < size <= MAX_FRAME: raise ValueError('原始遥测帧长度无效')
-                        frame = header + exact(stream, size, stop, connection_pause)
-                        mirror.accept(frame)
-                        hub.raw(frame, generation)
-            except (ValueError, OSError, EOFError, SSHConnectError) as exc:
-                if not stop.is_set() and not (connection_pause is not None and connection_pause.is_set()):
+                with ExitStack() as early:
+                    saved_report=handoff.ready_report if handoff else None
+                    event={'channel':'robotd_stream','data':{'status':'waiting','preserve_startup':startup_ready(saved_report or {})}}
+                    emit(event);hub.event(event,generation)
+                    if not startup_ready(saved_report or {}):
+                        stream=early.enter_context(open_remote_socket(target,config['robotd_socket'],system_log,stop=stop))
+                        if handoff and not handoff.attach(stream):continue
+                        transport_status('robotd', True)
+                        def publish_startup(report):
+                            event={'channel':'startup','data':report}
+                            emit(event);hub.event(event,generation)
+                        try:
+                            startup_receive(stream,publish_startup,cancelled=lambda:stop.is_set() or bool(handoff and handoff.paused) or bool(connection_pause and connection_pause.is_set()))
+                        finally:
+                            if handoff:handoff.detach(stream)
+                    with open_remote_socket(target, config['robotd_socket'], system_log, stop=stop) as stream:
+                        # Acquire the raw stream before releasing the startup stream,
+                        # preserving the existing authenticated SSH forward.
+                        early.close()
+                        if handoff and not handoff.attach(stream):continue
+                        transport_status('robotd', True)
+                        stream.settimeout(.5)
+                        stream.sendall(b'{"jsonrpc":"2.0","id":1,"method":"robot.rawSubscribe","params":{}}\n')
+                        response = json_object(line(stream, stop))
+                        result = response.get('result')
+                        if not isinstance(result, dict): result = {}
+                        if response.get('id') != 1 or response.get('error') or result.get('accepted') is not True or result.get('schema') != 'r17.raw.v1' or result.get('framing') != 'u32le':
+                            raise ValueError('固件未提供 R17 原始遥测流，请安装同版固件')
+                        if handoff:handoff.connected()
+                        if system_log:system_log.add('实时数据连接','成功 · robotd 四步完成，原始数据订阅已接受')
+                        mirror = Mirror(emit)
+                        while not stop.is_set() and not (connection_pause and connection_pause.is_set()):
+                            header = exact(stream, 4, stop, connection_pause)
+                            size = struct.unpack('<I', header)[0]
+                            if not 1 < size <= MAX_FRAME: raise ValueError('原始遥测帧长度无效')
+                            frame = header + exact(stream, size, stop, connection_pause)
+                            mirror.accept(frame)
+                            hub.raw(frame, generation)
+            except (ValueError, OSError, EOFError, SSHConnectError, StartupFailure) as exc:
+                restarting=config.get('robotd_restarting')
+                expected_close=bool(handoff and handoff.paused) or (not (handoff and handoff.recovery_pending) and isinstance(exc,(EOFError,OSError)) and not isinstance(exc,SSHConnectError) and restarting is not None and restarting.is_set())
+                if expected_close:
+                    if system_log and not (handoff and handoff.paused):system_log.add('服务交接','成功 · 旧数据连接已关闭，等待新服务启动状态')
+                elif not stop.is_set() and not (connection_pause is not None and connection_pause.is_set()):
                     if system_log: system_log.add('原始遥测', str(exc))
                     for channel in TTL:
-                        if channel == 'tof': continue
-                        event = {'channel':channel, 'error':str(exc)}
+                        if channel in {'tof','startup'}: continue
+                        event = {'channel':channel, **endpoint_error('robotd', exc, target)}
                         emit(event); hub.event(event, generation)
-            stop.wait(2)
+                    if isinstance(exc,StartupFailure) and handoff:
+                        handoff.begin()
+                    if handoff and handoff.failed_attempt() and system_log:
+                        system_log.add('服务交接','安装后数据连接失败；已停止自动尝试，请点击 SSH 连接重新连接。原因：'+str(exc))
+            finally:
+                if handoff and stream is not None:handoff.detach(stream)
+                if expected_close:
+                    event={'channel':'robotd_stream','data':{'status':'waiting'}}
+                    emit(event);hub.event(event,generation)
+                transport_status('robotd', False)
+            if not (handoff and handoff.paused):stop.wait(2)
     finally:
         worker.join(timeout=1)
 

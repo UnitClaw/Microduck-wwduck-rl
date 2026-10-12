@@ -50,22 +50,219 @@ def hardware_actuator(backlash=False):
 
 def report_friction_state(env, report):
     """One readback after the first real step; never reset or sample the env."""
+    import torch
+    import mujoco
     from mjlab_microduck.actuator.friction_dr_bam import FrictionDRBamActuator
-    event = env.event_manager.get_term_cfg('randomize_joint_friction')
-    lo, hi = event.params['scale_range']
-    asset_name = getattr(event.params.get('asset_cfg'), 'name', 'robot')
-    actuators = env.scene[asset_name].actuators
+    plain = importlib.import_module((__package__+'.' if __package__ else '')+'recipe').plain
+
+    def stats(values, item_limit=None):
+        # Indexing the mjlab bridge yields a real Tensor; do not interpret the
+        # wrapper repr or compile-time mj_model values as per-world DR values.
+        values = values.detach()
+        finite = bool(torch.isfinite(values).all())
+        items = values if item_limit is None else values[:, :item_limit]
+        result = {'shape': list(values.shape), 'finite': finite,
+                'min': float(values.min().item()) if values.numel() and finite else None,
+                'max': float(values.max().item()) if values.numel() and finite else None,
+                'per_item_min': items.amin(dim=0).cpu().tolist() if items.numel() and finite else [],
+                'per_item_max': items.amax(dim=0).cpu().tolist() if items.numel() and finite else []}
+        if item_limit is not None:
+            result.update(total_count=int(values.shape[1]), sample_count=int(items.shape[1]),
+                          truncated=items.shape[1] < values.shape[1])
+        return result
+
+    def unavailable(exc):
+        return {'available': False, 'reason': type(exc).__name__+': '+str(exc)[:240]}
+
+    def value_range(item):
+        return ('%.6g～%.6g' % (item['min'], item['max'])
+                if item['min'] is not None and item['max'] is not None else '非有限或为空')
+
+    data = {'schema': 'microduck-friction-readback-v1', 'num_envs': int(env.num_envs),
+            'step': int(env.common_step_counter), 'motor': [],
+            'scope': 'one post-step snapshot; not long-run randomization coverage',
+            'configured_events': {}}
+    for name in ('randomize_joint_friction', 'foot_friction', 'randomize_wheel_friction'):
+        if name in env.cfg.events and env.cfg.events[name] is not None:
+            data['configured_events'][name] = plain(env.event_manager.get_term_cfg(name))
+        else:
+            data['configured_events'][name] = None
+    event = (env.event_manager.get_term_cfg('randomize_joint_friction')
+             if data['configured_events']['randomize_joint_friction'] is not None else None)
+    asset_name = getattr(event.params.get('asset_cfg'), 'name', 'robot') if event else 'robot'
+    robot = env.scene[asset_name]
+    actuators = robot.actuators
     for index, actuator in enumerate(actuators):
         if not isinstance(actuator, FrictionDRBamActuator):
             report('log', line='[摩擦随机化读回] 执行器 %d 未被官方事件识别。' % index)
+            data['motor'].append({'actuator_index': index, 'available': False,
+                                  'reason': '执行器不是FrictionDRBamActuator'})
             continue
-        values = actuator.friction_scale.detach()
-        minimum, maximum = float(values.min().item()), float(values.max().item())
-        report('log', line='[摩擦随机化读回] 官方事件已识别飞特执行器 %d；%d 个环境；任务范围 %.4f～%.4f；实际倍率 %.4f～%.4f。' %
-               (index, int(values.shape[0]), lo, hi, minimum, maximum))
+        try:
+            scale = stats(actuator.friction_scale)
+            dof_ids = robot.indexing.joint_v_adr[actuator.target_ids]
+            friction = stats(env.sim.model.dof_frictionloss[:, dof_ids])
+            item = {'actuator_index': index, 'available': True,
+                    'joint_names': list(actuator.target_names),
+                    'configured_scale_range': list(event.params['scale_range']) if event else None,
+                    'friction_scale': scale, 'actual_dof_frictionloss_nm': friction}
+            data['motor'].append(item)
+            if event and scale['finite'] and scale['min'] is not None:
+                lo, hi = event.params['scale_range']
+                report('log', line='[摩擦随机化读回] 官方事件已识别飞特执行器 %d；%d 个环境；任务范围 %.4f～%.4f；实际倍率 %.4f～%.4f。' %
+                       (index, int(scale['shape'][0]), lo, hi, scale['min'], scale['max']))
+            report('log', line='[电机摩擦读回] %s；实际摩擦预算 %s N·m；这是本步预算，不是随机化倍率。' %
+                   (friction['shape'], value_range(friction)))
+        except Exception as exc:
+            data['motor'].append({'actuator_index': index, **unavailable(exc)})
+            report('log', line='[电机摩擦读回] 不可用：'+data['motor'][-1]['reason'])
+
+    def geom_readback(ids, detail_limit=None):
+        if not ids:
+            raise ValueError('配置范围内没有碰撞面')
+        model = env.sim.mj_model
+        ids = sorted(set(ids))
+        values = env.sim.model.geom_friction[:, ids, :]
+        detail_ids = ids if detail_limit is None else ids[:detail_limit]
+        return {'available': True, 'geom_count': len(ids), 'total_count': len(ids),
+                'sample_count': len(detail_ids), 'truncated': len(detail_ids) < len(ids),
+                'scope': 'geom_coefficients_after_DR; not mixed contact coefficients or contact forces',
+                'statistics_scope': 'shape and min/max cover all geoms; per_item and metadata may be truncated',
+                'coefficients': stats(values, detail_limit), 'sliding': stats(values[:, :, 0], detail_limit),
+                'geoms': [{'name': mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, i),
+                           'body': mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, int(model.geom_bodyid[i])),
+                           'condim': int(model.geom_condim[i]), 'priority': int(model.geom_priority[i])}
+                          for i in detail_ids]}
+
+    try:
+        sensor = env.scene['feet_ground_contact']
+        primary = sensor.cfg.primary
+        entity = env.scene[primary.entity or 'robot']
+        # Follow the actual contact sensor's name selector, including excludes.
+        names = sensor._resolve_primary_names(env.scene.entities, primary)
+        if primary.mode == 'geom':
+            local_ids, _ = entity.find_geoms([re.escape(name) for name in names])
+            ids = entity.indexing.geom_ids[local_ids].cpu().tolist()
+        else:
+            local_ids, _ = entity.find_bodies([re.escape(name) for name in names])
+            bodies = set(entity.indexing.body_ids[local_ids].cpu().tolist())
+            model = env.sim.mj_model
+            ids = []
+            for geom in entity.indexing.geom_ids.cpu().tolist():
+                body = int(model.geom_bodyid[geom])
+                if primary.mode == 'subtree':
+                    while body and body not in bodies:
+                        body = int(model.body_parentid[body])
+                if body in bodies:
+                    ids.append(geom)
+        model = env.sim.mj_model
+        ids = [i for i in ids if model.geom_contype[i] or model.geom_conaffinity[i]]
+        data['foot_or_wheel_contact'] = geom_readback(ids)
+        sliding = data['foot_or_wheel_contact']['sliding']
+        report('log', line='[脚/轮接触面读回] %d个碰撞面；滑动摩擦系数 %s；实际%s，配置事件另记。' %
+               (len(ids), value_range(sliding), sliding['shape']))
+    except Exception as exc:
+        data['foot_or_wheel_contact'] = unavailable(exc)
+        report('log', line='[脚/轮接触面读回] 不可用：'+data['foot_or_wheel_contact']['reason'])
+
+    try:
+        terrain = env.scene.terrain
+        data['terrain_contact'] = geom_readback(terrain.indexing.geom_ids.cpu().tolist(), detail_limit=32)
+    except Exception as exc:
+        data['terrain_contact'] = unavailable(exc)
+
+    try:
+        wheel_names = [name for name in robot.joint_names
+                       if name.startswith('passive_') and name.endswith('wheel')]
+        if wheel_names:
+            local_ids, names = robot.find_joints([re.escape(name) for name in wheel_names])
+            dof_ids = robot.indexing.joint_v_adr[local_ids]
+            actual = stats(env.sim.model.dof_frictionloss[:, dof_ids])
+            data['wheel_bearings'] = {'available': True, 'joint_names': list(names),
+                                      'actual_frictionloss_nm': actual}
+            report('log', line='[轮轴阻力读回] %d个被动轮；实际 %s N·m，%s；与地面摩擦系数分开记录。' %
+                   (len(names), value_range(actual), actual['shape']))
+        else:
+            data['wheel_bearings'] = {'available': True, 'joint_names': [],
+                                      'actual_frictionloss_nm': None, 'reason': '该模型没有被动轮'}
+    except Exception as exc:
+        data['wheel_bearings'] = unavailable(exc)
+    report('friction_readback', data=data)
+
+
+def _repair_roller_standup_servo_indices(cfg, req):
+    """Translate this pinned recipe's raw roller indices into its reward view.
+
+    Upstream's three pose rewards now call ``_servo_joint_pos`` (14 values),
+    but RollerStandUp still supplies indices from the 18-joint wheel model.
+    Only those reward functions consume servo indices. Reset/event indices
+    still address the complete articulation and must remain untouched.
+    """
+    if req.get('task') != 'Mjlab-RollerStandUp-Flat-MicroDuck':
+        return
+    previous = getattr(cfg, '_studio_adapter_corrections', None)
+    if previous:
+        req['_adapter_corrections'] = copy.deepcopy(previous)
+        return
+
+    import mujoco
+    spec = cfg.scene.entities['robot'].spec_fn()
+    raw_names = [joint.name for joint in spec.joints
+                 if joint.type != mujoco.mjtJoint.mjJNT_FREE]
+    servo_names = [name for name in raw_names if not name.startswith('passive_')]
+    if len(raw_names) != 18 or len(servo_names) != 14 or len(set(raw_names)) != 18:
+        raise ValueError('RollerStandUp索引校正要求官方14关节加4被动轮模型；当前关节布局已改变。')
+    servo_index = {name: index for index, name in enumerate(servo_names)}
+
+    def remap(index):
+        if type(index) is not int or not 0 <= index < len(raw_names):
+            raise ValueError('RollerStandUp奖励包含无效原模型关节索引：'+str(index))
+        name = raw_names[index]
+        if name not in servo_index:
+            raise ValueError('RollerStandUp伺服奖励不能引用被动轮：'+name)
+        return servo_index[name]
+
+    consumers = {'pose_target_match', 'pose_l1_penalty', 'standing_composite_score'}
+    changes = []
+    # Prepare every change before committing, so an unexpected passive target
+    # cannot leave half of the recipe corrected.
+    updates = []
+    for name, term in cfg.rewards.items():
+        if term is None or getattr(term.func, '__name__', '') not in consumers:
+            continue
+        if getattr(term.func, '__module__', '') != 'mjlab_microduck.tasks.mdp':
+            continue
+        params = copy.deepcopy(term.params)
+        before = {key: copy.deepcopy(params[key]) for key in ('joint_indices', 'target_overrides')
+                  if key in params}
+        if params.get('joint_indices') is not None:
+            params['joint_indices'] = [remap(index) for index in params['joint_indices']]
+        if params.get('target_overrides') is not None:
+            params['target_overrides'] = {remap(index): value
+                                          for index, value in params['target_overrides'].items()}
+        after = {key: copy.deepcopy(params[key]) for key in before}
+        if before != after:
+            changes.append({'reward': name, 'function': term.func.__name__,
+                            'before': before, 'after': after})
+            updates.append((term, params))
+    if not changes:
+        return
+    for term, params in updates:
+        term.params = params
+    receipt = {'schema': 'microduck-roller-servo-index-correction-v1',
+               'task': req['task'], 'source_revision': REVISION,
+               'source_joint_names': raw_names, 'servo_joint_names': servo_names,
+               'changes': changes,
+               'scope': 'reward_indices_only; weights, reset/events and upstream files unchanged'}
+    cfg._studio_adapter_corrections = [receipt]
+    req['_adapter_corrections'] = copy.deepcopy(cfg._studio_adapter_corrections)
+    module = importlib.import_module((__package__+'.' if __package__ else '')+'event_protocol')
+    module.emit('log', line='[官方索引适配] RollerStandUp的3个姿态奖励按关节名转换为14维伺服序；右腿9～13，颈头5～8。奖励权重与倒地复位不变。')
+    module.emit('adapter_correction', data=receipt)
 
 
 def adapt_robot(cfg, agent, req):
+    _repair_roller_standup_servo_indices(cfg, req)
     robot = copy.deepcopy(cfg.scene.entities['robot'])
     from mjlab_microduck.actuator.friction_dr_bam import BacklashEncoderBamActuatorCfg
     backlash = any(isinstance(a, BacklashEncoderBamActuatorCfg) for a in robot.articulation.actuators)

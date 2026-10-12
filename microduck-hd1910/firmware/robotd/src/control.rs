@@ -626,6 +626,14 @@ impl Controller {
         } else {
             None
         };
+        // Each roller network owns its exported runtime scale/filter. Crouch's
+        // deployment EMA differs from its unfiltered training data; switching back
+        // to swizzle or spin must immediately recover those models' coefficients.
+        let execution = uniform.or_else(|| contract.and_then(|c| c.roller_execution));
+        if self.last_net != Some(net) && contract.is_some_and(|c| c.roller_execution.is_some()) {
+            self.previous = None;
+            self.contract_previous = None;
+        }
         let body_padding = contract.is_some_and(|c| c.body_padding);
         let effective =
             contract.map_or(effective, |c| c.clamp_command(effective, net == Net::Walk));
@@ -701,7 +709,7 @@ impl Controller {
         // The student's declared training mapping remains its no-override baseline.
         // A separately declared uniform profile is the user's explicit runtime choice:
         // walking, holding and recovery use the same arithmetic, without a phase gate.
-        let base_scale = uniform.map_or_else(
+        let base_scale = execution.map_or_else(
             || {
                 if unfiltered_joint_walk {
                     training_action_scale
@@ -711,7 +719,7 @@ impl Controller {
             },
             |(scale, _, _)| scale,
         );
-        let (head_filter, legs_filter) = uniform.map_or_else(
+        let (head_filter, legs_filter) = execution.map_or_else(
             || {
                 if target_filter_passthrough {
                     (1.0, 1.0)
@@ -958,3 +966,7 @@ mod selftrained_checks;
 #[cfg(test)]
 #[path = "joint_uniform_tests.rs"]
 mod joint_uniform_tests;
+
+#[cfg(test)]
+#[path = "unfiltered_skill_tests.rs"]
+mod unfiltered_skill_tests;

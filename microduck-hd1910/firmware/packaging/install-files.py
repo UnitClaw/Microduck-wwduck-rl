@@ -11,7 +11,11 @@ import tempfile
 
 RETIRED={'model_cleanup.py','upgrade.py','upgrade.sh','toml_config.py',
          'robotd-ft5-overrides.toml','R17-FIX1.zh-CN.md','R17-FIX2.zh-CN.md',
-         'prepare-models.py','release_check.py'}
+         'prepare-models.py','release_check.py','advanced_parameters.py','model_preflight.py'}
+
+def file_sha256(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream,'sha256').hexdigest()
 
 def owned_files(installed):
     owned=set()
@@ -73,6 +77,20 @@ def execution_refresh(bundle, installed):
         previous=json.loads((installed/'management-profile.json').read_text()).get('requested_model_replacement',{})
     except (OSError,ValueError,AttributeError):previous={}
     if previous.get('id')==ident and previous.get('execution_profile_sha256')==expected:return set()
+    current=installed/name
+    if current.is_file():
+        # v148 migration: update only the untouched former .9/.5/.7 Walk default.
+        # Any operator-saved model-bound scale must survive later upgrades.
+        try:
+            raw=current.read_bytes();old=json.loads(raw);new=json.loads(source.read_bytes())
+            unchanged_default=(previous.get('id')==ident
+                and hashlib.sha256(raw).hexdigest()==previous.get('execution_profile_sha256')
+                and old=={**new,'action_scale':.9}
+                and old.get('head_lowpass')==.5 and old.get('legs_lowpass')==.7)
+        except (OSError,ValueError,TypeError,AttributeError):unchanged_default=False
+        if not unchanged_default:return set()
+    elif previous.get('id')==ident and previous.get('execution_profile_sha256'):
+        return set()
     return {name}
 
 def cleanup(bundle, installed, replace_models=False, previous_owned=None):
@@ -133,7 +151,12 @@ def install(bundle, installed, replace_models=False):
             if any(parent.is_symlink() for parent in (target,*target.parents) if parent.is_relative_to(installed)):
                 raise ValueError('安装目标含符号链接：'+name)
             prepared=stage/rel;prepared.parent.mkdir(parents=True,exist_ok=True)
+            expected=file_sha256(source)
             shutil.copy2(source,prepared)
+            # Complete staging is required before the first rename. A short
+            # copy must not install a truncated executable or mapped library.
+            if file_sha256(prepared)!=expected:
+                raise ValueError('安装暂存文件 SHA256 不匹配，未替换已安装文件：'+name)
         # Keep ownership metadata last so an interrupted install retains the
         # previous inventory for cleanup on the next attempt.
         payload=[name for name in names if name not in {'install-files.json','SHA256SUMS'}]
@@ -148,7 +171,7 @@ def install(bundle, installed, replace_models=False):
         cleanup(bundle,installed,replace_models=replace_models,previous_owned=previous_owned)
         for name in ('SHA256SUMS','install-files.json'):
             os.replace(stage/name,installed/name)
-    print('服务文件已完成逐文件原子替换；'+('模型已按明确请求重置。' if replace_models else '已保留导入模型。'),flush=True)
+    print('服务文件已完成逐文件原子替换；'+('模型已按明确请求重置。' if replace_models else '已保留当前模型文件。'),flush=True)
     if refreshed:print('已恢复随包模型的损坏合同或更新修正版合同：'+', '.join(sorted(refreshed)),flush=True)
     if executions:print('已应用联合模型全程统一的缩放与滤波配置；原模型权重与训练数据保留。',flush=True)
 

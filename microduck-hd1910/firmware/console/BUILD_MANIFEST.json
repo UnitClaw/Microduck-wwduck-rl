@@ -1,11 +1,11 @@
 {
-  "console_version": "1.0.146",
+  "console_version": "1.0.164",
   "official_baseline": "1fa84386f07884e27866411bc1ba166977bced95",
-  "service_build": "1fa8438-feetech-ft6-control.29",
+  "service_build": "1fa8438-feetech-ft6-control.40",
   "hardware_verified": false,
   "hardware_base": "R17 v1.0.95",
-  "service_package_sha256": "9cecf03286c608d750cee402d6a977870ba1d92a97b37cb5274abcdefd6c459a",
-  "source_distribution": "Microduck-Source-R17-v1.0.146.tar.gz",
+  "service_package_sha256": "cba2a3d1fa486713c72f1155fed42d102c2fe3aea9bb3aaf0aad337e046b9afd",
+  "source_distribution": "Microduck-Source-R17-V163-control40-compiled.tar.gz",
   "models": {
     "walk": {
       "id": "1cbf8730eadd75a5704332c9f3c10f60",
@@ -22,7 +22,7 @@
         "schema": "microduck-runtime-execution/v1",
         "model_sha256": "1cbf8730eadd75a5704332c9f3c10f60bfa9412135b907831c9dbd731ce1795f",
         "mode": "uniform",
-        "action_scale": 0.9,
+        "action_scale": 1.0,
         "head_lowpass": 0.5,
         "legs_lowpass": 0.7
       },
@@ -34,238 +34,93 @@
       "task": "Mjlab-SitStand-Flat-MicroDuck"
     },
     "ground_pick": {
-      "id": "2b69fa681ed06f7ded9e2a2d12ba5c67",
-      "sha256": "2b69fa681ed06f7ded9e2a2d12ba5c6776ec87308ac4a299e4b8196199c17f24",
-      "task": "Mjlab-GroundPick-Flat-MicroDuck"
+      "id": "b14e3a8b56ddbb8d2d831e727774a168",
+      "sha256": "b14e3a8b56ddbb8d2d831e727774a168c8f5b00194e3e431ae7593a840498c69",
+      "task": "Mjlab-GroundPick-Flat-Backlash-MicroDuck",
+      "epochs": 10000,
+      "source_iteration": 9999,
+      "num_envs": 4096,
+      "base_action_scale": 1.0,
+      "head_alpha": 1.0,
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "deployment_verified": false,
+      "source_policy_directory": "policies/ground_pick"
     },
     "roulade": {
-      "id": "8fdaf12c7478a8314a63647a466bfa34",
-      "sha256": "8fdaf12c7478a8314a63647a466bfa34ba1f15a7d9a5cb3b6ffa242719666168",
-      "task": "Mjlab-Roulade-Flat-MicroDuck"
-    },
-    "stand": {
-      "id": "a481d9f211f31d9476ab1a319fe362a2",
-      "sha256": "a481d9f211f31d9476ab1a319fe362a21ef0879d9fa59442a122845af598268c",
-      "task": "Mjlab-StandUp-Rough-Backlash-MicroDuck",
-      "teacher_only": true,
-      "bound_by_default": false,
-      "epochs": 11000,
+      "id": "59e15d7b04d0c40e9b11b8a70bdecae6",
+      "sha256": "59e15d7b04d0c40e9b11b8a70bdecae6da87a5e096efc204fb58eea304fcbbac",
+      "task": "Mjlab-Roulade-Flat-MicroDuck",
+      "epochs": 10000,
+      "source_iteration": 9999,
       "num_envs": 4096,
-      "manual_lb_bound": true,
       "base_action_scale": 1.0,
-      "target_filter": "passthrough",
       "head_alpha": 1.0,
-      "legs_alpha": 1.0
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "deployment_verified": false,
+      "source_policy_directory": "policies/roulade"
+    },
+    "kick_right": {
+      "id": "67ad09d82f4865d222a7ae06f250cf9f",
+      "sha256": "67ad09d82f4865d222a7ae06f250cf9f77f08c27e4f019ee3f7e431a764419fd",
+      "task": "Mjlab-BallKick-Flat-MicroDuck",
+      "epochs": 10000,
+      "num_envs": 4096,
+      "base_action_scale": 1.0,
+      "head_alpha": 1.0,
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "duration_seconds": 0.5,
+      "deployment_verified": false
     }
   },
   "global_settings": {
     "action_scale": 0.7
   },
-  "default_servo_test_draft": {
-    "kp": 3,
-    "kd": 0,
-    "torque_limit": 681
-  },
-  "tests_run_in_release": {
-    "python": 272,
-    "python_run": 272,
-    "python_skipped": 0,
-    "native_suites": {
-      "duck_control": {
-        "passed": 130,
-        "failed": 0,
-        "ignored": 0
-      },
-      "duck_ipc_proto": {
-        "passed": 53,
-        "failed": 0,
-        "ignored": 0
-      },
-      "robotd": {
-        "passed": 247,
-        "failed": 0,
-        "ignored": 2
-      },
-      "robotd_params": {
-        "passed": 97,
-        "failed": 0,
-        "ignored": 0
-      },
-      "padd": {
-        "passed": 25,
-        "failed": 0,
-        "ignored": 0
-      }
-    },
-    "focused": {
-      "all_passed": true,
-      "checks": [
-        {
-          "command": [
-            "node",
-            "packaging/test_joint_execution_ui.mjs",
-            "console/static"
-          ],
-          "exit_code": 0,
-          "stdout": "PASS uniform model metadata, posture-independent UI, actual output/null/stale readback, catalog binding, preserved global scale and servo editing, ordinary/LB restoration",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "packaging/test_manual_recovery_ui.mjs",
-            "console/static"
-          ],
-          "exit_code": 0,
-          "stdout": "PASS startup fallen + limp: explicit LB press/release only; no automatic enable or synthesized HOME\nPASS fallen HOME, homing, holding and walking use the same production pad event path\nPASS missing model disables only its action; upright HOME remains; native refusal displays without replay\nPASS recovery readback shows current pose, actual scale/filters and HOME versus Walk return\nPASS physical controller takeover releases held web LB and disables browser actions\nPASS replay, pause, offline and disconnected protections remain",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "packaging/test_settings_ui.mjs",
-            "console/static"
-          ],
-          "exit_code": 0,
-          "stdout": "PASS newer device settings replace receipts; mouth updates preserve saved head amplitude; missing values stay unknown",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "packaging/test_advanced_parameters_ui.mjs",
-            "console/static"
-          ],
-          "exit_code": 0,
-          "stdout": "PASS drafts have no writes; single apply carries all four; saved/live values are distinct; empty input cannot apply",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "packaging/test_walk_ui.mjs",
-            "console/static"
-          ],
-          "exit_code": 0,
-          "stdout": "PASS official global scale capability, active walk dispatch, stale telemetry configuration and explicit missing capability reason",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "--check",
-            "console/static/execution-profile.js"
-          ],
-          "exit_code": 0,
-          "stdout": "",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "--check",
-            "console/static/control.js"
-          ],
-          "exit_code": 0,
-          "stdout": "",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "--check",
-            "console/static/advanced-parameters.js"
-          ],
-          "exit_code": 0,
-          "stdout": "",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "node",
-            "--check",
-            "console/static/service-management.js"
-          ],
-          "exit_code": 0,
-          "stdout": "",
-          "stderr": ""
-        },
-        {
-          "command": [
-            "python3",
-            "-m",
-            "unittest",
-            "test_raw_telemetry.RawTelemetryTests.test_uniform_execution_metadata_actual_values_and_clear_reach_both_stores_and_recording",
-            "-v"
-          ],
-          "exit_code": 0,
-          "stdout": "",
-          "stderr": "test_uniform_execution_metadata_actual_values_and_clear_reach_both_stores_and_recording (test_raw_telemetry.RawTelemetryTests.test_uniform_execution_metadata_actual_values_and_clear_reach_both_stores_and_recording) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.064s\n\nOK"
-        }
-      ],
-      "independent_native_review": "uniform-ui-and-native-independent-review146.json",
-      "reviewed_source_sha256_unchanged": true,
-      "evidence_files": [
-        "ui-uniform-tests146.log",
-        "uniform-ui-and-native-independent-review146.json",
-        "model-packages-uniform-tests146.log",
-        "model-install-crosscheck146.log"
-      ],
-      "scope": "DOM event tests and binary stream roundtrip; no Chromium rendering, systemd/uinput, real GameSir, or physical Zero.",
-      "review_sha256": "cfe287ac3ad035b9206fe46cecd52409d957435a5f365ca69ed8d6bd003ba6d5"
-    },
-    "robotd_rebuilt": true,
-    "robotctl_rebuilt": true,
-    "padd_rebuilt": true,
-    "reused_binary_payload_from": "1.0.145",
-    "hardware_tested": false,
-    "windows_hardware_tested": false,
-    "full_system_integration_verified": false,
-    "integration_scope": "Real ONNX control/formula tests with fake hardware, execution profile tests, import/configuration and frontend/input regressions. No physical Zero, systemd/uinput or GameSir activation."
-  },
-  "parameter_apply": {
-    "fields": [
-      "policy.action_scale",
-      "kp",
-      "kd",
-      "torque_limit"
+  "protocol": "official IPC, unchanged native raw telemetry, persistent SSH web input",
+  "startup_flow": {
+    "steps": [
+      "configuration_and_ipc",
+      "hardware_first_valid_sample",
+      "models_and_controller",
+      "first_completed_control_cycle"
     ],
-    "one_submit": true,
-    "input_changes_write": false,
-    "flow": "existing maintenance SSH -> saved configuration -> robotd restart -> explicit HOME arm -> native register write and readback",
-    "servo_scope": "all 15, including mouth",
-    "registers": [
-      48,
-      49,
-      50,
-      51
-    ],
-    "eeprom_written": false,
-    "restores_on_relax": true,
-    "persists_after_restart": true
+    "uart_startup_hooks": false,
+    "uart_configured_ack": false,
+    "uart_generation_state_file": false,
+    "extra_cold_reopen": false,
+    "hardware_wait_interval": "existing official startup interval",
+    "ipc_available_while_hardware_waits": true,
+    "control_thread_exit_notification": true,
+    "state_transport": "robot.startupSubscribe change events plus initial snapshot",
+    "imu_ready_samples": 25,
+    "max_short_waits": 24,
+    "short_wait": "existing control period",
+    "nominal_wait_at_50hz_ms": 480,
+    "fault_backoff_seconds": 1,
+    "unchanged_ready_guard": true,
+    "startup_target_gain_torque_writes": false,
+    "new_threads_or_loops": false,
+    "steady_control_work_added": false
   },
-  "temporary_modules": [
-    "console/static/advanced-parameters.js",
-    "console/static/advanced-parameters.css",
-    "packaging/advanced_parameters.py",
-    "duck-control/src/hd1910_test.rs"
-  ],
-  "protocol": "official 0.15.1 IPC; original R17 maintenance and real/web gamepad paths",
+  "web_input": {
+    "path": "browser WebSocket -> persistent SSH helper -> official robotd IPC",
+    "physical_pad_priority": true,
+    "device_detection": "initial snapshot plus kernel input uevents",
+    "discovery_polling": false,
+    "virtual_webpad": false,
+    "idle_wait": "blocking selector; timeout only for an active web input lease",
+    "stale_action_replay": false,
+    "input_lease_seconds": 0.6
+  },
+  "generated_at_utc": "2026-10-11T03:55:24.370673+00:00",
+  "firmware_reinstall_required": false,
   "files": [
     {
-      "path": "LICENSE",
-      "bytes": 2779,
-      "sha256": "74009f8060dfb296c31aa3f853dabaac8cc02556b08952b26f75b5be15d9793b"
-    },
-    {
-      "path": "PUBLICATION-NOTE.txt",
-      "bytes": 971,
-      "sha256": "36957c2936e1cfa39b95f6d57feabec5116fe82436971e949de2d4dbc3dceb94"
-    },
-    {
       "path": "README.zh-CN.md",
-      "bytes": 6867,
-      "sha256": "5135e5ab09f26dd27d728e1fdaf54f1178367b68bf174f0c46b1b2d84d5d1f39"
+      "bytes": 6892,
+      "sha256": "462b3759e15c09cb67f03e93e7884e44dea0a5918c25d08ef64ebdd698d06fe7"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -274,33 +129,158 @@
     },
     {
       "path": "agent.py",
-      "bytes": 13149,
-      "sha256": "ae171548b47fa4fbb1b9c9fd0163a31ca0852cdcf07f0c8c1ec582c0f5761610"
+      "bytes": 13388,
+      "sha256": "55ed4162ae5ce7d2dca3be89632805158b8b4a4b383cfa3f730936279b259c50"
     },
     {
       "path": "connection.py",
-      "bytes": 5687,
-      "sha256": "b2096740877fcce39d8d5e6e60b37bbee362dcde9022f6a07a251e0578bf6bde"
+      "bytes": 8232,
+      "sha256": "3c7256b75b4296f480f8469c6bf32e4c60d6a4732dc7344c9a4d48cac4fb75a2"
     },
     {
       "path": "console.py",
-      "bytes": 23779,
-      "sha256": "f295213ca3af0f116855ae01dd4ed93d149b1ac4d975fa19e2a915044d3780d7"
+      "bytes": 23645,
+      "sha256": "75fdc581a578a366089b63109d246e40f3384c163ced1e4eaedd16d8c7be3fae"
     },
     {
       "path": "control_socket.py",
-      "bytes": 6294,
-      "sha256": "68b40569e6dc4981fd534d08b968d2279c96d583759d77e771beec4c456a27fd"
+      "bytes": 7445,
+      "sha256": "58acdde124f05b9c126061333609b78b6d67cb1e920cdfe927ffd42e7ea3be6a"
     },
     {
       "path": "controls.py",
-      "bytes": 16274,
-      "sha256": "91d406a1edf62322518e6e427a6515c875475b92b224c379f8e47d110912cb9b"
+      "bytes": 17300,
+      "sha256": "5e92fbcc313b3dfa4972e194d6a3f843abf7d55da2c915db5e34c099f6e20e19"
+    },
+    {
+      "path": "docs/joint-scale-design148.md",
+      "bytes": 25032,
+      "sha256": "af4e81c5ad4772e22c9a1321e1ad2b9d3d1c033e25fc8cc25c3ede140868a474"
+    },
+    {
+      "path": "docs/releases/R146.md",
+      "bytes": 6867,
+      "sha256": "5135e5ab09f26dd27d728e1fdaf54f1178367b68bf174f0c46b1b2d84d5d1f39"
+    },
+    {
+      "path": "docs/releases/R147.md",
+      "bytes": 4592,
+      "sha256": "ee2c08f1bb0e8b1f87ebbd43f2ecb082c20ad4f81f5333af8b6be39a5ed6f237"
+    },
+    {
+      "path": "docs/releases/R149.md",
+      "bytes": 969,
+      "sha256": "74dfcbd5c5bc7ff9fc90e52e86a7eaaaef90b21dbf88aa12ac00c08a5f63d60e"
+    },
+    {
+      "path": "docs/releases/R150.md",
+      "bytes": 2659,
+      "sha256": "07cb35e3e4a3ccb165651536bb44789c30eac49033ff9e43b7f55cce30e518ff"
+    },
+    {
+      "path": "docs/releases/R151.md",
+      "bytes": 3368,
+      "sha256": "0708ad6eed0a5c0280340a64e6006b7868c5929f6dfe0b36e07f5049721579cd"
+    },
+    {
+      "path": "docs/releases/R152.md",
+      "bytes": 2660,
+      "sha256": "64287ad04d69aa78b8219d8dd4c8e59fb6b20181cb9599c888de9a7936c13d3e"
+    },
+    {
+      "path": "docs/releases/R153.md",
+      "bytes": 3096,
+      "sha256": "661c150995c174fcc7ca7bb540eb153dfdf0a64aedf5e19c4127aeb9da6b7742"
+    },
+    {
+      "path": "docs/releases/R154.md",
+      "bytes": 2649,
+      "sha256": "bb9ac304055624e16f3176e3333749b0fa82bfa806457f80480dcb304b0ebb74"
+    },
+    {
+      "path": "docs/releases/R155.md",
+      "bytes": 3332,
+      "sha256": "354b40b31be7e8119646f541db6ae004c2829c9904b2f14319b8206a247b54c0"
+    },
+    {
+      "path": "docs/releases/R156.md",
+      "bytes": 2078,
+      "sha256": "5e76e07d9ec6a8bdc2a5f795a2c6d914c090c2fdc566a5db91252a2d0ded670d"
+    },
+    {
+      "path": "docs/releases/R157-Fix1.md",
+      "bytes": 2600,
+      "sha256": "201b5fb9ab334669432f7dae7bc7734b856453fc18136307c7fb7ae576e8b1e4"
+    },
+    {
+      "path": "docs/releases/R157-Fix10.md",
+      "bytes": 1576,
+      "sha256": "1c5c1d6cb20634b3e2143f84a132b3384f686edecd795a62d124bfe65965c4e4"
+    },
+    {
+      "path": "docs/releases/R157-Fix2.md",
+      "bytes": 3230,
+      "sha256": "cfea6e4a1922cdc68813571d36d94263105d70955c4c550290c8613cd77f3115"
+    },
+    {
+      "path": "docs/releases/R157-Fix3.md",
+      "bytes": 2751,
+      "sha256": "35a664f76c90b43b2447079d963e2c633701a5d56ba2cf5461f8827aa72634ca"
+    },
+    {
+      "path": "docs/releases/R157-Fix4.md",
+      "bytes": 4225,
+      "sha256": "65a481a1944e978d2a766a71f3a427d5dba7ea19f3444d4817783364bc52ed69"
+    },
+    {
+      "path": "docs/releases/R157-Fix5.md",
+      "bytes": 2466,
+      "sha256": "6c6f2188ac554951e6a41d5cf720390a1a1df321f74761163872a234ee6369de"
+    },
+    {
+      "path": "docs/releases/R157-Fix6.md",
+      "bytes": 4491,
+      "sha256": "97c6f6bdea0cda8021d2de84dd1cddf49c0ad09866b49c697fbe5ec298602fbe"
+    },
+    {
+      "path": "docs/releases/R157-Fix7.md",
+      "bytes": 495,
+      "sha256": "a4f5eacb1e934294fc0f412d9524caca9331f0248b94cc69b47db66f7da3611c"
+    },
+    {
+      "path": "docs/releases/R157-Fix8.md",
+      "bytes": 852,
+      "sha256": "1b49fdb042c0eafdee071a6b8ab2bb40a94f2fa03e069d330ade5afb6d48d871"
+    },
+    {
+      "path": "docs/releases/R157-Fix9.md",
+      "bytes": 1007,
+      "sha256": "de613a4b96028f1c2e1d06e4d2e4a10dfcb93080772cc02c4944ff2f2fd9b200"
+    },
+    {
+      "path": "docs/releases/R157.md",
+      "bytes": 3582,
+      "sha256": "686a7b5c135a584ad6a7d4c753710d8f1c6d5281515e45094fb688c969203646"
     },
     {
       "path": "firmware_packages.py",
       "bytes": 3592,
-      "sha256": "e7a51c72eb746f04bf307e7b6b0adae4ef3a1b288cd82e18d3af3a3a432eecb7"
+      "sha256": "d2260f17c79fd1f2a3c86f74fc478e8550315bd39a440a974ca7b71b2ea44678"
+    },
+    {
+      "path": "gamepad_repair.py",
+      "bytes": 27129,
+      "sha256": "1624a5870086d2c859e75402b19921c3056f3418cea288fe76ca30488290792d"
+    },
+    {
+      "path": "input_channel.py",
+      "bytes": 4501,
+      "sha256": "9ede66730f610bfa0d8c3e669dd847ed944605f2b13e63e63d99b16d865375d2"
+    },
+    {
+      "path": "install_handoff.py",
+      "bytes": 1778,
+      "sha256": "7ef8504124e16e80424caf2720567e15052217dc54fbbc650b7f78c54a9ae0c4"
     },
     {
       "path": "licenses/MICRODUCK-APACHE-2.0.txt",
@@ -318,14 +298,9 @@
       "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
     },
     {
-      "path": "logs/system-20261007-003807-694cd2.log",
-      "bytes": 113,
-      "sha256": "2eacc17a53fa2c4310aa460dd2e389a8d82779f29de4fd6a3c4b4e92d8d68327"
-    },
-    {
       "path": "management-profile.json",
-      "bytes": 2659,
-      "sha256": "5b61a67f8dca8d29df820404c5b9f2f3a139c0d90fddd274c1bb107e87aa39c2"
+      "bytes": 3701,
+      "sha256": "e7b5c34b726b0707685b119333c5d2c9b57ecd378a52cafb18eed525a7470e97"
     },
     {
       "path": "management_profile.py",
@@ -339,18 +314,18 @@
     },
     {
       "path": "process_lifecycle.py",
-      "bytes": 764,
-      "sha256": "5273122a459c42d0d77c89bf1a3dfff58c911ae8550f5bfb2eb30e0cbbbfcc53"
+      "bytes": 11062,
+      "sha256": "b119a424225ec46ddd3f82be18f059991920ae88fe35c814920999b1cfbce2fd"
     },
     {
       "path": "raw_telemetry.py",
-      "bytes": 16550,
-      "sha256": "35f1287fc301c72b6daf9d0d3875d0672c935f1c1180b564cac2cda75b541a99"
+      "bytes": 21248,
+      "sha256": "da34bf7e285b0787e78b17cd0519fe6b997cbfeac3d705025ae237ce993d3f7a"
     },
     {
       "path": "release_identity.py",
-      "bytes": 170,
-      "sha256": "6dae4737c3f18b3cdac6e2046b170415e5ff63385e329a215518a819fbf4e644"
+      "bytes": 157,
+      "sha256": "063da9dc6399fa39fdf47163461da3107588136cdc8012afbabe0960448fb26f"
     },
     {
       "path": "remote_audio.py",
@@ -358,14 +333,19 @@
       "sha256": "3548defac19ba7155bb95e3bddc6c9f37bc84ea2deacb0f1cd8749636ca453d9"
     },
     {
+      "path": "remote_input.py",
+      "bytes": 15885,
+      "sha256": "c8e02dab52700812dd9c0e356eeffa339093854bdc5e4253b5da8fa38757e64c"
+    },
+    {
       "path": "service_channel.py",
-      "bytes": 4821,
-      "sha256": "88dfdfef3aa7ffd6f2e52c97ecb14e84fd3ae2d64656bb749cb4e6be0f41825b"
+      "bytes": 5184,
+      "sha256": "4ef9cc631b1f7fa931cd50a2bb6b206bf2a42a95e5ff316926851fdbac780325"
     },
     {
       "path": "service_control.py",
-      "bytes": 48934,
-      "sha256": "a6e30e4aeb03300d60792759b4dbfc6080639f5d1d566e44e15a9ec8fa710863"
+      "bytes": 60178,
+      "sha256": "1ea168c6f165323f9b8857cbb98977bf559a50a6b965a35c345aa1c1766f221d"
     },
     {
       "path": "service_data.py",
@@ -384,8 +364,8 @@
     },
     {
       "path": "socket_transport.py",
-      "bytes": 9595,
-      "sha256": "26659847468f056982bcf755c8665c87aff668eaf710d45f4022b998b755aa3b"
+      "bytes": 9237,
+      "sha256": "b993fbee01beaea7d6e83d58d101623df856e7a3e1c6b6a929341bbd767c6777"
     },
     {
       "path": "ssh-askpass",
@@ -404,13 +384,13 @@
     },
     {
       "path": "staging_upload.py",
-      "bytes": 2366,
-      "sha256": "ba99db21351426a9ba46d75a14da42727a9e127b29d92ab195b0eddda314948d"
+      "bytes": 3381,
+      "sha256": "5e08635ce348ad77ce544bff19e75ba66ad0aed97dbe82d1448036c15cd30ae3"
     },
     {
       "path": "start.cmd",
-      "bytes": 273,
-      "sha256": "c5430ea29e454a044e7b029f24df11306cb68b8960f597db89babdb4bfef19e5"
+      "bytes": 432,
+      "sha256": "5a1a8858e5e595544e9385756139218920858f1018f012587a5fd8df34483df7"
     },
     {
       "path": "start.command",
@@ -418,19 +398,29 @@
       "sha256": "32d76f1ce0e94fb579f54caa8c20d4f5e24a4dba16b9a991f3e3a414ffedd9e9"
     },
     {
+      "path": "startup_diagnostic.py",
+      "bytes": 2815,
+      "sha256": "c4649b495aec8411d5c2a51cd874aba74e56010a551f824327a97d14f1bae2ec"
+    },
+    {
+      "path": "startup_gate.py",
+      "bytes": 6561,
+      "sha256": "9b1a07b55f36d8cc93b0a99d1776396f455e5f91f890a91112d8b04d18e48557"
+    },
+    {
       "path": "static/advanced-parameters.css",
-      "bytes": 1390,
-      "sha256": "7a03e7b61429e71336b5062cf1960337446d1d303d4de8eb1c448a4da0313c9b"
+      "bytes": 665,
+      "sha256": "e5e7584154ad826b9389df43f5a093d6701124e3f0dd7242bc0a289a0fe2333f"
     },
     {
       "path": "static/advanced-parameters.js",
-      "bytes": 8385,
-      "sha256": "35ce8a2c62c4cf292abdad584cac04f803cb10ac5b845edbe0d3317d36862276"
+      "bytes": 6221,
+      "sha256": "226c1f1fe3098da608db2302c2976e2c640e7aa56c1dfc04977eb05f48dabccc"
     },
     {
       "path": "static/app.js",
-      "bytes": 37959,
-      "sha256": "c4341638de7054f5a24caf39ea628059157bedafe24212eef351bc52efb0429c"
+      "bytes": 36988,
+      "sha256": "d53177011de980f4096f0c3fe2a6ef951f786bd4b36a230479b4512d7ad5d53f"
     },
     {
       "path": "static/assets/duck-visual.bin",
@@ -443,39 +433,54 @@
       "sha256": "8922b98bb9ba3c99bc18f936a42abdbfe87cc045d18200e5948c99ee841f573f"
     },
     {
+      "path": "static/calibration-reference.js",
+      "bytes": 1262,
+      "sha256": "ee256295e0ef8580a278e2f91366c5819a1dca5e2cfb5c57ab1deb79e86dc8e1"
+    },
+    {
+      "path": "static/calibration-view.css",
+      "bytes": 2120,
+      "sha256": "9430a5604633f1241c44ee30df8be0c09ca26f2c3c9ef44a690f845d26b7dbcf"
+    },
+    {
+      "path": "static/calibration-view.js",
+      "bytes": 3605,
+      "sha256": "fd8d7bd1cdfcb6bd58b4ae5770dc2c9cb33b31e9dbe032d0eb4cbdb344337b4a"
+    },
+    {
       "path": "static/camera.js",
-      "bytes": 4967,
-      "sha256": "009ab682df59e6170d9b1cc248cb56f6e45bafd239b553a1db1a92e8bf09541f"
+      "bytes": 4995,
+      "sha256": "44e86b896966dab4dc027f507620c7415fdf48fb9c0ec2749c01b671a8de1129"
     },
     {
       "path": "static/connection.js",
-      "bytes": 2326,
-      "sha256": "e004724d86343ec19edc5bd7ef7851d8ef3d5c271a4f630ca61b465721c1fdc8"
+      "bytes": 2087,
+      "sha256": "d16645769f0e048bbddb0e8ecb4a764d2e84da0e170462ed6c3bf20e1d53ffb3"
     },
     {
       "path": "static/control-socket.js",
-      "bytes": 2321,
-      "sha256": "fba1cbf20eed1a6ca42a52dcded8e6b7c241e9307c50832a589bbec6ed12e954"
+      "bytes": 2490,
+      "sha256": "c35b00cb27fa25dda4995ae9e27bc34adfd359d02c25d3a97120922ad30151e8"
     },
     {
       "path": "static/control.css",
-      "bytes": 2701,
-      "sha256": "cf00d9e43821f325e21b2ab3df794b2faabc84de0f22eb1505c358b7fab00495"
+      "bytes": 3656,
+      "sha256": "d55b81ad393ebf0433e0b75744bcc684a4e62e843b68dc566d1dd5e2335ca16f"
     },
     {
       "path": "static/control.js",
-      "bytes": 18800,
-      "sha256": "d93782f02207903f1570638584726b8f0bbef5c91d360d3c5d1e481b08858694"
+      "bytes": 18662,
+      "sha256": "0eeafc7445f35bc35c864e160a4eddc8f99aef723d9d62097140fac84ae6738d"
     },
     {
       "path": "static/duck.js",
-      "bytes": 10137,
-      "sha256": "a7a5fe0e3835dc59fd9d97de2be378bbfaf87f30e1e8acebfa5af74143a2a667"
+      "bytes": 12956,
+      "sha256": "b393047caf33970aa337200ef5a46e1a58af84611de3b71f565e297739814207"
     },
     {
       "path": "static/execution-profile.js",
       "bytes": 1064,
-      "sha256": "0c531221d5556af0c5605203d3eae582d62f3cea00ac71deee666a1aa1fe8255"
+      "sha256": "c642723837b179124e4feea1ac9d98a6ac656f20c6010b2a280012d9fea93430"
     },
     {
       "path": "static/feedback.js",
@@ -484,8 +489,13 @@
     },
     {
       "path": "static/firmware.js",
-      "bytes": 5767,
-      "sha256": "ec26bb35e4a69ce980f0bfdcebefb69a5feb757b2e31e18348e5fbdc9e5b1ed7"
+      "bytes": 6822,
+      "sha256": "63b43db6c926ba702d41b580b59fc5401685e3e27cf1493ce265df5f4e1b528f"
+    },
+    {
+      "path": "static/gamepad-repair.js",
+      "bytes": 6192,
+      "sha256": "dce8b1266d929fe0257a3dbbe495f36921a38d6314c3950c0ae5832036437037"
     },
     {
       "path": "static/history-frame.js",
@@ -494,13 +504,18 @@
     },
     {
       "path": "static/index.html",
-      "bytes": 26630,
-      "sha256": "3429e0d10c1a04b0019f49c8b70af65616ee8b6da9b203adc1560f8f7b61d131"
+      "bytes": 28351,
+      "sha256": "d56cac14cfd9dd1abf80c782b0951dfe0cbe76e4883d04699583334a8ec3cb0f"
     },
     {
       "path": "static/inspection.js",
-      "bytes": 12505,
-      "sha256": "9c4be4fadfea65050e4b12fe9c03e8e2ecaaa02bbaaded04f17150ad9b7b6781"
+      "bytes": 12405,
+      "sha256": "bfa7fb72ebca02a6ed82abaf062e9d4c59dadbb3fe06eb2b4bcf4c84f185a90b"
+    },
+    {
+      "path": "static/joint-direction.js",
+      "bytes": 1220,
+      "sha256": "b15321bec9be02d1c52c9d7db98d0ec774543687d5c53abfbc5098fb1882ca29"
     },
     {
       "path": "static/joint-map.js",
@@ -523,14 +538,19 @@
       "sha256": "25eca8d616ade7426ce44f097c39ef960c8bbec8abaa7f6895152d61f15960f8"
     },
     {
+      "path": "static/pose-state.js",
+      "bytes": 2856,
+      "sha256": "743c6efe38652f7a8a5fb21465accf7cfed6ae602fd561dfe2f6169c8e022cf1"
+    },
+    {
       "path": "static/pose.js",
       "bytes": 3623,
       "sha256": "2ed790562837c8014d5321098c74cba14b4d0b3c2498e7bdaf3d81e045b11350"
     },
     {
       "path": "static/r17-0151.css",
-      "bytes": 37778,
-      "sha256": "c00fc1fe4de47078b75727a830ee1ea25a8a958d8807db5cc2e673f2e3069482"
+      "bytes": 39502,
+      "sha256": "0a8da8cbfcc71df9ea7bfc5b3e605bbd0e4cca61b4d41fa53dd563791716e7aa"
     },
     {
       "path": "static/raw-kinematics.js",
@@ -539,8 +559,8 @@
     },
     {
       "path": "static/raw-telemetry.js",
-      "bytes": 18006,
-      "sha256": "b89a37aa3a4aad2ad1966c31e960a37254387427addb79e24abefd459b67c83a"
+      "bytes": 18432,
+      "sha256": "16a7f54b2c8fb8f932fe0a6d478c2415fe321ce34fb3095aa5e584d7e0d4ea02"
     },
     {
       "path": "static/read-timing.js",
@@ -549,23 +569,28 @@
     },
     {
       "path": "static/service-builds.js",
-      "bytes": 3006,
-      "sha256": "114d5427f00461e0066bf0d7816f26daa6d2c921b6852f735e02a9e0aab6f1f7"
+      "bytes": 3798,
+      "sha256": "e2f2d94bf6635ecc39c5060b63dfb396f5cf3e55d6f0bc4a2e5a7eda0486ea42"
     },
     {
       "path": "static/service-management.js",
-      "bytes": 12946,
-      "sha256": "3055ed6852446436d119354a8bcffdb0eb45fef647acc7a525b43cd5817d4526"
+      "bytes": 11531,
+      "sha256": "0be9aa17b6887c18474ef565f94531108defd0ad81ae368cc21d647f21721dab"
     },
     {
       "path": "static/service.css",
-      "bytes": 22154,
-      "sha256": "fded9d177cdc7908f14ce241e2d3cd03d9dc20cc157fdd1eaf1dcd357eb0d42e"
+      "bytes": 21723,
+      "sha256": "6104e806d443ba4c7a1dff3caa559e55d48f4e95b0fe27eb46abb1f2670b2703"
     },
     {
       "path": "static/service.js",
-      "bytes": 32895,
-      "sha256": "8a5e34187e770db63fdfaee33c2cafa0d708ad2c1e9ef7f614a0524c2e9c0fe9"
+      "bytes": 29786,
+      "sha256": "8413f3a77d20b78b39811e28795b6de0364202fb5ed35011ea7d02f33400c45e"
+    },
+    {
+      "path": "static/startup-status.js",
+      "bytes": 2874,
+      "sha256": "010e5d3632fbf4a8c83477f81d91c1ae5ac20d2f54b4d27d89930e93c5374baf"
     },
     {
       "path": "static/styles.css",
@@ -574,8 +599,8 @@
     },
     {
       "path": "static/system-log.js",
-      "bytes": 2773,
-      "sha256": "c0118c854c3afb102e2e458bab60d6fab4bc3be6590fcac3518a538309852c9a"
+      "bytes": 2534,
+      "sha256": "97450830c04e49c312f0b44bc17d0a7cd4e04f5f022757f9566f9305d3ec151c"
     },
     {
       "path": "static/vendor/OrbitControls.js",
@@ -594,8 +619,8 @@
     },
     {
       "path": "static/webpad-controls.js",
-      "bytes": 4347,
-      "sha256": "21f07a5eeec552d9820b9ea27a38a8b98151afa0b377d15cc218d591e08362a1"
+      "bytes": 4447,
+      "sha256": "4b6050a203fd936467652584bc950f62318e319403ace5772bd4eeb45c3ec0a7"
     },
     {
       "path": "sudo_credential.py",
@@ -604,18 +629,18 @@
     },
     {
       "path": "system_log.py",
-      "bytes": 3004,
-      "sha256": "40cd6fa6202d4e37201df4815694ff71e9f6aaf28f5363e6f89e5213f86b95ac"
+      "bytes": 3470,
+      "sha256": "0fe11098462a24ac0ec60a13dc700bf351fc61d57ff7e8c76667e97defd9a204"
     },
     {
       "path": "telemetry.py",
-      "bytes": 12789,
-      "sha256": "a031c874e2d8765dd3da1928f3651974bbb3513ef0f3f01018933303d8c4428b"
+      "bytes": 14144,
+      "sha256": "317748053447ca6748da4b9125746fb04b6318bdb47065a5901cc930c313096b"
     },
     {
       "path": "updates/Microduck-Robotd-FT6-R17.tar.gz",
-      "bytes": 18919145,
-      "sha256": "9cecf03286c608d750cee402d6a977870ba1d92a97b37cb5274abcdefd6c459a"
+      "bytes": 34554759,
+      "sha256": "cba2a3d1fa486713c72f1155fed42d102c2fe3aea9bb3aaf0aad337e046b9afd"
     },
     {
       "path": "updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin",
@@ -623,16 +648,532 @@
       "sha256": "d7bd2f37a6a4e0e15d1f9650a3959bcf4d8c704524d8ec319d72d8bdf104ab6d"
     },
     {
+      "path": "verification/3d-audit147.json",
+      "bytes": 14055,
+      "sha256": "226a3e16d4b3a711e1ac918f424bde6cbde9a0ef502387d50aeeacffbee9ce52"
+    },
+    {
+      "path": "verification/README.md",
+      "bytes": 906,
+      "sha256": "6d55d094372c4e6c341256d19b2683c2a58c003b3d35eb977a0b2ae3c6e190d1"
+    },
+    {
+      "path": "verification/console-regression151.log",
+      "bytes": 6626,
+      "sha256": "424dfcc7996f3cbf3f74e2347a53a58518a8cc6569aea9d57b920b7fa228cd61"
+    },
+    {
+      "path": "verification/frontend-connection155.json",
+      "bytes": 1133,
+      "sha256": "3ed0060d58cb7663c5ec111d54437b4985d7e4c03e385d13059e4f9ca601fd12"
+    },
+    {
+      "path": "verification/frontend-connection155.log",
+      "bytes": 771,
+      "sha256": "873c47b0737c668a729c3ea888efa07952c23ad9a9df033074edf310c77038d5"
+    },
+    {
+      "path": "verification/frontend-controls154.log",
+      "bytes": 403,
+      "sha256": "0610de2db2d50b08fa39fe9fd4941b250fed33d2843599d4c12daee78c72389f"
+    },
+    {
+      "path": "verification/frontend-direction155.log",
+      "bytes": 390,
+      "sha256": "2e4a3f0a1e78453c58e0c965ba6b8692f5fa5833e68a9afa299097c48adc920c"
+    },
+    {
+      "path": "verification/frontend-gamepad152.log",
+      "bytes": 133,
+      "sha256": "72d7539bf553c19352361a88a00d88bb6aaa05c85ebafeb27f99de35d5f1e1a0"
+    },
+    {
+      "path": "verification/frontend-gamepad153.log",
+      "bytes": 133,
+      "sha256": "72d7539bf553c19352361a88a00d88bb6aaa05c85ebafeb27f99de35d5f1e1a0"
+    },
+    {
+      "path": "verification/frontend-startup152.log",
+      "bytes": 120,
+      "sha256": "1051736a2c3c606f87fc8ca8b5ffe966e682f54386457b6c78195bcff54adc78"
+    },
+    {
+      "path": "verification/frontend-startup153.log",
+      "bytes": 120,
+      "sha256": "1051736a2c3c606f87fc8ca8b5ffe966e682f54386457b6c78195bcff54adc78"
+    },
+    {
+      "path": "verification/gamepad-repair-ui151.log",
+      "bytes": 133,
+      "sha256": "72d7539bf553c19352361a88a00d88bb6aaa05c85ebafeb27f99de35d5f1e1a0"
+    },
+    {
+      "path": "verification/gamepad-repair151.json",
+      "bytes": 1517,
+      "sha256": "4f6e10da00535b1192014169f4395019af54254f75d9aa42e96f9c3f72d9c330"
+    },
+    {
+      "path": "verification/gamepad-repair151.log",
+      "bytes": 2948,
+      "sha256": "fbf781169899d59cff3895b63b3a1efa1d13b1cdab5f7b7eb5ac68b96f51cab4"
+    },
+    {
+      "path": "verification/joint-scale148.json",
+      "bytes": 11816,
+      "sha256": "f1b4db3bd6f9acd08e5366357044a95cef8f4a21894fb990b027086fddb5e078"
+    },
+    {
+      "path": "verification/process-lifecycle156.json",
+      "bytes": 487,
+      "sha256": "a0ca50366800d3ea39484df636f7f88953dfc4205690dd0526786e44d6c81811"
+    },
+    {
+      "path": "verification/process-lifecycle156.log",
+      "bytes": 2099,
+      "sha256": "b066b6eaace358bd484481efede0d9e9ca87db80c56285db2e603158789572c9"
+    },
+    {
+      "path": "verification/python-backend154.log",
+      "bytes": 16297,
+      "sha256": "d2569e1f85b998642846f4e3495c05afd7c8eab371154db044de68b4dc367144"
+    },
+    {
+      "path": "verification/python-connection153.log",
+      "bytes": 226,
+      "sha256": "ea36d24feb83ad38a80a87e184727095eb42e46528f80e0e199847ef780c382c"
+    },
+    {
+      "path": "verification/python-connection156.log",
+      "bytes": 3534,
+      "sha256": "bf0318c0b9d8bbb900b7e8c28b3516a747fdb279508befeaa3cc438af859fa22"
+    },
+    {
+      "path": "verification/python-console-exit156.log",
+      "bytes": 579,
+      "sha256": "59125791e419432ebbf6517a273c3f2ddee3f0d9208526a09c86112f283fc206"
+    },
+    {
+      "path": "verification/python-diagnostic152.log",
+      "bytes": 860,
+      "sha256": "7d43e5a79a9e1bbd2a2ece987ea7554cebbb6d985c676c2e21af9573e9b063d5"
+    },
+    {
+      "path": "verification/python-diagnostic153.log",
+      "bytes": 1065,
+      "sha256": "03e385d21aa8f1ec704116b1a1600e5381349f9d79a7db07d025433693853e79"
+    },
+    {
+      "path": "verification/python-gamepad152.log",
+      "bytes": 3146,
+      "sha256": "1384eed99bdcc5e1420a8e10267c46ddac0ef92e210eab67baf4461413e12b14"
+    },
+    {
+      "path": "verification/python-identity156.log",
+      "bytes": 262,
+      "sha256": "cb10a8cdf795303d2ffc333b172086db5b2245a31078f1ed23d8a46c19c3e773"
+    },
+    {
+      "path": "verification/python-transport156.log",
+      "bytes": 1797,
+      "sha256": "ce6d37b0509f57ed231aff5101f2644cccda13a1a02e4b2da6fadcf576e15269"
+    },
+    {
+      "path": "verification/r146_runtime_skeleton_report.json",
+      "bytes": 2182,
+      "sha256": "ca8adf7a2f5f87e936bebae25fc53f45400a8ba4669d38d7af8d980445a3fe49"
+    },
+    {
+      "path": "verification/r146_three_comparison_report.json",
+      "bytes": 15423,
+      "sha256": "a595130df2a4af55badabbb40e53d95501120e059e1ad86dd7bab9bf972011f2"
+    },
+    {
+      "path": "verification/real-console-exit156.json",
+      "bytes": 216,
+      "sha256": "0fd0678d940b51179369df521d59960aa6d188e6c0873c30c41cae8966a6285d"
+    },
+    {
+      "path": "verification/reference_runtime.xml",
+      "bytes": 6881,
+      "sha256": "078693dff3bcd5e69eb6cc483974178e1511a11f762b1a4dd00370bc5d58b8a8"
+    },
+    {
+      "path": "verification/reference_training_8d0db749.xml",
+      "bytes": 34991,
+      "sha256": "8ddae05f00d321945220c632cca13445287c94fdbc1654573142347a5ac87d59"
+    },
+    {
+      "path": "verification/test_calibration_reference.mjs",
+      "bytes": 13626,
+      "sha256": "cefe87f4b90fc4070f84d8433c137ba483da1135081e6ed1155464ef185eeaee"
+    },
+    {
+      "path": "verification/test_camera_demand.py",
+      "bytes": 2693,
+      "sha256": "1f8a3183d1bad16dd30908ecf963f0bcb3ca28167e4cf93cdad16cacf3ecf7e9"
+    },
+    {
+      "path": "verification/test_camera_demand_ui.mjs",
+      "bytes": 2166,
+      "sha256": "0c63b95dceabce4d8c29b91251dcdf7a98151c226b9fedbf7b1e11c479a4d086"
+    },
+    {
+      "path": "verification/test_connection_recovery.py",
+      "bytes": 12953,
+      "sha256": "693d1016bd297860945774d694e6a7802464db32fae1dbea37f02c4e68f84a2f"
+    },
+    {
+      "path": "verification/test_connection_ui155.mjs",
+      "bytes": 10356,
+      "sha256": "cfb6fdab9cf9fd62210e5ad8a5aeac52441cc4e576283db601b2cbbf3ef10024"
+    },
+    {
+      "path": "verification/test_console_exit156.py",
+      "bytes": 2841,
+      "sha256": "c1e6fa58abb634ac7f6dd5fb696ec3a98b5363b9410e361e35de2a4fa6ddb16f"
+    },
+    {
+      "path": "verification/test_controls154.mjs",
+      "bytes": 6375,
+      "sha256": "174e41a4abd5ca0617a76139c4a6e297bfcad6e51b5880de1745d509fdeed606"
+    },
+    {
+      "path": "verification/test_fix157pc.mjs",
+      "bytes": 6789,
+      "sha256": "b5065ab1834d4201a82b946f10826cd508dbdbe619f2c4602346ade65c6837fb"
+    },
+    {
+      "path": "verification/test_fix157pc.py",
+      "bytes": 11987,
+      "sha256": "bef1fd987b4b12dbeddd446a1ae162053aef2379cf23ddacfd2c0ca24db82bc0"
+    },
+    {
+      "path": "verification/test_gamepad_repair.py",
+      "bytes": 27564,
+      "sha256": "373853ed250f39fff9318c542e5b5913d7c07c53a254d0aed537b9df5269d9e9"
+    },
+    {
+      "path": "verification/test_gamepad_repair_ui.mjs",
+      "bytes": 6016,
+      "sha256": "e59d8a366c7e9b4378255c6324c663e934a7cecc86b1b927a3402c4437ab807d"
+    },
+    {
+      "path": "verification/test_input157.py",
+      "bytes": 8772,
+      "sha256": "1d1083a6f01bf5d93929a113f7c67dd0271cb7c5de4225791048b54742acd075"
+    },
+    {
+      "path": "verification/test_install_log157.py",
+      "bytes": 16312,
+      "sha256": "5566dcc1cb034377c40c0ba1652a417e70cf76f1479ac4ed8ff56a5bff391f66"
+    },
+    {
+      "path": "verification/test_install_progress157.mjs",
+      "bytes": 2587,
+      "sha256": "38ac233aed08e23ba1a9a8f4f3f34c5b5fdfdd48c572a9ffd68893edda1b80d3"
+    },
+    {
+      "path": "verification/test_joint_direction155.mjs",
+      "bytes": 8165,
+      "sha256": "aa98b67de8723650d6db5531942fea79eb3f76300debbce0b75cc5262f02ec06"
+    },
+    {
+      "path": "verification/test_pose_state.mjs",
+      "bytes": 6472,
+      "sha256": "400270a5e215ee55e48369c582ee66a236ee4172100aaca034ce950efab63a06"
+    },
+    {
+      "path": "verification/test_process_lifecycle156.py",
+      "bytes": 18364,
+      "sha256": "2218a165ebe02bf5505f29e868ce56ab0d8d9df40366df5b151b20f261ad250d"
+    },
+    {
+      "path": "verification/test_query_logs157.py",
+      "bytes": 6562,
+      "sha256": "ddfc842c0b32ab610939214ac9d7ab56abcde731e5eb006cc400db9e33f15e3a"
+    },
+    {
+      "path": "verification/test_robotd_first157.mjs",
+      "bytes": 2797,
+      "sha256": "257749cf9f269f981c16f478ed78b6c9fb76f856ba8e653f21dfb5e1bc317325"
+    },
+    {
+      "path": "verification/test_robotd_first157.py",
+      "bytes": 10947,
+      "sha256": "6d0ebbe3222e1ae6a2d26ce937595db5a568c45e04e53fda5228aeb6365b74b9"
+    },
+    {
+      "path": "verification/test_startup_diagnostic.py",
+      "bytes": 5689,
+      "sha256": "62e7ab4b7f8ff8d51a12392288f51d08b79c86eb3eb2db2a6bc6b76bd339255f"
+    },
+    {
+      "path": "verification/test_startup_ui.mjs",
+      "bytes": 2791,
+      "sha256": "4e3774e7d79ff5894646a6e292b2eb5bc6cf02d049162ccf619175ef66f88fec"
+    },
+    {
+      "path": "verification/tests156.json",
+      "bytes": 1422,
+      "sha256": "4c5e2a5833fa443745d86863cc051c60b93690ab085c78940ae5e906b1cfed6d"
+    },
+    {
+      "path": "verification/v160/arm64-build.log",
+      "bytes": 6054,
+      "sha256": "85af29abbb8fb701ea99312f66025392b90b4f5f95f7cd91b24260421aa8e8bd"
+    },
+    {
+      "path": "verification/v160/arm64-models.json",
+      "bytes": 1210,
+      "sha256": "d5caa6b517df83efc52979356ee2e08ea3833fff1f8d040a56dc46161c6b2c16"
+    },
+    {
+      "path": "verification/v160/release-tests.json",
+      "bytes": 1366,
+      "sha256": "3c8e891ecb2db4c5ff67ee7b49296544ca4ba8561d17b7bdc36d93aead6ead2a"
+    },
+    {
+      "path": "verification/v160/release-tests.log",
+      "bytes": 18420,
+      "sha256": "ad51544b59ad2034849a39e1294a06e8371a6ca05fd1c9a69abbb72053290287"
+    },
+    {
+      "path": "verification/v160/roller-tests.log",
+      "bytes": 610,
+      "sha256": "cb708d99b5cb6db5be6ce940b3a63aeed5ad1a456259f896e5da2d837bbd38dd"
+    },
+    {
+      "path": "verification/v160/rust-tests.json",
+      "bytes": 53928,
+      "sha256": "ea795e43b71558d9951f6bf466208f23e0156affcdec6ea20e8e2c01c14e83ca"
+    },
+    {
+      "path": "verification/v160/rust-tests.log",
+      "bytes": 157945,
+      "sha256": "3958bfbfa4ca39efbe0c0c2b239657bafb040e5976266cacd3af440859f7215b"
+    },
+    {
+      "path": "verification/v161/arm64-build.log",
+      "bytes": 513,
+      "sha256": "32efad8c04a562f1ec6f9d2953b559dd0c61bdb2dec97efbf3413edd0a71d72f"
+    },
+    {
+      "path": "verification/v161/arm64-models.json",
+      "bytes": 3521,
+      "sha256": "c82c864cfc61d3f57036066cc724f23f11a6bdb5f3e717afa4ee07007aa5c0fd"
+    },
+    {
+      "path": "verification/v161/python-tests.json",
+      "bytes": 386,
+      "sha256": "320db7d6829513ffe1c04bbcb28da2a63b598a512502392520385d37dade2a73"
+    },
+    {
+      "path": "verification/v161/python-tests.log",
+      "bytes": 2865,
+      "sha256": "ead3172bc5c76b24018d55211e1f83652c2b1c36687d28edc9792388eed19e36"
+    },
+    {
+      "path": "verification/v161/release-tests.json",
+      "bytes": 1366,
+      "sha256": "25ca6fa2aa28103c3721975e830bbb7955e2a3405d7936e78abbfbbd68e47fd8"
+    },
+    {
+      "path": "verification/v161/release-tests.log",
+      "bytes": 18773,
+      "sha256": "da0a5d346b133274a451bd0a656bb091d22236d19cb7fc5b22fe269080c2a6e0"
+    },
+    {
+      "path": "verification/v162/arm64-build.log",
+      "bytes": 557,
+      "sha256": "77d6effce48c4c5c1a0360eaf016dfeab38a7f2c8853b385e48d60e777fc754d"
+    },
+    {
+      "path": "verification/v162/arm64-models.json",
+      "bytes": 3912,
+      "sha256": "fb27feebc3f3e52168865e1fac361ac4f52717e86370dbbbd687f6a55a3b1f43"
+    },
+    {
+      "path": "verification/v162/python-tests.json",
+      "bytes": 221,
+      "sha256": "fa996fbe26af8402f1118712e0f556bf00c00fa254cf02c02047d0d2340841f7"
+    },
+    {
+      "path": "verification/v162/python-tests.log",
+      "bytes": 3299,
+      "sha256": "5ce2d66ffef8817ca2a28d99f44f15e3a2bbc2802964aad8c59c7be2bda8c0ed"
+    },
+    {
+      "path": "verification/v162/release-tests.json",
+      "bytes": 1366,
+      "sha256": "301c893e420cf7a8df395bee229025f82a5b853e6b4e129705031fc22d0884a1"
+    },
+    {
+      "path": "verification/v162/release-tests.log",
+      "bytes": 18621,
+      "sha256": "d37ffd7b60288024417b2a2d2130d19239c8fc732f8bc7ccb54605c95354b228"
+    },
+    {
+      "path": "verification/v163/arm64-build.log",
+      "bytes": 541,
+      "sha256": "b4c36f38982018375678047fb9950b311d9a19cc324054f19aea471b3242dea7"
+    },
+    {
+      "path": "verification/v163/arm64-models.json",
+      "bytes": 4006,
+      "sha256": "dac5882a158e095775d738a6e826cb31c7bf3d4879783457f6a75b0ba46daa75"
+    },
+    {
+      "path": "verification/v163/python-tests.json",
+      "bytes": 204,
+      "sha256": "62c07c07274dc45c8a451053e95a90466aa60972db3608bdc45003cbd1af8737"
+    },
+    {
+      "path": "verification/v163/python-tests.log",
+      "bytes": 994,
+      "sha256": "937336a80369d589e8d7075a2c8ee29d7687823ed7ebc66718079c3476b7e504"
+    },
+    {
+      "path": "verification/v163/release-tests.json",
+      "bytes": 1367,
+      "sha256": "8b99fae69a9ff9ac1d776141d36e19366c3fdf431390fb4aca806843e32daf17"
+    },
+    {
+      "path": "verification/v163/release-tests.log",
+      "bytes": 19593,
+      "sha256": "6b68c0248584188619d8b70ddea8241b1153bc8748c9673afa04da4d9eb171c0"
+    },
+    {
+      "path": "verification/v163/source-diff.json",
+      "bytes": 624,
+      "sha256": "9437ab14089fb7685293b0eb50eab297df783b59328cb88f074006db70a17f75"
+    },
+    {
       "path": "voice_preferences.py",
       "bytes": 589,
       "sha256": "d6ce960abafb21dc9cc2406df4659797ff842fb2ff67f8cf8d5929cbb1367b14"
     }
   ],
-  "retired_model_ids": [
-    "d11f8430712c35cb2416ce3948e9f8b7",
-    "388461feb3f4cd24071197ffc30d63e2",
-    "5c019c3d3d2c490947f21974f3947506"
-  ],
-  "publication_revision": "public1",
-  "publication_metadata_note": "Walk metadata corrected against BUILD.json and policy bytes; runtime code and binaries unchanged."
+  "release_changes": "Roller model display names: bilingual titles; checkpoint names below titles",
+  "media_build": "1fa8438-feetech-media-demand.1",
+  "roller_experiment": {
+    "installed": true,
+    "active": "physical-gamepad-only",
+    "models": [
+      "swizzle",
+      "crouch",
+      "spin",
+      "standup"
+    ],
+    "installed_models": [
+      "swizzle",
+      "crouch",
+      "spin",
+      "standup"
+    ],
+    "unbound_models": [],
+    "standup_trigger": "physical_L3_guarded_manual_test",
+    "standup_test_duration_s": 5.0
+  },
+  "release_status": "compiled-unverified-hardware",
+  "package_baseline": {
+    "name": "Microduck-Console-R17-V163.zip",
+    "sha256": "ccf97e549ba1a6d8d3715b073d587a2f2b9e40de7dfc9fe257163f9d1ce1586b"
+  },
+  "baseline_tests_run_in_release": {
+    "robot_hardware_tested": false,
+    "rust_passed": 226,
+    "rust_failed": 0,
+    "rust_ignored": 0,
+    "full_regression_run": false,
+    "release_scope_passed": true,
+    "release_scope_rust_passed": 226,
+    "release_scope_description": "duck-control unit; duck-ipc-proto unit; padd unit; robotd roller::tests",
+    "roller_tests_passed": 3,
+    "arm64_model_loads_passed": 9,
+    "rust_scope": [
+      "duck-control",
+      "duck-ipc-proto",
+      "robotd",
+      "padd"
+    ],
+    "arm64_release_compiled": true,
+    "logs": [
+      {
+        "path": "verification/v161/arm64-build.log",
+        "sha256": "32efad8c04a562f1ec6f9d2953b559dd0c61bdb2dec97efbf3413edd0a71d72f"
+      },
+      {
+        "path": "verification/v161/arm64-models.json",
+        "sha256": "c82c864cfc61d3f57036066cc724f23f11a6bdb5f3e717afa4ee07007aa5c0fd"
+      },
+      {
+        "path": "verification/v161/release-tests.log",
+        "sha256": "da0a5d346b133274a451bd0a656bb091d22236d19cb7fc5b22fe269080c2a6e0"
+      },
+      {
+        "path": "verification/v161/release-tests.json",
+        "sha256": "25ca6fa2aa28103c3721975e830bbb7955e2a3405d7936e78abbfbbd68e47fd8"
+      },
+      {
+        "path": "verification/v161/python-tests.log",
+        "sha256": "ead3172bc5c76b24018d55211e1f83652c2b1c36687d28edc9792388eed19e36"
+      },
+      {
+        "path": "verification/v161/python-tests.json",
+        "sha256": "320db7d6829513ffe1c04bbcb28da2a63b598a512502392520385d37dade2a73"
+      }
+    ]
+  },
+  "toolchain": "Rust 1.99.0 / cargo-zigbuild 0.23.4 / Zig 0.15.1; aarch64-unknown-linux-gnu.2.31",
+  "console_source_distribution": "Console Python and JavaScript source included in this archive",
+  "firmware_validation": {
+    "robot_hardware_tested": false,
+    "rust_passed": 235,
+    "rust_failed": 0,
+    "rust_ignored": 0,
+    "full_regression_run": false,
+    "release_scope_passed": true,
+    "release_scope_description": "duck-control unit; duck-ipc-proto unit; padd unit; robotd roller::tests",
+    "python_passed": 6,
+    "arm64_model_loads_passed": 10,
+    "arm64_release_compiled": true,
+    "logs": [
+      {
+        "path": "verification/v163/arm64-build.log",
+        "sha256": "b4c36f38982018375678047fb9950b311d9a19cc324054f19aea471b3242dea7"
+      },
+      {
+        "path": "verification/v163/release-tests.json",
+        "sha256": "8b99fae69a9ff9ac1d776141d36e19366c3fdf431390fb4aca806843e32daf17"
+      },
+      {
+        "path": "verification/v163/release-tests.log",
+        "sha256": "6b68c0248584188619d8b70ddea8241b1153bc8748c9673afa04da4d9eb171c0"
+      },
+      {
+        "path": "verification/v163/python-tests.json",
+        "sha256": "62c07c07274dc45c8a451053e95a90466aa60972db3608bdc45003cbd1af8737"
+      },
+      {
+        "path": "verification/v163/python-tests.log",
+        "sha256": "937336a80369d589e8d7075a2c8ee29d7687823ed7ebc66718079c3476b7e504"
+      },
+      {
+        "path": "verification/v163/arm64-models.json",
+        "sha256": "dac5882a158e095775d738a6e826cb31c7bf3d4879783457f6a75b0ba46daa75"
+      },
+      {
+        "path": "verification/v163/source-diff.json",
+        "sha256": "9437ab14089fb7685293b0eb50eab297df783b59328cb88f074006db70a17f75"
+      }
+    ],
+    "validation_console_version": "1.0.163"
+  },
+  "tests_run_in_release": {
+    "model_card_render": "passed: six action cards and four roller cards",
+    "firmware_byte_comparison": "passed: unchanged control.40 archive",
+    "webpad_byte_comparison": "passed: all webpad and transport files unchanged",
+    "full_regression_run": false,
+    "robot_hardware_tested": false
+  }
 }

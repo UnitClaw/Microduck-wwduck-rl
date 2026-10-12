@@ -1,11 +1,12 @@
 {
-  "schema": "microduck-publication/v1",
-  "publication_revision": "public1",
-  "date": "2026-10-07",
-  "firmware_console_version": "1.0.146",
-  "firmware_build": "1fa8438-feetech-ft6-control.29",
+  "schema": "microduck-publication/v2",
+  "publication_revision": "public-image-r1-source-sync",
+  "date": "2026-10-12",
+  "firmware_console_version": "1.0.164",
+  "firmware_build": "1fa8438-feetech-ft6-control.40",
+  "firmware_compilation_console_version": "1.0.163",
   "api_version": 40,
-  "training_console_version": "1.5.17",
+  "training_console_version": "1.5.27",
   "upstream_firmware": {
     "repository": "https://github.com/pollen-robotics/microduck",
     "tag": "daemon-v0.15.1",
@@ -16,6 +17,15 @@
     "commit": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
     "included_in_source_bundle": false,
     "retrieval": "first environment preparation uses pinned git checkout and uv sync --frozen --python 3.12"
+  },
+  "source_archive": {
+    "name": "Microduck-Source-R17-V163-control40-compiled.tar.gz",
+    "bytes": 210356082,
+    "sha256": "cd0bd2421d7c6bd774c90c074f0913d563625962baf6c13d4c1496619aa20ff0",
+    "firmware_source_location": "firmware/",
+    "omitted": [
+      "base/ historical V160, V161 and V162 installer ZIPs"
+    ]
   },
   "models": {
     "walk": {
@@ -33,7 +43,7 @@
         "schema": "microduck-runtime-execution/v1",
         "model_sha256": "1cbf8730eadd75a5704332c9f3c10f60bfa9412135b907831c9dbd731ce1795f",
         "mode": "uniform",
-        "action_scale": 0.9,
+        "action_scale": 1.0,
         "head_lowpass": 0.5,
         "legs_lowpass": 0.7
       },
@@ -45,72 +55,102 @@
       "task": "Mjlab-SitStand-Flat-MicroDuck"
     },
     "ground_pick": {
-      "id": "2b69fa681ed06f7ded9e2a2d12ba5c67",
-      "sha256": "2b69fa681ed06f7ded9e2a2d12ba5c6776ec87308ac4a299e4b8196199c17f24",
-      "task": "Mjlab-GroundPick-Flat-MicroDuck"
+      "id": "b14e3a8b56ddbb8d2d831e727774a168",
+      "sha256": "b14e3a8b56ddbb8d2d831e727774a168c8f5b00194e3e431ae7593a840498c69",
+      "task": "Mjlab-GroundPick-Flat-Backlash-MicroDuck",
+      "epochs": 10000,
+      "source_iteration": 9999,
+      "num_envs": 4096,
+      "base_action_scale": 1.0,
+      "head_alpha": 1.0,
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "deployment_verified": false,
+      "source_policy_directory": "policies/ground_pick"
     },
     "roulade": {
-      "id": "8fdaf12c7478a8314a63647a466bfa34",
-      "sha256": "8fdaf12c7478a8314a63647a466bfa34ba1f15a7d9a5cb3b6ffa242719666168",
-      "task": "Mjlab-Roulade-Flat-MicroDuck"
-    },
-    "stand": {
-      "id": "a481d9f211f31d9476ab1a319fe362a2",
-      "sha256": "a481d9f211f31d9476ab1a319fe362a21ef0879d9fa59442a122845af598268c",
-      "task": "Mjlab-StandUp-Rough-Backlash-MicroDuck",
-      "teacher_only": true,
-      "bound_by_default": false,
-      "epochs": 11000,
+      "id": "59e15d7b04d0c40e9b11b8a70bdecae6",
+      "sha256": "59e15d7b04d0c40e9b11b8a70bdecae6da87a5e096efc204fb58eea304fcbbac",
+      "task": "Mjlab-Roulade-Flat-MicroDuck",
+      "epochs": 10000,
+      "source_iteration": 9999,
       "num_envs": 4096,
-      "manual_lb_bound": true,
+      "base_action_scale": 1.0,
+      "head_alpha": 1.0,
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "deployment_verified": false,
+      "source_policy_directory": "policies/roulade"
+    },
+    "kick_right": {
+      "id": "67ad09d82f4865d222a7ae06f250cf9f",
+      "sha256": "67ad09d82f4865d222a7ae06f250cf9f77f08c27e4f019ee3f7e431a764419fd",
+      "task": "Mjlab-BallKick-Flat-MicroDuck",
+      "epochs": 10000,
+      "num_envs": 4096,
+      "base_action_scale": 1.0,
+      "head_alpha": 1.0,
+      "legs_alpha": 1.0,
+      "target_filter": "passthrough",
+      "duration_seconds": 0.5,
+      "deployment_verified": false
+    },
+    "kick_left": {
+      "id": "ee0376c927044cdece056ba1d3e6eac7",
+      "sha256": "ee0376c927044cdece056ba1d3e6eac77b3e02ee3f701f1feb437c183ed39a6d",
+      "task": "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck",
+      "epochs": 10000,
+      "num_envs": 4096,
       "base_action_scale": 1.0,
       "target_filter": "passthrough",
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0
+      "duration_seconds": 0.5,
+      "deployment_verified": false
     }
+  },
+  "roller_models": {
+    "swizzle": "roller/swizzle/policy.onnx",
+    "crouch": "roller/crouch/policy.onnx",
+    "spin": "roller/spin/policy.onnx",
+    "standup": "roller/standup/policy.onnx"
   },
   "binary_sha256": {
-    "robotd": "1c4e77c640dcbb8fa402566c39fb20306457e421a40ab6639974fb1c239fc56c",
-    "robotctl": "05ebae696ed12e8824088ddd4e7833110bf045ca9416f027481e333e4d12f00c",
-    "padd": "78b456e7c19e720330c325fe16719e291d36373c0879911d59f77700d52f79a3",
+    "robotd": "464dde28e0be939237fdd1b7e9a4087d751b5c495b896cf25b6c8e44ba3c0fe9",
+    "robotctl": "a5034efaf6d26aaecc4a1b477c947abb7cf59d157288b9ad661706f00a700da7",
+    "padd": "356ed712b97c5c073cc9c691ede802a72704c7ece42d69c626f3c69fab0af241",
     "sounds": "00360318eb10509e65cbb0f1be7ef8725b00b0edbb2e0b3d779149ae61284103",
-    "gamepad-r7/gamesir-xboxd": "6f8d78d2bdcb85c2e216013c66e1af25b38813cb86d0e88a7722ef98df5d4b30"
+    "gamepad-r7/gamesir-xboxd": "e7c428e5690adf1483b5349fb100e076b5ca37c74068a6dd315015ce47d0af73",
+    "onnxruntime/libonnxruntime.so.1.28.0": "f1ec1a08eb99bd6e5401340f0a2b101381bf4694415480291dc13bcaa30f9ec7",
+    "onnxruntime/libonnxruntime_providers_shared.so": "3b6be288fbfb7dff8770d08a23defdde18e8f7e0f5a2b344a0e5e238c999ea88",
+    "mediad": "0417c8c2dc5a63dd2e1c2a65d652f31609c232abab95d50e4acbd1faab0f742b"
   },
-  "firmware_payload_sha256": "9cecf03286c608d750cee402d6a977870ba1d92a97b37cb5274abcdefd6c459a",
-  "original_inputs": [
+  "firmware_payload_sha256": "cba2a3d1fa486713c72f1155fed42d102c2fe3aea9bb3aaf0aad337e046b9afd",
+  "runtime_archives": [
     {
-      "name": "Microduck-Console-R17-v1.0.146.zip",
-      "bytes": 24386755,
-      "sha256": "a59ed3852e7d6db1f8aa59ba582b18cf9eaa096af00188e4227bbe0915bc9e6f"
+      "name": "Microduck-Console-R17-V164.zip",
+      "bytes": 40270716,
+      "sha256": "5c9313b2aba04b89c5dc608644ba7d814771623597d11ddc6a10373528272d31"
     },
     {
-      "name": "Microduck-Firmware-R17-v1.0.146.zip",
-      "bytes": 18884444,
-      "sha256": "928bb10c96daf82899c8633d9ac7474fd0fdfb21f849f71331354d45c417fb8d"
-    },
-    {
-      "name": "Microduck-R17-v1.0.146-Changes-and-Verification.txt",
-      "bytes": 12571,
-      "sha256": "e2744c8f900f667a4bc032b56d4cbc046e12e11cd399097abd98aaeaf55dc908"
-    },
-    {
-      "name": "Microduck-Source-R17-v1.0.146.tar.gz",
-      "bytes": 43887020,
-      "sha256": "7fb47afedbc3f3704d157ecedc6e779545d000f9edf2c374fcd3fef4eb93df18"
-    },
-    {
-      "name": "Microduck-Training-Studio-R1.5.17.zip",
-      "bytes": 20493532,
-      "sha256": "fa96a8e4cd757c88d4473acbb31a17dad3b6a0f424c0df5727e46cb1294e6b0d"
+      "name": "Microduck-Training-Studio-R1.5.27.zip",
+      "bytes": 24385768,
+      "sha256": "1c9f7725a7e253361f2c091ee062ecf0d67b685b16eefc5c7632b414754596e6"
     }
   ],
-  "publication_changes": [
-    "Add a repository directory, short README, VS Code publishing guide, portable build entry and explicit license scope.",
-    "Preserve all shipped runtime source logic, compiled ELF files, embedded firmware payload and ONNX model bytes.",
-    "Correct stale Walk metadata in the two source/console inventory manifests from original BUILD.json and actual policy SHA256; refresh inventories.",
-    "Remove personal SSH source/target and import-history metadata from two training example configurations; keep all numeric calibration and model parameters unchanged.",
-    "Preserve upstream licenses and original nested upstream workflow examples; no root auto-publish workflow is enabled."
-  ],
-  "hardware_verified": false,
-  "hardware_verified_note": "No new Zero, motor, gamepad, camera or GPU long-training acceptance run was performed during publication preparation."
+  "source_identity_checks": {
+    "package_BUILD_exact_match": true,
+    "padd_source_matches_shipped_BUILD": true,
+    "padd_roller_source_matches_shipped_BUILD": true,
+    "Rust_sources_preserved_from_control40_archive": true,
+    "console_program_sources_preserved_from_V164_zip": true,
+    "training_program_sources_preserved_from_R1527_zip": true,
+    "training_sample_source_metadata_cleared": []
+  },
+  "validation_scope": "Source and archive byte comparison, published BUILD/source hashes, syntax and documentation checks; no new firmware build or hardware/GPU test.",
+  "system_image": {
+    "release": "public-image-r1",
+    "name": "microduck-zero3w-0.15.1-R1.img.xz",
+    "sha256": "75da978b5d56acd9e4146256431732381de84523bb683e4ab7ac9f0580a7bce5",
+    "reported_acceptance": "Previously verified by reflashing the card, first Wi-Fi setup, SSH, robot communication and R17 identification."
+  },
+  "hardware_verified_in_source_sync": false
 }

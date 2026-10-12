@@ -6,12 +6,12 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 static ssize_t test_read(int fd, void *buffer, size_t size);
 static int test_close(int fd);
 static int test_ioctl(int fd, unsigned long request, ...);
 static int test_open(const char *path, int flags, ...);
-static int test_clock_gettime(clockid_t clock_id, struct timespec *now);
 
 /* Compile the production event/error/reconnect functions into this test.
  * Only hardware discovery, ioctl and fault injection are replaced. */
@@ -20,20 +20,17 @@ static int test_clock_gettime(clockid_t clock_id, struct timespec *now);
 #define close test_close
 #define ioctl test_ioctl
 #define open test_open
-#define clock_gettime test_clock_gettime
 #include "../gamesir-xboxd.c"
 #undef main
 #undef read
 #undef close
 #undef ioctl
 #undef open
-#undef clock_gettime
 
 static int failing_read_fd = -1;
 static int read_error = 0;
 static int watched_fd = -1;
 static int watched_closes = 0;
-static int64_t fake_now_ms = -1;
 static bool fake_consumer_available = false;
 static int fake_consumer_template = -1;
 static int fake_consumer_fd = -1;
@@ -88,15 +85,6 @@ static int test_open(const char *path, int flags, ...) {
     return -1;
 }
 
-static int test_clock_gettime(clockid_t clock_id, struct timespec *now) {
-    if (fake_now_ms >= 0) {
-        assert(clock_id == CLOCK_MONOTONIC);
-        now->tv_sec = fake_now_ms / 1000;
-        now->tv_nsec = (fake_now_ms % 1000) * 1000000;
-        return 0;
-    }
-    return clock_gettime(clock_id, now);
-}
 
 struct fixture {
     int primary[2];
@@ -266,36 +254,21 @@ static void test_consumer_keys_stay_isolated(void) {
     puts("PASS Consumer HOME/media keys remain excluded from Xbox buttons");
 }
 
-static void test_consumer_retry_is_bounded_and_recovers(void) {
+static void test_consumer_hotplug_recovers_without_timer_scans(void) {
     int auxiliary[2];
     assert(pipe2(auxiliary, O_NONBLOCK | O_CLOEXEC) == 0);
     fake_consumer_template = auxiliary[0];
     struct pollfd consumer = {.fd = -1, .events = POLLIN};
-    int64_t next_retry_ms = 1000;
-    fake_now_ms = 999;
-    retry_consumer_input(&consumer, &next_retry_ms);
-    assert(discovery_opens == 0);
-
-    fake_now_ms = 1000;
-    retry_consumer_input(&consumer, &next_retry_ms);
+    reopen_consumer_input(&consumer);
     assert(consumer.fd == -1);
-    assert(next_retry_ms == 2000);
     int attempts = discovery_opens;
     assert(attempts > 0);
-    /* Frequent main-node readiness must neither cause a discovery spin nor
-     * prevent the auxiliary node from being found when its deadline arrives. */
-    for (fake_now_ms = 1001; fake_now_ms < 2000; fake_now_ms++)
-        retry_consumer_input(&consumer, &next_retry_ms);
-    assert(discovery_opens == attempts);
-
     fake_consumer_available = true;
-    retry_consumer_input(&consumer, &next_retry_ms);
+    reopen_consumer_input(&consumer);
     assert(consumer.fd >= 0);
     assert(consumer_grabs == 1);
-    assert(next_retry_ms == 3000);
     attempts = discovery_opens;
-    fake_now_ms = 5000;
-    retry_consumer_input(&consumer, &next_retry_ms);
+    reopen_consumer_input(&consumer);
     assert(discovery_opens == attempts);
     watched_fd = consumer.fd;
     watched_closes = 0;
@@ -304,10 +277,59 @@ static void test_consumer_retry_is_bounded_and_recovers(void) {
     assert(watched_closes == 1);
     close(auxiliary[0]);
     close(auxiliary[1]);
-    fake_now_ms = -1;
     watched_fd = -1;
-    puts("PASS absent auxiliary retries at most once per second; reconnect "
-         "reopens/grabs; live auxiliary causes no scans");
+    puts("PASS auxiliary hotplug reopens/grabs; live auxiliary causes no scans");
+}
+
+static void test_real_input_hotplug_waits_and_late_directory(void) {
+    char parent[] = "/tmp/duck-input-watch-XXXXXX";
+    assert(mkdtemp(parent));
+    char directory[256], event[288];
+    snprintf(directory, sizeof(directory), "%s/input", parent);
+    snprintf(event, sizeof(event), "%s/event9", directory);
+    struct input_watch watch;
+    assert(start_input_watch(&watch, directory, parent) == 0);
+    assert(watch.input < 0);
+    assert(mkdir(directory, 0700) == 0);
+    assert(wait_input_change(&watch));
+    assert(watch.input >= 0);
+    struct pollfd fd = {.fd = watch.fd, .events = POLLIN};
+    input_changed(&watch);
+    int before_opens = discovery_opens;
+    assert(poll(&fd, 1, 30) == 0);
+    assert(discovery_opens == before_opens);
+    pid_t child = fork();
+    assert(child >= 0);
+    if (!child) {
+        struct timespec delay = {.tv_nsec = 40000000};
+        nanosleep(&delay, NULL);
+        int created = open(event, O_CREAT | O_WRONLY | O_CLOEXEC, 0600);
+        if (created < 0) _exit(1);
+        close(created);
+        _exit(0);
+    }
+    struct timespec start, stop;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    assert(wait_input_change(&watch));
+    clock_gettime(CLOCK_MONOTONIC, &stop);
+    double elapsed = (stop.tv_sec-start.tv_sec)*1000.0+(stop.tv_nsec-start.tv_nsec)/1000000.0;
+    assert(elapsed >= 20.0);
+    int status;
+    assert(waitpid(child, &status, 0) == child && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    input_changed(&watch);
+    assert(chmod(event, 0640) == 0);
+    assert(wait_input_change(&watch));
+    assert(unlink(event) == 0);
+    assert(wait_input_change(&watch));
+    assert(rmdir(directory) == 0);
+    input_changed(&watch);
+    assert(watch.input < 0);
+    assert(mkdir(directory, 0700) == 0);
+    assert(wait_input_change(&watch));
+    assert(watch.input >= 0);
+    close(watch.fd);
+    assert(rmdir(directory) == 0 && rmdir(parent) == 0);
+    puts("PASS actual inotify: idle blocks, late directory, creation/permissions/removal/recreation; no discovery timer");
 }
 
 int main(void) {
@@ -315,7 +337,8 @@ int main(void) {
     test_primary_hup();
     test_permanent_and_temporary_errors();
     test_consumer_keys_stay_isolated();
-    test_consumer_retry_is_bounded_and_recovers();
+    test_consumer_hotplug_recovers_without_timer_scans();
+    test_real_input_hotplug_waits_and_late_directory();
     puts("All GameSir disconnect regressions passed (production C paths, no hardware).");
     return 0;
 }

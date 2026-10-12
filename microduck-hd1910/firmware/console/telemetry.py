@@ -15,7 +15,7 @@ NAMES = ["left_hip_yaw", "left_hip_roll", "left_hip_pitch", "left_knee", "left_a
 LABELS = ["左髋旋转", "左髋侧摆", "左髋俯仰", "左膝", "左踝", "颈部俯仰", "头部俯仰",
           "头部转向", "头部侧倾", "嘴巴", "右髋旋转", "右髋侧摆", "右髋俯仰", "右膝", "右踝"]
 HOME = [0, -.0873, -.4579, -.0049, .4530, .3491, .3491, 0, 0, 0, 0, .0873, .4579, .0049, -.4530]
-TTL = {"state": 1.5, "health": 5, "tof": 2, "system": 7, "capabilities": 20, "bus": 1.5, "calibration": float("inf")}
+TTL = {"state": 1.5, "health": 5, "tof": 2, "system": 7, "capabilities": 20, "bus": 1.5, "calibration": float("inf"), "startup": float("inf")}
 
 
 def number(value):
@@ -57,6 +57,10 @@ class Store:
         self.system_log = None
         self.service_operation = False
         self.connection_paused = threading.Event()
+        self.robotd_restarting = threading.Event()
+        self.robotd_epoch = 0
+        from install_handoff import InstallHandoff
+        self.install_handoff = InstallHandoff()
         self.history = deque(maxlen=1200)  # 120 seconds at 10 Hz, in RAM only.
         self.last_record = -1
         self.inspection_active = mode != "service"
@@ -65,6 +69,16 @@ class Store:
         self.bus_sample_at = None
 
     def ingest(self, event):
+        if isinstance(event,dict) and event.get('channel')=='robotd_stream':
+            with self.lock:
+                preserve_startup=(event.get('data') or {}).get('preserve_startup') is True
+                if not preserve_startup:self.robotd_epoch += 1
+                for name in TTL:
+                    if name=='tof' or name=='startup' and preserve_startup:continue
+                    self.data.pop(name,None)
+                    self.channels[name].update(status='waiting',at=None,error='',seq=0)
+                self.bus_sample_key=self.bus_sample_at=None
+            return
         if not isinstance(event, dict) or event.get("channel") not in TTL:
             return
         channel = event["channel"]
@@ -85,6 +99,11 @@ class Store:
             if "error" in event:
                 c["status"], c["error"] = "error", str(event["error"])[:500]
             elif isinstance(event.get("data"), dict):
+                if channel == 'startup' and self.system_log:
+                    previous_steps=self.data.get('startup',{}).get('steps',{})
+                    for step, row in event['data'].get('steps',{}).items():
+                        if row != previous_steps.get(step) and row.get('status') in {'success','failed'}:
+                            self.system_log.add('robotd 启动 '+str(step)+'/4',('成功' if row['status']=='success' else '失败')+' · '+row.get('detail',''))
                 self.data[channel] = copy.deepcopy(event["data"])
                 if channel == "bus":
                     sample = event["data"].get("last_sample") or {}
@@ -168,6 +187,7 @@ class Store:
             result = {"schema": "microduck-console/v1", "service_operation": self.service_operation, "connection_paused": self.connection_paused.is_set(), "version": VERSION, "baseline": BASELINE,
                       "mode": self.mode, "read_only": not self.control_enabled, "at": time.time(), "uptime": now-self.started,
                       "channels": channels, "state": state, "health": health, "imu": imu,
+                      "startup": copy.deepcopy(self.data.get("startup", {})),
                       "capabilities": copy.deepcopy(self.data.get("capabilities", {})),
                       "tof": copy.deepcopy(self.data.get("tof", {})), "servos": servos,
                       "system": copy.deepcopy(self.data.get("system", {})), "events": list(self.events),

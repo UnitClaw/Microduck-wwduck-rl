@@ -288,7 +288,12 @@ def model_details(cfg):
         if name:
             d=int(effective.jnt_dofadr[i])
             dynamics.append({'joint':name,'damping':float(effective.dof_damping[d]),'armature':float(effective.dof_armature[d]),'frictionloss':float(effective.dof_frictionloss[d])})
-    effective_contacts=[{'name':mujoco.mj_id2name(effective,mujoco.mjtObj.mjOBJ_GEOM,i),'friction':effective.geom_friction[i].tolist(),'condim':int(effective.geom_condim[i]),'contype':int(effective.geom_contype[i]),'conaffinity':int(effective.geom_conaffinity[i]),'solref':effective.geom_solref[i].tolist(),'solimp':effective.geom_solimp[i].tolist()} for i in range(effective.ngeom)]
+    effective_contacts=[{'name':mujoco.mj_id2name(effective,mujoco.mjtObj.mjOBJ_GEOM,i),'id':i,
+        'body_name':mujoco.mj_id2name(effective,mujoco.mjtObj.mjOBJ_BODY,int(effective.geom_bodyid[i])),
+        'type':int(effective.geom_type[i]),'friction':effective.geom_friction[i].tolist(),
+        'condim':int(effective.geom_condim[i]),'contype':int(effective.geom_contype[i]),
+        'conaffinity':int(effective.geom_conaffinity[i]),'solref':effective.geom_solref[i].tolist(),
+        'solimp':effective.geom_solimp[i].tolist()} for i in range(effective.ngeom)]
     play_joints = [j for j in joints if j['name'].startswith('passive_') and j['name'].endswith('_backlash')]
     gear_backlash = {'enabled': bool(play_joints), 'joint_count': len(play_joints),
                     'ranges_rad': {j['name']: j['range'] for j in play_joints},
@@ -304,4 +309,6 @@ def model_details(cfg):
 def inspect_configs(task,cfg,agent):
     tree={'env':plain(cfg),'agent':plain(agent)}
     model=model_details(cfg)
-    return {'task':task,'full':tree,'rows':list(flatten(tree)),'model':model,'sha256':digest({'full':tree,'model':model})}
+    return {'task':task,'full':tree,'rows':list(flatten(tree)),'model':model,
+            'adapter_corrections':plain(getattr(cfg, '_studio_adapter_corrections', [])),
+            'sha256':digest({'full':tree,'model':model})}

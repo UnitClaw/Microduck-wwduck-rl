@@ -29,6 +29,7 @@ mod params;
 mod process_safety;
 mod raw_codec;
 mod raw_stream;
+mod roller;
 mod selftrained_profile;
 mod service_client;
 mod soc;
@@ -281,10 +282,6 @@ struct Args {
     #[arg(long, conflicts_with_all = ["fake", "read_only"])]
     commissioning: bool,
 
-    /// Installation helper barrier, before the first bus transaction.
-    #[arg(long, hide = true, conflicts_with_all = ["fake", "read_only"])]
-    uart_setup: bool,
-
     /// Report unhealthy. For exercising the updater's rollback path on a bench robot
     /// without having to break a real build.
     #[arg(long)]
@@ -363,7 +360,7 @@ fn mode_code(mode: Mode) -> u8 {
 
 fn mode_of(code: u8) -> Mode {
     match code {
-        1 => Mode::Roller,
+        roller::CROUCH_CODE | roller::SPIN_CODE => Mode::Roller,
         _ => Mode::Walk,
     }
 }
@@ -596,7 +593,9 @@ struct RobotState {
     bus_snapshot: ArcSwapOption<feetech_commissioning::Status>,
     bus_calibration: ArcSwapOption<serde_json::Value>,
     raw: raw_stream::Hub,
-    uart_setup_ready: AtomicBool,
+    startup: tokio::sync::watch::Sender<serde_json::Value>,
+    deployment_error: ArcSwapOption<String>,
+    control_exited: Arc<tokio::sync::Notify>,
     /// Session-only multiplier shared by every policy; Home/calibration remain unchanged.
     /// Epoch for every timestamp below. `Instant` so the clock cannot go backwards.
     started: Instant,
@@ -778,7 +777,9 @@ impl RobotState {
             bus_snapshot: ArcSwapOption::empty(),
             bus_calibration: ArcSwapOption::empty(),
             raw: raw_stream::Hub::default(),
-            uart_setup_ready: AtomicBool::new(false),
+            startup: tokio::sync::watch::channel(serde_json::json!({"steps":{}})).0,
+            deployment_error: ArcSwapOption::empty(),
+            control_exited: Arc::new(tokio::sync::Notify::new()),
             started: Instant::now(),
             ticks: AtomicU64::new(0),
             missed: AtomicU64::new(0),
@@ -878,6 +879,11 @@ impl RobotState {
             // string as the reason it rolled a release back — so it has to name the cause.
             let waiting = self.startup_bus_failures.load(Ordering::Relaxed);
             if waiting > 0 {
+                if let Some(status) = self.bus_status.load_full()
+                    && let Some(error) = status.get("error").and_then(serde_json::Value::as_str)
+                {
+                    return degraded(format!("motor bus startup: {error}"));
+                }
                 // Degraded, not unhealthy: an unpowered bench board must not roll back every
                 // release shipped to it. The bus not answering is the same before and after.
                 return degraded(format!(
@@ -1091,10 +1097,12 @@ async fn main() -> ExitCode {
         .params
         .clone()
         .unwrap_or_else(|| PathBuf::from(params::DEFAULT_PATH));
+
+    tracing::info!(step=1, status="starting", path=%params_path.display(), "startup: read main configuration");
     let mut params = match Params::load(&params_path, explicit) {
         Ok(params) => params,
         Err(e) => {
-            tracing::error!(error = %e, "bad params");
+            tracing::error!(step=1, status="failed", error = %e, "startup: bad main configuration");
             return ExitCode::FAILURE;
         }
     };
@@ -1103,10 +1111,6 @@ async fn main() -> ExitCode {
     }
     if args.no_policy || args.read_only || args.commissioning {
         params.policy.enabled = false;
-    }
-    if let Err(reason) = selftrained_profile::configure(&mut params, args.fake) {
-        tracing::error!(%reason, "HD1910 deployment refused configuration");
-        return ExitCode::FAILURE;
     }
     if args.read_only || args.commissioning {
         if args.command.is_some() || params.bus.protocol != params::BusProtocol::Feetech {
@@ -1194,6 +1198,7 @@ async fn main() -> ExitCode {
         }
     };
 
+    state.startup_step(1, "success", "配置读取、实例锁、IPC socket、控制线程已启动");
     let serving = serve(
         Arc::clone(&state),
         Arc::clone(&intents),
@@ -1209,6 +1214,10 @@ async fn main() -> ExitCode {
             }
         }
         signal = shutdown() => tracing::warn!(signal, "service shutdown requested"),
+        _ = state.control_exited.notified() => {
+            state.startup_step(1, "failed", "控制线程意外结束；主服务退出并交由 systemd 恢复，具体原因见前一条日志");
+            code = ExitCode::FAILURE;
+        }
     }
 
     // Ask the loop to stop and let it finish the tick it is in, rather than aborting
@@ -1285,7 +1294,6 @@ fn spawn_control_thread(
     let bus = params.bus.clone();
     let read_only = args.read_only;
     let commissioning = args.commissioning;
-    let uart_setup = args.uart_setup;
     let params = params.clone();
     // So a reload can re-read `[policy]` without a restart. The path rather than the loaded
     // params, because the point is to pick up what has been written since.
@@ -1294,9 +1302,18 @@ fn spawn_control_thread(
         .clone()
         .unwrap_or_else(|| PathBuf::from(params::DEFAULT_PATH));
 
+    if !fake && sim.is_none() && !read_only && bus.protocol == params::BusProtocol::Feetech {
+        state.bus_status.store(Some(Arc::new(serde_json::json!({
+            "build":feetech_commissioning::BUILD,
+            "mode":if commissioning { "commissioning" } else { "motion" },
+            "phase":"configuring_bus","port":bus.port
+        }))));
+    }
+
     std::thread::Builder::new()
         .name("control".into())
         .spawn(move || {
+            let _exit = ControlThreadExit(Arc::clone(&state.control_exited));
             let runtime = match tokio::runtime::Builder::new_current_thread()
                 .enable_time()
                 .build()
@@ -1322,7 +1339,6 @@ fn spawn_control_thread(
                     &state,
                     period,
                     calibration_path,
-                    uart_setup,
                 ));
                 return;
             }
@@ -1369,11 +1385,31 @@ fn spawn_control_thread(
             // loop has not completed a cycle yet", forever, whatever happened to the robot
             // afterwards. Retrying the read alone was not enough: execution never got there.
             runtime.block_on(async move {
-                if let Some(io) = open_bus_waiting(&bus, &state, uart_setup).await {
+                if let Some(io) = open_bus_waiting(&bus, &state).await {
                     control_loop(io, state, intents, params, params_path, period, poweroff).await;
                 }
             });
         })
+}
+
+struct ControlThreadExit(Arc<tokio::sync::Notify>);
+impl Drop for ControlThreadExit {
+    fn drop(&mut self) { self.0.notify_one(); }
+}
+
+impl RobotState {
+    fn startup_step(&self, step: u8, status: &str, detail: &str) {
+        let detail = if status == "waiting" { detail.split("; request_sent=").next().unwrap_or(detail) } else { detail };
+        let row = serde_json::json!({"status":status,"detail":detail});
+        let key = step.to_string();
+        let changed = self.startup.send_if_modified(|report| {
+            if report["steps"][&key] == row { return false; }
+            report["steps"][&key] = row;
+            report["build"] = serde_json::json!(feetech_commissioning::BUILD);
+            true
+        });
+        if changed { tracing::info!(step, status, detail, "startup status"); }
+    }
 }
 
 /// The real bus on the board; a fake elsewhere, so `open_bus_waiting` has one signature.
@@ -1389,67 +1425,21 @@ type BusIo = FakeIo;
 /// one to abandon the control loop over.
 ///
 /// Returns `None` only if shutdown is requested while waiting.
-async fn open_bus_waiting(
-    bus: &params::Bus,
-    state: &RobotState,
-    uart_setup: bool,
-) -> Option<BusIo> {
-    #[cfg(target_os = "linux")]
-    if uart_setup && bus.protocol == params::BusProtocol::Feetech {
-        let result = async {
-            let path = bus
-                .feetech_calibration
-                .as_ref()
-                .ok_or("missing Feetech calibration")?;
-            let calibration: duck_control::feetech::Calibration =
-                toml::from_str(&std::fs::read_to_string(path)?)?;
-            calibration.validate_motion()?;
-            let raw = duck_control::feetech::Bus::open(&bus.port)?;
-            feetech_commissioning::await_uart_setup(state, &bus.port, "motion").await?;
-            let report = feetech_commissioning::calibration_status(&calibration, path);
-            let mut io = duck_control::feetech::FeetechIo::from_bus(raw, calibration)?;
-            io.configure_servo_test(path)?;
-            state.bus_calibration.store(Some(Arc::new(report)));
-            Ok::<_, Box<dyn std::error::Error>>(BusIo::Feetech(io))
-        }
-        .await;
-        return match result {
-            Ok(io) => Some(io),
-            Err(error) => {
-                state.startup_bus_failures.store(1, Ordering::Relaxed);
-                state.bus_status.store(Some(Arc::new(serde_json::json!({"build":feetech_commissioning::BUILD,"mode":"motion","phase":"configuration_error","error":error.to_string()}))));
-                tracing::error!(%error,"bus startup failed");
-                None
-            }
-        };
-    }
+async fn open_bus_waiting(bus: &params::Bus, state: &RobotState) -> Option<BusIo> {
     let mut attempt = 0u32;
-
+    state.startup_step(2, "starting", "读取保存标定、打开串口、关闭并确认扭矩、初始化 IMU");
     while !state.shutdown.load(Ordering::Relaxed) {
-        // Logging lives in `open_bus`, which is chatty by design on the first attempt and
-        // quiet thereafter — a board waiting overnight must not fill the journal.
         if let Some(io) = open_bus(bus, attempt, Some(state)) {
             state.startup_bus_failures.store(0, Ordering::Relaxed);
             return Some(io);
         }
         attempt += 1;
-        // Published before sleeping, so `robot.health` can name the cause immediately.
         state.startup_bus_failures.store(attempt, Ordering::Relaxed);
-        if bus.protocol == params::BusProtocol::Feetech {
-            state.bus_status.store(Some(Arc::new(serde_json::json!({
-                "build":feetech_commissioning::BUILD, "mode":"motion",
-                "phase":"waiting_for_bus", "attempt":attempt, "port":bus.port,
-                "message":"Waiting for calibrated FT5 hardware; see robotd journal for the exact cause"
-            }))));
-        }
-
-        // Nothing to retry on a platform that has no bus at all.
-        if !cfg!(target_os = "linux") {
-            return None;
-        }
+        if !cfg!(target_os = "linux") { return None; }
+        // The existing official startup wait owns this retry, with no helper,
+        // acknowledgement, configuration copy, cold-reopen pass or extra timer.
         tokio::time::sleep(STARTUP_RETRY_INTERVAL).await;
     }
-
     None
 }
 
@@ -1469,8 +1459,9 @@ fn open_bus(bus: &params::Bus, attempt: u32, state: Option<&RobotState>) -> Opti
                 toml::from_str(&std::fs::read_to_string(path)?)?;
             calibration.validate_motion()?;
             let report = feetech_commissioning::calibration_status(&calibration, path);
-            let mut io = duck_control::feetech::FeetechIo::open(port, calibration)?;
-            io.configure_servo_test(path)?;
+            let raw = duck_control::feetech::Bus::open(port)?;
+            let mut io = duck_control::feetech::FeetechIo::for_startup(raw, calibration)?;
+            io.confirm_startup_limp()?;
             if let Some(state) = state {
                 state.bus_calibration.store(Some(Arc::new(report)));
             }
@@ -1479,14 +1470,19 @@ fn open_bus(bus: &params::Bus, attempt: u32, state: Option<&RobotState>) -> Opti
         return match open() {
             Ok(io) => {
                 tracing::warn!(
-                    "native Feetech FT5 selected; calibrated official control loop; existing torque preserved, init/enable is explicit"
+                    "native Feetech selected; startup torque OFF confirmed; init/enable remains explicit"
                 );
                 Some(BusIo::Feetech(io))
             }
             Err(e) => {
-                if loud {
-                    tracing::error!(error = %e, port, attempt, "cannot open native Feetech; no Dynamixel fallback");
+                if let Some(state) = state {
+                    state.startup_step(2, "waiting", &e.to_string());
+                    state.bus_status.store(Some(Arc::new(serde_json::json!({
+                        "build":feetech_commissioning::BUILD,"mode":"motion",
+                        "phase":"waiting_for_bus","port":port,"error":e.to_string()
+                    }))));
                 }
+                if loud { tracing::warn!(error = %e, port, attempt, "hardware initialization waiting"); }
                 None
             }
         };
@@ -1594,7 +1590,7 @@ fn open_bus(_bus: &params::Bus, _attempt: u32, _state: Option<&RobotState>) -> O
     None
 }
 
-/// How long to wait between attempts to read the startup pose.
+/// Backoff after a failed startup read or incomplete joint feedback.
 ///
 /// A second, not a control period: the read itself already carries a 30 ms bus timeout, and
 /// a board waiting for someone to switch servo power on is not in a hurry. Fast enough that
@@ -1689,11 +1685,36 @@ async fn adopt_startup_pose<T: RobotIo>(
     period: Duration,
 ) -> Option<[f64; NUM_JOINTS]> {
     let mut attempt = 0u32;
+    // The decoder needs 25 accepted samples. One-second fault backoff between
+    // good reads would turn that confirmation into 24 seconds of startup delay.
+    // Only this initial, bounded burst uses the existing control period; invalid
+    // quaternion data cannot keep an unready robot polling at 50 Hz forever.
+    let mut imu_confirmation_reads = duck_control::imu::SFLP_READY_SAMPLES.saturating_sub(1);
 
     while !state.shutdown.load(Ordering::Relaxed) {
         match safety.read() {
             Ok(sensors) => {
+                if let Some(status) = safety.feetech_control_status() {
+                    if !status.all_joints_fresh || status.joints_held {
+                        state.startup_step(2, "waiting", "等待全部关节的新鲜反馈；未发送目标");
+                        tokio::time::sleep(STARTUP_RETRY_INTERVAL).await;
+                        continue;
+                    }
+                    if !status.imu_ready {
+                        let delay = if imu_confirmation_reads > 0 {
+                            imu_confirmation_reads -= 1;
+                            state.startup_step(2, "waiting", "关节反馈已有效；确认 IMU 融合就绪；未发送目标");
+                            period
+                        } else {
+                            state.startup_step(2, "waiting", "关节反馈已有效；IMU 仍未就绪，按原间隔等待；未发送目标");
+                            STARTUP_RETRY_INTERVAL
+                        };
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                }
                 state.startup_bus_failures.store(0, Ordering::Relaxed);
+                state.startup_step(2, "success", "第一份有效关节与 IMU 反馈已读取");
                 if attempt > 0 {
                     // Only worth a line if it had to wait — otherwise "control loop running"
                     // below already says everything, and this would just double it.
@@ -1710,6 +1731,11 @@ async fn adopt_startup_pose<T: RobotIo>(
                 // Published before sleeping, so `robot.health` can name the cause on the
                 // very first failure rather than after the first log line.
                 state.startup_bus_failures.store(attempt, Ordering::Relaxed);
+                state.startup_step(2, "waiting", &e.to_string());
+                state.bus_status.store(Some(Arc::new(serde_json::json!({
+                    "build":feetech_commissioning::BUILD,"mode":"motion",
+                    "phase":"waiting_for_bus","error":e.to_string()
+                }))));
                 if attempt == 1 || attempt.is_multiple_of(STARTUP_READ_LOG_EVERY) {
                     tracing::warn!(
                         error = %e,
@@ -1993,7 +2019,7 @@ fn cut_torque_before_poweroff<T: RobotIo>(safety: &mut Safety<T>) {
 /// Both callers are places where that costs nothing: a robot holding the home pose, or one with
 /// no torque at all.
 fn load_mode(
-    target: Mode,
+    target_code: u8,
     policy_params: &mut params::PolicyParams,
     policy_cfg: &mut params::ResolvedPolicy,
     controller: &mut Option<Controller>,
@@ -2001,14 +2027,33 @@ fn load_mode(
     state: &RobotState,
     slot_errors: &SlotErrors,
 ) {
-    policy_params.mode = target;
-    let cfg = policy_params.resolved();
+    let target = mode_of(target_code);
+    let mut candidate = policy_params.clone();
+    candidate.mode = target;
+    let cfg = roller::resolved(candidate.resolved(), target_code);
+    // A rejected or non-loadable roller model must never discard the working Walk
+    // controller. No new mode is published before all networks are ready.
+    let built = match try_controller(&cfg, limp_fall) {
+        Ok(Some(controller)) => controller,
+        Ok(None) => {
+            tracing::error!(mode = target.as_str(), "mode switch refused: no policy controller loaded");
+            return;
+        }
+        Err(error) => {
+            tracing::error!(mode = target.as_str(), error = %error,
+                "mode switch failed: preserving previous controller and mode");
+            state.policy_change_error.store(Some(Arc::new(error.to_string())));
+            return;
+        }
+    };
+    *controller = Some(built);
+    *policy_params = candidate;
     state.policy_error.store(None);
-    *controller = build_controller(&cfg, limp_fall, state);
+    state.policy_change_error.store(None);
     // Published together with the mode, and only after the load: a client that reads
     // `robot.mode` and gets the new one must not then be told the old mode's networks.
     state.policies.store(Arc::new(PolicyNames::of(&cfg)));
-    state.mode.store(mode_code(target), Ordering::Relaxed);
+    state.mode.store(target_code, Ordering::Relaxed);
     state
         .policy_slots
         .store(Arc::new(slot_report(policy_params, &cfg, slot_errors)));
@@ -2044,7 +2089,7 @@ async fn control_loop<T: RobotIo>(
     io: T,
     state: Arc<RobotState>,
     intents: Arc<Intents>,
-    params: Params,
+    mut params: Params,
     // Where `[policy]` is re-read from on a reload, so adding a skill needs no restart.
     params_path: PathBuf,
     period: Duration,
@@ -2054,44 +2099,33 @@ async fn control_loop<T: RobotIo>(
     // what the file said: `robot.setMode` replaces the mode, `robot.loadPolicy` replaces one
     // slot, and the line below drops any override this board cannot actually load.
     let feetech = params.bus.protocol == params::BusProtocol::Feetech;
+    let initial_cfg = roller::resolved(params.policy.resolved(), mode_code(params.policy.mode));
+    let mut safety = Safety::new(io, SafetyConfig {
+        fall_gravity_z: params.safety.fall_gravity_z,
+        fall_debounce: Duration::from_millis(params.safety.fall_debounce_ms),
+        deadman: Duration::from_millis(params.safety.deadman_ms),
+        gain_running: initial_cfg.gain,
+        gain_limp: params.safety.gain_limp,
+    });
+    state.startup_step(2, "waiting", "等待第一份有效关节与 IMU 反馈；未发送目标");
+    let Some(mut hold) = adopt_startup_pose(&mut safety, &state, period).await else { return; };
+    let mut startup_pose_ready = true;
+    state.startup_step(2, "success", "硬件初始化与第一份有效反馈完成");
+    state.startup_step(3, "starting", "加载随包模型配置与推理运行时");
+    let profile_error = selftrained_profile::configure(&mut params, !feetech).err();
+    state.deployment_error.store(profile_error.as_ref().map(|s| Arc::new(s.clone())));
     let mut policy_params = params.policy.clone();
-    // Slots running their default because an override would not load. Empty on nearly every
-    // robot; anything in it makes health degraded and shows up in `robot.policies`.
     let mut slot_errors = SlotErrors::default();
-    drop_unloadable_overrides(&mut policy_params, &mut slot_errors);
-    // `mut` because a mode switch replaces it: the resolved policy *is* the mode, once the
-    // per-mode defaults have been applied.
-    let mut policy_cfg = policy_params.resolved();
-    // Republished, because `RobotState::new` built both from the file and the check above may
-    // have dropped an override since. A client that asks before the first tick gets what this
-    // loop is actually going to load, not what the file asked for.
-    state.policies.store(Arc::new(PolicyNames::of(&policy_cfg)));
-    state.policy_slots.store(Arc::new(slot_report(
-        &policy_params,
-        &policy_cfg,
-        &slot_errors,
-    )));
-    let mut safety = Safety::new(
-        io,
-        SafetyConfig {
-            fall_gravity_z: params.safety.fall_gravity_z,
-            fall_debounce: Duration::from_millis(params.safety.fall_debounce_ms),
-            deadman: Duration::from_millis(params.safety.deadman_ms),
-            gain_running: policy_cfg.gain,
-            gain_limp: params.safety.gain_limp,
-        },
-    );
-
-    // Acquisition must run even before the first usable Feetech pose. The
-    // placeholder is internal only: no target write until real feedback arrives.
-    let (mut hold, mut startup_pose_ready) = if feetech {
-        (duck_control::deployment::home(), false)
+    // Contract errors disable model actions, not hardware sampling or IPC.
+    if let Some(reason) = &profile_error {
+        state.policy_error.store(Some(Arc::new(reason.clone())));
+        state.startup_step(3, "failed", reason);
     } else {
-        let Some(pose) = adopt_startup_pose(&mut safety, &state, period).await else {
-            return;
-        };
-        (pose, true)
-    };
+        drop_unloadable_overrides(&mut policy_params, &mut slot_errors);
+    }
+    let mut policy_cfg = roller::resolved(policy_params.resolved(), mode_code(policy_params.mode));
+    state.policies.store(Arc::new(PolicyNames::of(&policy_cfg)));
+    state.policy_slots.store(Arc::new(slot_report(&policy_params, &policy_cfg, &slot_errors)));
 
     // Was the robot powered on already sitting? A seated duck has hips and knees folded
     // far from the standing pose. If so, the first bring-up rises via the sitstand network
@@ -2112,14 +2146,16 @@ async fn control_loop<T: RobotIo>(
     }
 
     // Loaded once here and again on a mode switch — see `build_controller`.
-    let mut controller = build_controller(&policy_cfg, params.safety.limp_fall, &state);
-
-    tracing::warn!(
-        joints = NUM_JOINTS,
-        hz = 1.0 / period.as_secs_f64(),
-        driving = controller.is_some(),
-        "control loop running"
-    );
+    let mut controller = if profile_error.is_some() { None } else {
+        build_controller(&policy_cfg, params.safety.limp_fall, &state)
+    };
+    if let Some(reason) = state.policy_error.load_full() {
+        state.startup_step(3, "failed", reason.as_str());
+    } else {
+        state.startup_step(3, "success", if controller.is_some() { "随包模型可用" } else { "策略按配置关闭" });
+    }
+    state.bus_status.store(Some(Arc::new(serde_json::json!({"build":feetech_commissioning::BUILD,"mode":"motion","phase":"control"}))));
+    state.startup_step(4, "starting", "等待首个 50 Hz 控制周期完成");
 
     let mut ticker = control_ticker(period);
     // `Skip`, not `Burst` and not `Delay`.
@@ -2153,7 +2189,8 @@ async fn control_loop<T: RobotIo>(
     let mut bringup = Bringup::Limp;
     // A mode switch in flight: the mode to end up in, once the robot is home. `None` the rest of
     // the time, which is nearly always.
-    let mut mode_change: Option<Mode> = None;
+    let mut mode_change: Option<u8> = None;
+    let mut roller_heading = roller::Heading::default();
     // A policy load in flight, for the same reason and on the same path as `mode_change`: the
     // robot goes home first, and the swap happens there.
     let mut pending_swap: Option<PendingSwap> = None;
@@ -2400,6 +2437,11 @@ async fn control_loop<T: RobotIo>(
                 tracing::warn!("robot.init ignored: the robot is powering off")
             }
             Some(intents::PowerRequest::Init) => {
+                if feetech && bringup == Bringup::Ready {
+                    // Keep the absolute destination even when this HOME request
+                    // lands after a sensor pause; the backend still owns blind holds.
+                    hold = duck_control::deployment::home();
+                }
                 if feetech && let Some(controller) = controller.as_mut() {
                     // HOME owns the target now. A stale seat/skill must not resume
                     // when the next Start enables the walking policy.
@@ -2451,6 +2493,16 @@ async fn control_loop<T: RobotIo>(
                     // Mid-ramp, or no sample to ramp from: nothing to do, and saying so beats
                     // a silent no-op.
                     (state, _) => tracing::info!(?state, "robot.init: nothing to bring up"),
+                }
+            }
+            Some(intents::PowerRequest::Home) => {
+                if feetech && bringup == Bringup::Ready && !powered_off {
+                    // Explicit policy-off retains its direct HOME target. It must
+                    // work even when a blind bus already cleared `was_driving`.
+                    if let Some(controller) = controller.as_mut() {
+                        controller.reset_for_home();
+                    }
+                    hold = duck_control::deployment::home();
                 }
             }
             Some(intents::PowerRequest::Relax) => match safety.set_torque(false) {
@@ -2622,7 +2674,7 @@ async fn control_loop<T: RobotIo>(
         let mode_requested = mode_request.is_some();
         if let Some(code) = mode_request {
             let target = mode_of(code);
-            if target == policy_params.mode {
+            if code == state.mode.load(Ordering::Relaxed) {
                 tracing::info!(
                     mode = target.as_str(),
                     "already in that mode; nothing to switch"
@@ -2672,7 +2724,7 @@ async fn control_loop<T: RobotIo>(
                         voice.play("chirp", false);
                     }
                 }
-                mode_change = Some(target);
+                mode_change = Some(code);
             }
         }
 
@@ -2689,7 +2741,8 @@ async fn control_loop<T: RobotIo>(
         // without one. The request site refuses a switch on a robot that is shutting down; a
         // switch that was already waiting when the shutdown began is that same request arriving
         // late, and `robot.init` is turned away on this path for the same reason.
-        if let Some(target) = mode_change {
+        if let Some(target_code) = mode_change {
+            let target = mode_of(target_code);
             if shutdown_sit.is_some() || powered_off {
                 mode_change = None;
                 tracing::warn!(
@@ -2709,7 +2762,7 @@ async fn control_loop<T: RobotIo>(
                     Bringup::Limp => {
                         mode_change = None;
                         load_mode(
-                            target,
+                            target_code,
                             &mut policy_params,
                             &mut policy_cfg,
                             &mut controller,
@@ -2759,7 +2812,7 @@ async fn control_loop<T: RobotIo>(
             } else if let Some(candidate) =
                 candidate_params(&change, &policy_params, &params_path, &mut slot_errors)
             {
-                let cfg = candidate.resolved();
+                let cfg = roller::resolved(candidate.resolved(), state.mode.load(Ordering::Relaxed));
                 // Only a network that stepped last tick counts as driving: a robot that is
                 // disabled, limp or mid-ramp has nothing running that a swap could interrupt.
                 let driving = if was_driving {
@@ -3281,9 +3334,9 @@ async fn control_loop<T: RobotIo>(
             // up each network, so this blocks the loop for a moment — deliberately, and in the one
             // place where a stalled command stream costs nothing, because the robot is holding a
             // pose rather than mid-stride. Missed ticks in that window are expected.
-            if let Some(target) = mode_change.take() {
+            if let Some(target_code) = mode_change.take() {
                 load_mode(
-                    target,
+                    target_code,
                     &mut policy_params,
                     &mut policy_cfg,
                     &mut controller,
@@ -3510,6 +3563,7 @@ async fn control_loop<T: RobotIo>(
             }
         }
         was_driving = driving;
+        if !driving { roller_heading.reset(); }
 
         let scale_mult = if policy_cfg.voltage_adapt && battery_v > 0.0 {
             policy_cfg.nominal_voltage / battery_v.clamp(6.0, 9.5)
@@ -3551,7 +3605,18 @@ async fn control_loop<T: RobotIo>(
             },
             (true, Some(sensors)) => {
                 let controller = controller.as_mut().expect("driving implies a controller");
-                match controller.step(sensors, &command, snapshot.pose.active, dt, scale_mult) {
+                let adapted = if policy_cfg.mode == Mode::Roller {
+                    if fresh.is_some() {
+                        roller_heading.adapt(&command, &sensors.imu, tick_start)
+                    } else {
+                        roller_heading.reset();
+                        PolicyCommand { twist: [0.0; 3], ..command }
+                    }
+                } else {
+                    roller_heading.reset();
+                    command
+                };
+                match controller.step(sensors, &adapted, snapshot.pose.active, dt, scale_mult) {
                     Ok(step) => (
                         step.targets,
                         step.gain,
@@ -3791,8 +3856,15 @@ async fn control_loop<T: RobotIo>(
             communication_stats.observe(trace);
         }
         let raw_bus = safety.feetech_snapshot().map(|native| {
-            if !motion_report_started {
-                // Retire startup-only UART/error status once live facts take over.
+            if !motion_report_started
+                && startup_pose_ready
+                && fresh.is_some()
+                && native.dynamic.all_joints_fresh
+                && native.dynamic.imu_ready
+            {
+                // A numeric snapshot exists before any usable sensor read. Keep
+                // HOME refused until the first complete, converged observation,
+                // or its accepted request would be consumed on a blind tick.
                 state.bus_status.store(None);
                 motion_report_started = true;
             }
@@ -3980,6 +4052,7 @@ async fn control_loop<T: RobotIo>(
         }
 
         let ticks = state.ticks.fetch_add(1, Ordering::Relaxed) + 1;
+        if ticks == 1 { state.startup_step(4, "success", "首个控制周期完成；50 Hz 循环运行，运动需显式请求"); }
         state.last_tick_us.store(
             state.started.elapsed().as_micros() as u64,
             Ordering::Relaxed,
@@ -4492,31 +4565,36 @@ async fn handle(
             }
             continue;
         }
-        if request.method == "robot.uartConfigured" {
-            if let Some(id) = request.id.clone() {
-                let waiting = state
-                    .bus_status
-                    .load_full()
-                    .is_some_and(|r| r["phase"] == "configuring_uart");
-                let result = if waiting {
-                    state.uart_setup_ready.store(true, Ordering::Release);
-                    proto::Response::ok(Some(id), &serde_json::json!({"accepted":true}))
-                } else {
-                    proto::Response::err(
-                        Some(id),
-                        proto::Error::new(
-                            proto::code::INVALID_REQUEST,
-                            "UART setup is not pending",
-                        ),
-                    )
-                };
-                write_line(&mut write_half, &result).await?;
+        if request.method == "robot.startupSubscribe" {
+            let mut receiver = state.startup.subscribe();
+            let first = receiver.borrow_and_update().clone();
+            write_line(&mut write_half, &serde_json::json!({"jsonrpc":"2.0","id":request.id,"result":first})).await?;
+            loop {
+                tokio::select! {
+                    changed = receiver.changed() => {
+                        if changed.is_err() { break; }
+                        let report = receiver.borrow_and_update().clone();
+                        write_line(&mut write_half, &serde_json::json!({"jsonrpc":"2.0","method":"robot.startup","params":report})).await?;
+                    }
+                    _ = lines.next_line() => break,
+                }
             }
-            continue;
+            return Ok(());
         }
         if request.method == "robot.busStatus" {
             if let Some(id) = request.id.clone() {
-                if let Some(report) = state.bus_snapshot.load_full() {
+                if let Some(report) = state.bus_status.load_full()
+                    && startup_phase(report.get("phase").and_then(serde_json::Value::as_str))
+                {
+                    // An empty native snapshot already exists while ID 200 is
+                    // warming. Keep the actual startup phase visible to clients.
+                    let response = BorrowedBusStatus {
+                        jsonrpc: proto::JSONRPC_VERSION,
+                        id: &id,
+                        result: report.as_ref(),
+                    };
+                    write_line(&mut write_half, &response).await?;
+                } else if let Some(report) = state.bus_snapshot.load_full() {
                     let response = proto::Response::ok(Some(id), report.as_ref());
                     write_line(&mut write_half, &response).await?;
                 } else if let Some(snapshot) = state.raw.latest.load_full()
@@ -4637,7 +4715,9 @@ fn apply_intent(state: &RobotState, intents: &Intents, call: &proto::Call) -> bo
         // would be pure overhead. The one-shot press stays a request (`dispatch` refuses
         // it with a reason); the loop arbitrates either way.
         proto::Call::RobotDo(p) => {
-            queue_skill(state, intents, &p.skill);
+            if bus_startup_refusal(state).is_none() {
+                queue_skill(state, intents, &p.skill);
+            }
             true
         }
         // Same story for the wheee hold, which arrives per tick while the trigger is down.
@@ -5153,6 +5233,40 @@ fn queue_skill(state: &RobotState, intents: &Intents, skill: &str) -> bool {
     }
 }
 
+fn bus_startup_refusal(state: &RobotState) -> Option<String> {
+    if !state.feetech {
+        return None;
+    }
+    if let Some(reason) = state.deployment_error.load_full() {
+        return Some(format!("模型部署配置不可用，采集继续；动作未接受：{reason}"));
+    }
+    let status = state.bus_status.load_full()?;
+    let phase = status.get("phase")?.as_str()?;
+    if !startup_phase(Some(phase)) {
+        return None;
+    }
+    Some(
+        status
+            .get("error")
+            .and_then(serde_json::Value::as_str)
+            .map_or_else(
+                || "固件尚未完成总线初始化，请等待启动完成后重新按键".into(),
+                |error| format!("固件总线尚未就绪：{error}；请在恢复后重新按键"),
+            ),
+    )
+}
+
+fn startup_phase(phase: Option<&str>) -> bool {
+    matches!(
+        phase,
+        Some(
+            "configuring_bus"
+                | "waiting_for_bus"
+                | "configuration_error"
+        )
+    )
+}
+
 fn dispatch(
     state: &RobotState,
     intents: &Intents,
@@ -5223,7 +5337,9 @@ fn dispatch(
             // nothing is the worst answer available: the loop drops a skill request whenever
             // the policy is not driving, and it says so only in the journal. That silence cost
             // an evening once already.
-            let result = if state.feetech && p.skill == "stand_test" {
+            let result = if let Some(reason) = bus_startup_refusal(state) {
+                proto::IntentResult::refused(reason)
+            } else if state.feetech && p.skill == "stand_test" {
                 if let Some(index) = state
                     .policies
                     .load()
@@ -5357,21 +5473,31 @@ fn dispatch(
         // state and that state is what they get, and a pad held a beat too long should not report
         // an error.
         proto::Call::RobotSetMode(p) => {
-            let target = match p.mode.as_str() {
-                "walk" => Some(Mode::Walk),
-                "roller" => Some(Mode::Roller),
+            let code = match p.mode.as_str() {
+                "walk" => Some(0),
+                "roller" | "roller_crouch" => Some(roller::CROUCH_CODE),
+                "roller_spin" => Some(roller::SPIN_CODE),
                 _ => None,
             };
-            let result = match target {
-                None => proto::IntentResult::refused("mode must be \"walk\" or \"roller\""),
+            let active = state.mode.load(Ordering::Relaxed);
+            let action_change = code.is_some_and(|c| c != 0 && mode_of(active) == Mode::Roller);
+            let result = match code {
+                None => proto::IntentResult::refused("mode must be walk, roller, roller_crouch or roller_spin"),
                 Some(_) if state.policies.load().walk.is_none() => proto::IntentResult::refused(
                     "no policy on this robot, so there is nothing to switch between",
                 ),
-                Some(Mode::Roller) => proto::IntentResult::refused(
-                    "This build supports the self-trained walking mode only",
+                Some(c) if c != 0 && !roller::available() => proto::IntentResult::refused(
+                    "roller ONNX models are not installed; original walking policy unchanged",
                 ),
-                Some(mode) => {
-                    intents.request_mode_switch(mode_code(mode));
+                Some(_c) if action_change &&
+                    (!state.homed.load(Ordering::Relaxed) ||
+                     state.moving.load(Ordering::Relaxed) ||
+                     state.sitting.load(Ordering::Relaxed)) => proto::IntentResult::refused(
+                    "roller change requires stationary HOME with no active skill",
+                ),
+                Some(c) if c == active => proto::IntentResult::already("mode already selected"),
+                Some(c) => {
+                    intents.request_mode_switch(c);
                     proto::IntentResult::accepted()
                 }
             };
@@ -5456,6 +5582,10 @@ fn dispatch(
                 mode: mode_of(state.mode.load(Ordering::Relaxed))
                     .as_str()
                     .to_owned(),
+                roller_action: (mode_of(state.mode.load(Ordering::Relaxed)) == Mode::Roller)
+                    .then(|| if state.mode.load(Ordering::Relaxed) == roller::SPIN_CODE {
+                        "spin".to_owned()
+                    } else { "crouch".to_owned() }),
             },
         ),
 
@@ -5548,12 +5678,17 @@ fn dispatch(
             // `toggle` flips the robot's own state — the pad's Start. Evaluated here, not
             // in the client, because a client-side belief drifts (relax, shutdown, either
             // side restarting) and a stale one turns Start into a no-op every other press.
+            let was_enabled = intents.enabled();
             let on = if p.toggle {
-                !(intents.enabled() || intents.home_skill_pending())
+                !(was_enabled || intents.home_skill_pending())
             } else {
                 p.on
             };
-            let starting = on && !intents.enabled();
+            let starting = on && !was_enabled;
+            if on && let Some(reason) = bus_startup_refusal(state) {
+                state.enable_refusal.store(Some(Arc::new(reason.clone())));
+                return proto::Response::ok(Some(id), &proto::IntentResult::refused(reason));
+            }
             if starting && state.feetech {
                 let reason = state.home_start.load_full().map_or_else(
                     || Some("不能进入保持：尚未确认实际 HOME 和直立姿态，请先回 HOME".into()),
@@ -5619,13 +5754,22 @@ fn dispatch(
             }
             let result = {
                 intents.set_enabled(on);
-                if state.feetech && p.toggle && !on {
+                if state.feetech && p.toggle && !on && bus_startup_refusal(state).is_none() {
                     // A paused policy may already have stopped driving, so its
                     // falling-edge hold is not enough to execute Start-off HOME.
                     intents.request_init();
                     state.enable_refusal.store(None);
+                } else if state.feetech
+                    && !on
+                    && was_enabled
+                    && bus_startup_refusal(state).is_none()
+                {
+                    // The web/CLI explicit stop is direct HOME, including after
+                    // inference has already paused. An idle disable must not arm it.
+                    intents.request_home_hold();
+                    state.enable_refusal.store(None);
                 }
-                // Ordinary explicit disable keeps the native falling-edge HOME path.
+                // Ordinary explicit disable keeps the direct HOME path.
                 // R17 Start-off additionally requests init above, including while paused.
                 // From limp, enable-triggered bring-up still ramps torque on as ever.
                 proto::IntentResult {
@@ -5651,7 +5795,9 @@ fn dispatch(
         proto::Call::RobotInit => {
             // Never refused for gravity: init works whatever the robot is lying on, which
             // is the prototype's behaviour and what a bench actually needs.
-            let result = {
+            let result = if let Some(reason) = bus_startup_refusal(state) {
+                proto::IntentResult::refused(reason)
+            } else {
                 intents.request_init();
                 proto::IntentResult::accepted()
             };
@@ -5909,6 +6055,135 @@ mod mapping {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Drive the real quaternion decoder through startup, rather than making the
+    // readiness flag become true after an arbitrary number of fake reads.
+    struct StartupWarmIo {
+        inner: FakeIo,
+        decoder: duck_control::imu::SflpDecoder,
+        reads: Arc<std::sync::atomic::AtomicUsize>,
+        valid_quaternion: bool,
+        incomplete_reads: usize,
+    }
+
+    impl RobotIo for StartupWarmIo {
+        fn read(&mut self) -> duck_control::io::Result<duck_control::Sensors> {
+            self.reads.fetch_add(1, Ordering::Relaxed);
+            let mut sensors = self.inner.read()?;
+            let mut raw = [0; duck_control::imu::IMU_BLOCK_LEN];
+            if self.valid_quaternion {
+                raw[6..8].copy_from_slice(&0x3800u16.to_le_bytes()); // x = 0.5
+            }
+            sensors.imu = self.decoder.decode(&raw);
+            Ok(sensors)
+        }
+        fn feetech_control_status(&self) -> Option<duck_control::feetech::FeetechControlStatus> {
+            Some(duck_control::feetech::FeetechControlStatus {
+                all_joints_fresh: self.inner.reads > self.incomplete_reads,
+                joints_held: self.inner.reads <= self.incomplete_reads,
+                imu_ready: self.decoder.ready(),
+                imu_mount_verified: true,
+                torque_state_confirmed: Some(false),
+            })
+        }
+        fn write(&mut self, _: &duck_control::JointTargets) -> duck_control::io::Result<()> {
+            panic!("startup must not send targets")
+        }
+        fn set_gain(&mut self, _: u16) -> duck_control::io::Result<()> {
+            panic!("startup must not send gains")
+        }
+        fn set_torque(&mut self, _: bool) -> duck_control::io::Result<()> {
+            panic!("startup must not write torque")
+        }
+        fn reboot(&mut self, _: u8) -> duck_control::io::Result<()> {
+            panic!("startup must not reboot hardware")
+        }
+        fn slow_sensors(&mut self) -> duck_control::io::Result<duck_control::SlowSensors> {
+            panic!("startup must not add diagnostic reads")
+        }
+    }
+
+    fn startup_warm_io(failures: u32, incomplete_reads: usize, valid_quaternion: bool)
+        -> (Safety<StartupWarmIo>, Arc<std::sync::atomic::AtomicUsize>)
+    {
+        let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let io = StartupWarmIo {
+            inner: FakeIo::at(DEFAULT_POSITION).failing_reads(failures),
+            decoder: duck_control::imu::SflpDecoder::default(),
+            reads: Arc::clone(&reads), valid_quaternion, incomplete_reads,
+        };
+        (Safety::new(io, SafetyConfig::default()), reads)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn startup_imu_confirmation_uses_control_period_without_writes() {
+        let (mut safety, reads) = startup_warm_io(0, 0, true);
+        let state = state();
+        let period = Duration::from_millis(20);
+        let began = tokio::time::Instant::now();
+        assert_eq!(adopt_startup_pose(&mut safety, &state, period).await, Some(DEFAULT_POSITION));
+        assert_eq!(reads.load(Ordering::Relaxed), 25);
+        assert_eq!(began.elapsed(), period * 24);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn startup_read_failures_keep_one_second_backoff_before_imu_confirmation() {
+        let (mut safety, reads) = startup_warm_io(2, 0, true);
+        let state = state();
+        let period = Duration::from_millis(20);
+        let began = tokio::time::Instant::now();
+        assert!(adopt_startup_pose(&mut safety, &state, period).await.is_some());
+        assert_eq!(reads.load(Ordering::Relaxed), 27);
+        assert_eq!(began.elapsed(), Duration::from_secs(2) + period * 24);
+        assert_eq!(state.startup_bus_failures.load(Ordering::Relaxed), 0);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn startup_incomplete_joint_feedback_never_uses_fast_confirmation() {
+        let (mut safety, reads) = startup_warm_io(0, 26, true);
+        let state = state();
+        let began = tokio::time::Instant::now();
+        assert!(adopt_startup_pose(&mut safety, &state, Duration::from_millis(20)).await.is_some());
+        assert_eq!(reads.load(Ordering::Relaxed), 27);
+        assert_eq!(began.elapsed(), Duration::from_secs(26));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn startup_invalid_imu_does_not_wait_forever_at_fifty_hz() {
+        let (mut safety, reads) = startup_warm_io(0, 0, false);
+        let state = state();
+        let result = tokio::time::timeout(Duration::from_secs(2),
+            adopt_startup_pose(&mut safety, &state, Duration::from_millis(20))).await;
+        assert!(result.is_err(), "zero quaternion must never satisfy startup");
+        assert_eq!(reads.load(Ordering::Relaxed), 26, "only one bounded warmup burst");
+        assert_eq!(state.startup.borrow()["steps"]["2"]["status"], "waiting");
+    }
+
+    #[test]
+    fn startup_notifications_only_publish_changes_and_keep_late_snapshot() {
+        let state = state();
+        let mut receiver = state.startup.subscribe();
+        receiver.borrow_and_update();
+        state.startup_step(2, "waiting", "IMU not ready");
+        assert!(receiver.has_changed().unwrap());
+        receiver.borrow_and_update();
+        state.startup_step(2, "waiting", "IMU not ready");
+        assert!(!receiver.has_changed().unwrap());
+        state.startup_step(2, "success", "first valid sample");
+        state.startup_step(3, "failed", "model unavailable");
+        state.startup_step(4, "success", "first completed cycle");
+        let late = state.startup.subscribe();
+        let report = late.borrow();
+        assert_eq!(report["steps"]["3"]["status"], "failed");
+        assert_eq!(report["steps"]["4"]["status"], "success");
+    }
+
+    #[tokio::test]
+    async fn control_completion_is_an_event_even_before_main_starts_waiting() {
+        let state = state();
+        drop(ControlThreadExit(Arc::clone(&state.control_exited)));
+        state.control_exited.notified().await;
+    }
 
     /// A `RobotState` over a real config file, for the two calls that write one.
     fn state_over(text: &str) -> (tempfile::TempDir, Arc<RobotState>) {
@@ -6462,6 +6737,43 @@ mod tests {
     }
 
     #[test]
+    fn r17_explicit_disable_returns_home_only_after_an_enabled_policy() {
+        for (enabled, feetech, starting_bus, return_home) in [
+            (true, true, false, true),
+            (false, true, false, false),
+            (true, false, false, false),
+            (true, true, true, false),
+        ] {
+            let mut state = r17_guard_state();
+            state.feetech = feetech;
+            if starting_bus {
+                state.bus_status.store(Some(Arc::new(serde_json::json!({
+                    "phase": "waiting_for_bus"
+                }))));
+            }
+            let intents = Intents::new();
+            intents.set_enabled(enabled);
+            assert!(r17_enable(&state, &intents, false, false).accepted);
+            assert!(!intents.enabled());
+            assert_eq!(
+                intents.take_power_request(),
+                return_home.then_some(intents::PowerRequest::Home),
+                "enabled={enabled}, feetech={feetech}, starting_bus={starting_bus}"
+            );
+        }
+
+        // A redundant disable must not replace a pending explicit relax with HOME.
+        let state = r17_guard_state();
+        let intents = Intents::new();
+        intents.request_relax();
+        assert!(r17_enable(&state, &intents, false, false).accepted);
+        assert_eq!(
+            intents.take_power_request(),
+            Some(intents::PowerRequest::Relax)
+        );
+    }
+
+    #[test]
     fn r17_init_needs_no_home_imu_or_readiness_precheck() {
         let state = r17_guard_state();
         state.imu_ready.store(false, Ordering::Relaxed);
@@ -6487,6 +6799,245 @@ mod tests {
             !r17_enable(&state, &intents, true, false).accepted,
             "HOME acceptance must not bypass the policy entry guard"
         );
+    }
+
+    #[test]
+    fn r17_startup_refuses_motion_without_queuing_it_for_later() {
+        // The IPC socket outlives a failed startup. An accepted HOME made padd
+        // believe the robot was up although no control thread could consume it.
+        let state = r17_guard_state();
+        for phase in [
+            "configuring_bus",
+            "waiting_for_bus",
+            "configuration_error",
+        ] {
+            state.bus_status.store(Some(Arc::new(serde_json::json!({
+                "mode":"motion","phase":phase,"error":"Feetech ID 200 response timeout"
+            }))));
+            let intents = Intents::new();
+            let init: proto::IntentResult = dispatch(
+                &state,
+                &intents,
+                proto::Id::Number(1),
+                &proto::Call::RobotInit,
+            )
+            .result_as()
+            .unwrap();
+            assert!(!init.accepted, "{phase}");
+            assert!(!r17_enable(&state, &intents, true, false).accepted);
+            assert!(!r17_enable(&state, &intents, false, true).accepted);
+            let skill: proto::IntentResult = dispatch(
+                &state,
+                &intents,
+                proto::Id::Number(1),
+                &proto::Call::RobotDo(proto::DoParams {
+                    skill: "stand_test".into(),
+                }),
+            )
+            .result_as()
+            .unwrap();
+            assert!(!skill.accepted);
+            assert_eq!(intents.take_power_request(), None);
+            assert!(!intents.enabled() && !intents.home_skill_pending());
+            assert!(r17_enable(&state, &intents, false, false).accepted);
+        }
+        state.bus_status.store(Some(Arc::new(
+            serde_json::json!({"mode":"motion","phase":"control"}),
+        )));
+        let intents = Intents::new();
+        let init: proto::IntentResult = dispatch(
+            &state,
+            &intents,
+            proto::Id::Number(1),
+            &proto::Call::RobotInit,
+        )
+        .result_as()
+        .unwrap();
+        assert!(init.accepted);
+        assert_eq!(
+            intents.take_power_request(),
+            Some(intents::PowerRequest::Init)
+        );
+    }
+
+    #[tokio::test]
+    async fn r17_empty_snapshot_and_warming_imu_do_not_accept_home() {
+        // ID 200 can identify itself before it supplies a usable attitude. Drive
+        // the real loop through failed reads and convergence while its native
+        // snapshot is already available; neither phase may consume a HOME press.
+        use duck_control::feetech_snapshot as snapshot;
+        struct StartingIo {
+            stage: Arc<AtomicU8>,
+            inner: FakeIo,
+        }
+        impl RobotIo for StartingIo {
+            fn read(&mut self) -> duck_control::io::Result<duck_control::Sensors> {
+                if self.stage.load(Ordering::Relaxed) == 0 {
+                    Err(duck_control::io::IoError::Simulated)
+                } else {
+                    self.inner.read()
+                }
+            }
+            fn write(
+                &mut self,
+                targets: &duck_control::JointTargets,
+            ) -> duck_control::io::Result<()> {
+                self.inner.write(targets)
+            }
+            fn set_gain(&mut self, gain: u16) -> duck_control::io::Result<()> {
+                self.inner.set_gain(gain)
+            }
+            fn set_torque(&mut self, on: bool) -> duck_control::io::Result<()> {
+                self.inner.set_torque(on)
+            }
+            fn reboot(&mut self, id: u8) -> duck_control::io::Result<()> {
+                self.inner.reboot(id)
+            }
+            fn slow_sensors(&mut self) -> duck_control::io::Result<duck_control::SlowSensors> {
+                self.inner.slow_sensors()
+            }
+            fn imu_ready(&self) -> bool {
+                self.stage.load(Ordering::Relaxed) >= 2
+            }
+            fn feetech_snapshot(&self) -> Option<snapshot::Snapshot> {
+                let ready = self.stage.load(Ordering::Relaxed) >= 2;
+                let metadata = Arc::new(snapshot::Metadata {
+                    backend: "feetech_ft6",
+                    read_timing_revision: "test",
+                    motion_enabled: true,
+                    calibration_complete: true,
+                    imu_mount_verified: true,
+                    velocity_source: "test",
+                    velocity_rad_s_per_count: None,
+                    current_available: false,
+                    joints: Vec::new(),
+                });
+                Some(snapshot::Snapshot {
+                    metadata: metadata.clone(),
+                    dynamic: snapshot::Dynamic {
+                        torque_enabled: false,
+                        torque_state_confirmed: Some(false),
+                        gain_mode: "test",
+                        sample_age_ms: None,
+                        imu_ready: ready,
+                        imu_sequence: None,
+                        imu_age_ms: None,
+                        imu_age_upper_bound_ms: None,
+                        imu_status: None,
+                        command_clamps_total: 0,
+                        partial_samples_total: 0,
+                        all_joints_fresh: self.stage.load(Ordering::Relaxed) > 0,
+                        stale_joint_ids: Default::default(),
+                        held_joint_ids: Default::default(),
+                        joints: snapshot::JointSamples {
+                            samples: Default::default(),
+                            metadata,
+                        },
+                        sync: Default::default(),
+                        telemetry: Default::default(),
+                        hd1910: snapshot::HdState {
+                            temporary_gains_applied: false,
+                            restore_pending: false,
+                        },
+                    },
+                    hd1910: duck_control::hd1910::State::default().diagnostics(),
+                })
+            }
+        }
+        let mut params = Params::default();
+        params.bus.protocol = params::BusProtocol::Feetech;
+        params.policy.enabled = false;
+        params.audio.enabled = false;
+        let state = Arc::new(RobotState::new(
+            &params,
+            Path::new("/test/robotd.toml"),
+            false,
+            false,
+        ));
+        state.bus_status.store(Some(Arc::new(
+            serde_json::json!({"mode":"motion","phase":"configuring_bus"}),
+        )));
+        let intents = Arc::new(Intents::new());
+        let stage = Arc::new(AtomicU8::new(0));
+        let handle = tokio::spawn(control_loop(
+            StartingIo {
+                stage: stage.clone(),
+                inner: FakeIo::at(DEFAULT_POSITION).frozen(),
+            },
+            state.clone(),
+            intents.clone(),
+            params,
+            PathBuf::from("/nonexistent/robotd.toml"),
+            Duration::from_millis(2),
+            noop_poweroff(),
+        ));
+        for current in [0, 1] {
+            let before = state.ticks.load(Ordering::Relaxed);
+            stage.store(current, Ordering::Relaxed);
+            until(
+                || state.ticks.load(Ordering::Relaxed) >= before + 3,
+                Duration::from_secs(1),
+                "loop did not tick",
+            )
+            .await;
+            assert!(
+                state.bus_status.load().is_some(),
+                "stage {current} retired startup"
+            );
+            let init: proto::IntentResult = dispatch(
+                &state,
+                &intents,
+                proto::Id::Number(1),
+                &proto::Call::RobotInit,
+            )
+            .result_as()
+            .unwrap();
+            assert!(!init.accepted, "stage {current} accepted HOME");
+            assert_eq!(intents.take_power_request(), None);
+            assert!(
+                state.raw.latest.load().is_some(),
+                "test requires an already published native snapshot"
+            );
+            let line = ipc_response(
+                state.clone(),
+                serde_json::json!({
+                    "jsonrpc":"2.0","id":1,"method":"robot.busStatus"
+                }),
+            )
+            .await;
+            let response: serde_json::Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(
+                response["result"]["phase"], "configuring_bus",
+                "stage {current} concealed startup behind raw snapshot"
+            );
+        }
+        stage.store(2, Ordering::Relaxed);
+        until(
+            || state.bus_status.load().is_none(),
+            Duration::from_secs(1),
+            "ready sensors did not retire startup",
+        )
+        .await;
+        let line = ipc_response(
+            state.clone(),
+            serde_json::json!({
+                "jsonrpc":"2.0","id":1,"method":"robot.busStatus"
+            }),
+        )
+        .await;
+        let response: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(response["result"]["phase"], "control");
+        let init: proto::IntentResult = dispatch(
+            &state,
+            &intents,
+            proto::Id::Number(1),
+            &proto::Call::RobotInit,
+        )
+        .result_as()
+        .unwrap();
+        assert!(init.accepted);
+        state.shutdown.store(true, Ordering::Relaxed);
+        handle.await.unwrap();
     }
 
     #[test]
@@ -8466,7 +9017,7 @@ mod tests {
             ..Default::default()
         };
         let handle = tokio::spawn(async move {
-            open_bus_waiting(&nowhere, &waiter_state, false)
+            open_bus_waiting(&nowhere, &waiter_state)
                 .await
                 .is_none()
         });

@@ -12,6 +12,7 @@ import threading
 import time
 
 from ssh_connect import normalize_target, ssh_command, ssh_process_options, SSHConnectError
+from process_lifecycle import spawn_process, retire_process
 
 _registry = {}
 _registry_lock = threading.RLock()
@@ -60,7 +61,7 @@ class _Forward:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as reservation:
                     reservation.bind(('127.0.0.1', 0))
                     self.port = reservation.getsockname()[1]
-                self.process = subprocess.Popen(
+                self.process = spawn_process(
                     forward_command(self.target, self.path, self.port),
                     **ssh_process_options(self.target), stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=0)
@@ -143,16 +144,7 @@ class _Forward:
             if process.poll() is None:
                 with contextlib.suppress(OSError):
                     process.terminate()
-            try:
-                process.wait(timeout=1)
-            except subprocess.TimeoutExpired:
-                with contextlib.suppress(OSError):
-                    process.kill()
-                with contextlib.suppress(subprocess.TimeoutExpired, OSError):
-                    process.wait(timeout=1)
-            if process.stderr is not None:
-                with contextlib.suppress(OSError, ValueError):
-                    process.stderr.close()
+            retire_process(process, grace=0)
         if self.thread and self.thread is not threading.current_thread():
             self.thread.join(timeout=.2)
         if self.log and process is not None:

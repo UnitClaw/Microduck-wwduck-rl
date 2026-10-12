@@ -398,6 +398,180 @@ async fn feetech_official_coast_holds_and_resumes_without_reenable() {
     task.await.unwrap();
 }
 
+/// Web HOME uses explicit disable, which must also work after the running
+/// policy has already paused on a blind bus. Keep measured sag separate from
+/// commanded targets so a frozen pose cannot masquerade as measured HOME.
+#[tokio::test]
+async fn explicit_home_after_a_policy_pause_restores_absolute_home_without_replay() {
+    let mut params = Params::default();
+    params.bus.protocol = params::BusProtocol::Feetech;
+    params.policy.walk = Some(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../test-data/walk-teacher14000/policy.onnx"),
+    );
+    params.policy.stand = Some("none".into());
+    params.policy.sitstand = Some("none".into());
+    params.policy.ground_pick = Some("none".into());
+    params.policy.kick_left = Some("none".into());
+    params.policy.kick_right = Some("none".into());
+    params.policy.roulade = Some("none".into());
+    params.safety.limp_fall = false;
+    params.audio.enabled = false;
+    params.audio.greet = false;
+    let home = duck_control::deployment::home();
+    let same_stance = |actual: &[f64; NUM_JOINTS], expected: &[f64; NUM_JOINTS]| {
+        actual
+            .iter()
+            .zip(expected)
+            .enumerate()
+            .all(|(i, (actual, expected))| {
+                // The beak is independently controlled, exactly as the HOME start guard allows.
+                i == duck_control::model::MOUTH_INDEX || actual == expected
+            })
+    };
+    let mut sample = Sensors {
+        positions: home,
+        ..Sensors::default()
+    };
+    sample.imu.gravity = [0.0, 0.0, -1.0];
+    let current = Arc::new(Mutex::new(sample));
+    let dropping = Arc::new(AtomicBool::new(false));
+    let trace = Arc::new(Mutex::new(Trace::default()));
+    let path = PathBuf::from("/tmp/unused-explicit-home.toml");
+    let state = Arc::new(RobotState::new(&params, &path, false, false));
+    let intents = Arc::new(Intents::new());
+    let io = FallingIo {
+        inner: RecoveryIo {
+            sensors: sample,
+            dropping: dropping.clone(),
+            fail_write: Arc::new(AtomicBool::new(false)),
+            trace: trace.clone(),
+            missing: 0,
+        },
+        current: current.clone(),
+    };
+    let task = tokio::spawn(control_loop(
+        io,
+        state.clone(),
+        intents.clone(),
+        params,
+        path,
+        Duration::from_millis(5),
+        Arc::new(|| {}),
+    ));
+    let call = |on, toggle| {
+        dispatch(
+            &state,
+            &intents,
+            proto::Id::Number(1),
+            &proto::Call::RobotEnable(proto::EnableParams { on, toggle }),
+        )
+        .result_as::<proto::IntentResult>()
+        .unwrap()
+    };
+    until(|| state.ticks.load(Ordering::Relaxed) > 2).await;
+    // A console/CLI disable on a newly started limp robot must never bring it up.
+    assert!(call(false, false).accepted);
+    intents.request_home_hold(); // The internal event itself cannot power a limp robot.
+    let disabled_at = state.ticks.load(Ordering::Relaxed);
+    until(|| state.ticks.load(Ordering::Relaxed) > disabled_at + 3).await;
+    assert!(trace.lock().unwrap().torque.is_empty());
+    assert!(!state.homed.load(Ordering::Relaxed));
+    intents.request_init();
+    until(|| state.home_start.load_full().is_some_and(|r| r.ready)).await;
+
+    for (toggle, blind) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert!(call(true, false).accepted);
+        until(|| bus_status(&state).is_some_and(|r| r["scale_use"] == "hold")).await;
+        let mut sag = sample;
+        sag.positions[3] += 6_f64.to_radians();
+        *current.lock().unwrap() = sag;
+        until(|| {
+            state
+                .home_start
+                .load_full()
+                .is_some_and(|r| r.max_joint_error_deg.is_some_and(|error| error > 5.5))
+        })
+        .await;
+        if blind {
+            dropping.store(true, Ordering::Relaxed);
+            until(|| {
+                trace
+                    .lock()
+                    .unwrap()
+                    .writes
+                    .last()
+                    .is_some_and(|(n, target)| {
+                        *n > COAST_TICKS && same_stance(target, &sag.positions)
+                    })
+            })
+            .await;
+        }
+        assert!(call(false, toggle).accepted);
+        let disabled_at = state.ticks.load(Ordering::Relaxed);
+        until(|| state.ticks.load(Ordering::Relaxed) > disabled_at + 3).await;
+        assert!(!intents.enabled());
+        if !blind {
+            let target = trace.lock().unwrap().writes.last().unwrap().1;
+            if toggle {
+                assert!(
+                    !same_stance(&target, &home),
+                    "physical Start-off keeps its existing HOME ramp"
+                );
+                assert!(!state.homed.load(Ordering::Relaxed));
+            } else {
+                assert!(
+                    same_stance(&target, &home),
+                    "web HOME must stay direct, with no added 2s ramp; target={target:?}"
+                );
+            }
+        }
+        dropping.store(false, Ordering::Relaxed);
+        if blind {
+            until(|| state.consecutive_errors.load(Ordering::Relaxed) == 0).await;
+            let recovered_at = state.ticks.load(Ordering::Relaxed);
+            until(|| state.ticks.load(Ordering::Relaxed) > recovered_at + 3).await;
+            let target = trace.lock().unwrap().writes.last().unwrap().1;
+            assert!(
+                same_stance(&target, &home),
+                "HOME requested while blind must survive until fresh feedback resumes; target={target:?}"
+            );
+        }
+        until(|| {
+            trace
+                .lock()
+                .unwrap()
+                .writes
+                .last()
+                .is_some_and(|(n, target)| *n == 0 && same_stance(target, &home))
+        })
+        .await;
+        assert_eq!(trace.lock().unwrap().torque, [true]);
+        until(|| state.home_start.load_full().is_some_and(|r| !r.ready)).await;
+        assert!(
+            !call(true, false).accepted,
+            "6-degree measured sag is not HOME"
+        );
+        assert!(!intents.enabled());
+        *current.lock().unwrap() = sample;
+        until(|| state.home_start.load_full().is_some_and(|r| r.ready)).await;
+        assert!(
+            !intents.enabled(),
+            "arriving HOME must not replay a refused enable"
+        );
+    }
+    assert_eq!(trace.lock().unwrap().torque, [true]);
+    intents.request_shutdown();
+    until(|| trace.lock().unwrap().torque == [true, false]).await;
+    intents.request_home_hold();
+    assert!(call(false, false).accepted);
+    let shutdown_at = state.ticks.load(Ordering::Relaxed);
+    until(|| state.ticks.load(Ordering::Relaxed) > shutdown_at + 3).await;
+    assert!(!state.homed.load(Ordering::Relaxed));
+    state.shutdown.store(true, Ordering::Relaxed);
+    task.await.unwrap();
+    assert_eq!(trace.lock().unwrap().torque, [true, false]);
+}
+
 struct FallingIo {
     inner: RecoveryIo,
     current: Arc<Mutex<Sensors>>,

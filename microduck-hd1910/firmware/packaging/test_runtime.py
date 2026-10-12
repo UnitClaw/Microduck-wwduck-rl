@@ -21,7 +21,7 @@ class RuntimeTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.patches = [patch.object(runtime, k, v) for k,v in {
             'CONFIG': self.root/'robotd.toml', 'MODEL_DIR': self.root/'models',
-            'DROPINS':self.root/'dropins', 'RUNTIME_DROPINS':self.root/'runtime-dropins', 'PROC':self.root/'proc', 'STATE_DIR':self.root/'state'}.items()]
+            'DROPINS':self.root/'dropins', 'SYSTEMD_DIR':self.root/'systemd', 'PROC':self.root/'proc', 'STATE_DIR':self.root/'state'}.items()]
         for p in self.patches:p.start()
         runtime.MODEL_DIR.mkdir();runtime.DROPINS.mkdir()
         runtime.CONFIG.write_text('[bus]\nport="/dev/ttyS2"\n[policy]\nenabled=true\n')
@@ -30,56 +30,37 @@ class RuntimeTests(unittest.TestCase):
         for p in reversed(self.patches):p.stop()
         self.temp.cleanup()
 
-    def test_hat_modes_and_retire_old_overrides(self):
-        for mode in ('motion','commissioning'):
-            text=runtime.unit(mode)
-            self.assertEqual('--commissioning' in text, mode=='commissioning')
-            self.assertIn('--uart-setup',text)
-            self.assertIn('--port /dev/ttyS2',text)
-            self.assertIn('uart-service.py prepare',text)
-        legacy=runtime.DROPINS/'zzzzz-old-test.conf'
-        legacy.write_text('[Service]\nExecStart=\nExecStart=/opt/robot/feetech-ft5-r5/robotd-old-test --port /dev/ttyS9\nEnvironment=KEEP=1\n')
-        old_profile=runtime.DROPINS/'zzzz-old-model-r4.conf'
-        old_profile.write_text('[Service]\nExecStart=\nExecStart='+str(runtime.BASE/'robotd')+' --params '+str(runtime.CONFIG)+' --port /dev/ttyS2\n')
-        runtime.RUNTIME_DROPINS.mkdir()
-        temporary=runtime.RUNTIME_DROPINS/'zzzz-session.conf'
-        temporary.write_text('[Service]\nExecStart=/opt/robot/feetech-ft5-r5/robotd --port /dev/ttyS9\n')
-        runtime.configure_startup('commissioning')
-        self.assertEqual(runtime.config()['bus']['port'],'/dev/ttyS2')
-        self.assertNotIn('ExecStart=',legacy.read_text())
-        self.assertIn('Environment=KEEP=1',legacy.read_text())
-        self.assertFalse(temporary.exists())
-        self.assertFalse(old_profile.exists())
-        self.assertIn('--uart-setup',(runtime.DROPINS/runtime.DROPIN_NAME).read_text())
+    def test_only_current_startup_profile_is_written_without_scanning_or_retiring(self):
+        legacy=runtime.DROPINS/'zzzzzz-unrelated.conf'
+        contents='[Service]\nEnvironment=KEEP=1\n'
+        legacy.write_text(contents)
+        with patch.object(Path,'glob',side_effect=AssertionError('no old-hook scan')):
+            result=runtime.configure_startup('commissioning')
+        self.assertEqual(result,{'mode':'commissioning','port':'/dev/ttyS2'})
+        self.assertEqual(legacy.read_text(),contents)
+        self.assertFalse((runtime.STATE_DIR/'retired-startup').exists())
+        text=(runtime.DROPINS/runtime.DROPIN_NAME).read_text()
+        self.assertIn('--commissioning',text);self.assertNotIn('uart-service.py',text)
+        self.assertNotIn('--uart-setup',text)
+        self.assertFalse(hasattr(runtime,'retire_legacy_dropins'))
+        self.assertFalse(hasattr(runtime,'verify_startup'))
+        self.assertFalse(hasattr(runtime,'verify_ready'))
 
-    def test_other_installation_hook_only_and_late_override_are_retired(self):
-        foreign=runtime.DROPINS/'zzzzzz-custom-policy.conf'
-        text='[Service]\nExecStartPre=+/usr/bin/python3 \\\n /opt/microduck-0151/deploy/custom-guard.py\nExecStopPost=/opt/microduck-0151/deploy/recover.sh\nEnvironment=KEEP=1 ORT_DYLIB_PATH=/opt/microduck-0151/libort.so\nMemoryMax=200M\n'
-        foreign.write_text(text)
-        other=runtime.DROPINS/'unrelated.conf';other.write_text('[Service]\nEnvironment=LANG=zh_CN.UTF-8\n')
-        runtime.configure_startup('commissioning')
-        self.assertNotIn('Exec',foreign.read_text());self.assertNotIn('ORT_DYLIB_PATH',foreign.read_text())
-        self.assertIn('KEEP=1',foreign.read_text());self.assertIn('MemoryMax=200M',foreign.read_text())
-        self.assertEqual(other.read_text(),'[Service]\nEnvironment=LANG=zh_CN.UTF-8\n')
-        self.assertEqual(next((runtime.STATE_DIR/'retired-startup').glob('*.bak')).read_text(),text)
-
-    def test_merged_hooks_must_match_before_restart(self):
-        values={'ExecStart':f'{{ path={runtime.BASE}/robotd ; argv[]={runtime.BASE}/robotd --params {runtime.CONFIG} --port /dev/ttyS2 --uart-setup --commissioning ; }}',
-                'ExecStartPre':f'{runtime.BASE}/uart-service.py prepare','ExecStartPost':f'{runtime.BASE}/uart-service.py apply',
-                'ExecStopPost':'','ExecStop':'','ExecCondition':''}
-        with patch.object(runtime,'run',side_effect=lambda *args:values[args[-2]]):
-            self.assertTrue(runtime.verify_startup('commissioning')['startup_verified'])
-            values['ExecStartPre']+=' /opt/microduck-0151/deploy/custom_policy_guard.py'
-            with self.assertRaisesRegex(ValueError,'其他安装目录'):runtime.verify_startup('commissioning')
-
-    def test_ready_requires_bus_feedback_and_no_automatic_motion(self):
-        good={'build':runtime.BUILD,'mode':'motion','phase':'control','fresh_sample':True,'homed':False,'policy_enabled':False,'native':{'torque_state_confirmed':False}}
-        waiting={**good,'phase':'configuring_uart','fresh_sample':False}
-        with patch.object(runtime,'rpc',side_effect=[waiting,good]) as rpc,patch.object(runtime.time,'sleep'):
-            self.assertTrue(runtime.verify_ready('motion')['service_ready'])
-            self.assertEqual([call.args for call in rpc.call_args_list],[('robot.busStatus',),('robot.busStatus',)])
-        with patch.object(runtime,'rpc',return_value={**good,'build':'old'}):
-            with self.assertRaisesRegex(ValueError,'版本或模式'):runtime.verify_ready('motion')
+    def test_recovery_policy_runs_once_and_retries_only_a_failed_setting(self):
+        first=[]
+        def invoke(args,**kwargs):
+            first.append(args)
+            return subprocess.CompletedProcess(args,1 if 'robot-boot-check.timer' in args else 0,stdout=b'',stderr=b'blocked')
+        with patch.object(runtime.subprocess,'run',side_effect=invoke),patch.object(runtime,'run'):
+            with redirect_stdout(StringIO()):runtime.disable_automatic_recovery()
+        self.assertEqual(len(first),3)
+        with patch.object(runtime.subprocess,'run',return_value=subprocess.CompletedProcess([],0)) as invoke,patch.object(runtime,'run'):
+            with redirect_stdout(StringIO()):runtime.disable_automatic_recovery()
+        invoke.assert_called_once()
+        self.assertIn('robot-boot-check.timer',invoke.call_args.args[0])
+        with patch.object(runtime.subprocess,'run') as invoke,patch.object(runtime,'run') as run:
+            runtime.disable_automatic_recovery()
+        invoke.assert_not_called();run.assert_not_called()
 
     def test_actual_process_cannot_be_replaced_by_effective_unit(self):
         process=runtime.PROC/'123';process.mkdir(parents=True)

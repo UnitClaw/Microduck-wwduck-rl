@@ -1,22 +1,23 @@
-"""Training Studio ZIP imports. Never load checkpoint pickle or execute package code."""
+"""Validate shipped models and describe their built-in deployment metadata."""
 from __future__ import annotations
-import hashlib, io, json, math, os, re, shlex, shutil, subprocess, tempfile, zipfile
+import hashlib, io, json, math, os, re, shlex, subprocess, zipfile
 from pathlib import Path
 import tomllib
-from configure import dumps
 from model_commands import PARAM_FILES, RUNTIME_FILE, resolve as resolve_commands, encode as encode_commands
 
 BASE=Path('/opt/robot/feetech-ft5-r5')
 CONFIG=Path('/etc/robot/feetech-ft5/robotd.toml')
 CALIBRATION=CONFIG.with_name('hd1910-calibration.toml')
 NAMES=('left_hip_yaw','left_hip_roll','left_hip_pitch','left_knee','left_ankle','neck_pitch','head_pitch','head_yaw','head_roll','right_hip_yaw','right_hip_roll','right_hip_pitch','right_knee','right_ankle')
-from management_profile import SLOTS, LABELS, ACTION_INFO
+from management_profile import PROFILE, SLOTS, LABELS, ACTION_INFO
 BAM='ef2d51adfb1cc0831b9b02ca19aa9176fceecdf725148d084378d7d9a64afceb'
 ROUGH_TASK='Mjlab-Velocity-Rough-Backlash-MicroDuck'
 ROUGH_STAND_TASK='Mjlab-StandUp-Rough-Backlash-MicroDuck'
 ROUGH_JOINT_TASK='Mjlab-VelStand-Rough-Backlash-MicroDuck'
+BACKLASH_PICK_TASK='Mjlab-GroundPick-Flat-Backlash-MicroDuck'
+LEFT_KICK_TASK='Mjlab-BallKickLeft-Flat-Backlash-MicroDuck'
+BACKLASH_TASKS=(ROUGH_TASK,ROUGH_STAND_TASK,ROUGH_JOINT_TASK,BACKLASH_PICK_TASK,LEFT_KICK_TASK)
 EXECUTION_FILE='deployment-execution.json'
-MAX_SIZE=64*1024*1024
 EXPORT_FILES=('policy.onnx','deployment-contract.json','manifest.json','training-request.json')
 OPTIONAL_EXPORT_FILES=('training-config.json','export-audit.json','deployment-profile.toml','使用说明.md')
 EXPORT_DATA='export-data.zip'
@@ -144,14 +145,17 @@ def graph_interface(data):
             if domain not in ('','ai.onnx') or op not in allowed:raise ValueError('当前模型适配不支持 ONNX 运算：'+domain+':'+op)
     return {one(v,1).decode():one(v,2).decode() for k,v in fields(data) if k==14}
 def validate_export(files):
-    if any(n not in files for n in EXPORT_FILES):raise ValueError('请导入训练台导出的完整 ZIP：缺少模型、部署合同、manifest 或训练记录')
+    if any(n not in files for n in EXPORT_FILES):raise ValueError('内置模型数据不完整：缺少模型、部署合同、manifest 或训练记录')
     parsed={}
     for name in ('deployment-contract.json','manifest.json'):
         try:parsed[name]=json.loads(files[name])
         except (ValueError,UnicodeError) as exc:raise ValueError(f'{name}: {exc}') from exc
     c=parsed['deployment-contract.json'];m=parsed['manifest.json']
-    official_adapter=c.get('task_adapter')=='hd1910-official0151' and c.get('task') in ('Mjlab-VelStand-Flat-MicroDuck','Mjlab-GroundPick-Flat-MicroDuck','Mjlab-Roulade-Flat-MicroDuck','Mjlab-StandUp-Flat-MicroDuck',ROUGH_TASK,ROUGH_STAND_TASK,ROUGH_JOINT_TASK) and c.get('target_firmware',{}).get('version')=='0.15.1' and c.get('control_hz')==50
-    current_target_contract=official_adapter and c.get('task') in (ROUGH_TASK,ROUGH_STAND_TASK,ROUGH_JOINT_TASK)
+    official_adapter=c.get('task_adapter')=='hd1910-official0151' and c.get('task') in ('Mjlab-VelStand-Flat-MicroDuck','Mjlab-GroundPick-Flat-MicroDuck','Mjlab-Roulade-Flat-MicroDuck','Mjlab-StandUp-Flat-MicroDuck','Mjlab-BallKick-Flat-MicroDuck',*BACKLASH_TASKS) and c.get('target_firmware',{}).get('version')=='0.15.1' and c.get('control_hz')==50
+    backlash=official_adapter and c.get('task') in BACKLASH_TASKS
+    # A current Roulade export is unfiltered without training backlash. Keep
+    # those independent and do not let a missing/null filter downgrade rev2.
+    current_target_contract=backlash or (official_adapter and c.get('task') in ('Mjlab-Roulade-Flat-MicroDuck','Mjlab-BallKick-Flat-MicroDuck') and ('action_filter' in c or 'export_contract_revision' in c))
     supported_adapter=official_adapter or c.get('task_adapter')=='hd1910-v1' or (c.get('task_adapter')=='hd1910-v2' and c.get('task') in ('Mjlab-StandUp-Flat-MicroDuck-V2-HD1910','Mjlab-Velocity-Flat-MicroDuck-V2-HD1910'))
     if c.get('schema')!='microduck-deployment-contract/v1' or not supported_adapter or (c.get('input_dim'),c.get('output_dim'))!=(61,14):raise ValueError('当前服务支持 HD1910 V1、已适配 V2，以及官方 0.15.1 联合行走、地面捡取与前滚翻合同，61 维观测、14 关节输出')
     if c.get('obs_normalizer')!='baked_in_onnx':raise ValueError('模型须内含训练观测归一化')
@@ -168,17 +172,25 @@ def validate_export(files):
     settings=None
     if current_target_contract:
         f=c.get('action_filter',{});required=c.get('required_policy_settings',{})
+        scale_key={'ground_pick':'ground_pick_action_scale','roulade':'roulade_action_scale'}.get(slot,'action_scale')
         expected={'version':1,'control_hz':50.0,'stage':'joint_position_target_after_home_and_scale','reset':'first_target_passthrough_per_environment','update':'once_per_policy_step','previous_action_observation':'raw_policy_output','onnx':'external_filter_not_baked_into_graph'}
-        if not isinstance(f.get('enabled'),bool) or any(f.get(k)!=v for k,v in expected.items()) or required.get('action_scale')!=a['scale'] or ema!=0:raise ValueError('新版目标滤波与动作缩放合同不一致')
+        scale_value=c.get('required_skill_settings',{}).get('params',{}).get('action_scale') if slot in ('kick_left','kick_right') else required.get(scale_key)
+        if (not isinstance(f,dict) or not isinstance(required,dict)
+                or not isinstance(f.get('enabled'),bool) or type(f.get('version')) is not int
+                or not finite(f.get('control_hz')) or any(f.get(k)!=v for k,v in expected.items())
+                or not finite(scale_value) or scale_value!=a['scale'] or ema!=0):raise ValueError('新版目标滤波与动作缩放合同不一致')
         for name,alpha in (('head_lowpass','head_alpha'),('legs_lowpass','legs_alpha')):
             value=f.get(alpha)
             trained=a.get(alpha)
-            if not finite(value) or not 0<value<=1 or required.get(name)!=value or (f['enabled'] and trained!=value) or (not f['enabled'] and (value!=1.0 or trained not in (None,1.0))):raise ValueError('目标滤波系数与训练记录不一致')
-        settings={k:required[k] for k in ('action_scale','head_lowpass','legs_lowpass')}
+            if (not finite(value) or not 0<value<=1 or not finite(required.get(name)) or required[name]!=value
+                    or (f['enabled'] and (not finite(trained) or trained!=value))
+                    or (not f['enabled'] and (value!=1.0 or (trained is not None and (not finite(trained) or trained!=1.0))))):raise ValueError('目标滤波系数与训练记录不一致')
+        settings={k:required[k] for k in ('head_lowpass','legs_lowpass')}
+        if slot not in ('kick_left','kick_right'):settings[scale_key]=required[scale_key]
     terms=c.get('observations',{}).get('terms',{})
     if set(terms)!=set(('base_ang_vel','projected_gravity','joint_pos','joint_vel','actions','command','head_command','body_command')):raise ValueError('当前服务不支持该观测布局')
-    suffix='_backlash' if current_target_contract else ''
-    if not terms['joint_pos'].get('func',{}).get('callable','').endswith('joint_pos_rel'+suffix) or not terms['joint_vel'].get('func',{}).get('callable','').endswith('joint_vel_rel'+suffix):raise ValueError('当前服务支持相对 HOME 的编码器关节位置与速度观测')
+    suffix='_backlash' if backlash else ''
+    if any(terms[key].get('func',{}).get('callable','').rsplit('.',1)[-1]!=key+'_rel'+suffix for key in ('joint_pos','joint_vel')):raise ValueError('当前服务支持相对 HOME 的编码器关节位置与速度观测')
     for t in terms.values():
         if t.get('clip') is not None or t.get('scale') not in (None,1.0) or t.get('history_length') not in (None,0):raise ValueError('当前服务不支持此观测缩放、裁剪或历史长度')
     body=terms['body_command'].get('func',{}).get('callable','')
@@ -190,6 +202,10 @@ def validate_export(files):
     if slot=='ground_pick':
         command=c.get('commands',{}).get('twist',{});period=command.get('period',command.get('period_s'))
         if not command.get('class_type',{}).get('callable','').endswith('GroundPickPhaseCommand') or not finite(period) or period<=0:raise ValueError('捡取模型须使用阶段指令及有效动作周期')
+        if current_target_contract:
+            declared=c['required_policy_settings'].get('ground_pick_period')
+            if not finite(declared) or declared!=period:raise ValueError('捡取训练阶段周期与运行参数不一致')
+            settings['ground_pick_period']=period
     actuators=c.get('model',{}).get('actuators',[])
     if len(actuators)!=1 or actuators[0].get('parameter_file',{}).get('sha256')!=BAM:raise ValueError('模型使用了尚未适配的 BAM 参数')
     p=actuators[0].get('kp_fw')
@@ -212,17 +228,20 @@ def validate_export(files):
         if m.get('kind')!='episodic' or command.get('encoding')!='constant' or command.get('idle')!=[0,0,0] or command.get('twist')!='zeros':raise ValueError('前滚翻须使用官方一次动作窗口和零速度指令')
         if not finite(duration) or not .02<=duration<=10 or type(m.get('chain')) is not bool or not finite(action_scale) or not .1<=action_scale<=2:raise ValueError('前滚翻动作窗口、连续执行或动作系数无效')
         info['skill']={'name':'roulade','duration':duration,'chain':m['chain'],'command':[0.0,0.0,0.0],'unwind':[0.0,0.0,0.0],'unwind_s':0.0,'params':{'action_scale':action_scale,'gain_ratio':1.0}}
+    if slot in ('kick_left','kick_right'):
+        expected={'name':slot,'duration':.5,'command':[0,0,0],'unwind':[0,0,0],
+                  'unwind_s':0.0,'chain':False,'params':{'action_scale':1.0}}
+        if (m.get('kind')!='episodic' or m.get('name')!=slot or m.get('slot')!=slot
+                or c.get('slot')!=slot or c.get('role')!=slot
+                or m.get('duration_s')!=.5 or m.get('chain') is not False or m.get('action_scale')!=1.0
+                or m.get('required_skill_settings')!=expected or c.get('required_skill_settings')!=expected
+                or m.get('command',{}).get('encoding')!='constant' or m.get('command',{}).get('idle')!=[0,0,0]
+                or m.get('command',{}).get('twist')!='zeros' or a.get('scale')!=1.0
+                or c.get('action_filter',{}).get('enabled') is not False
+                or any(c.get('action_filter',{}).get(k)!=1.0 for k in ('head_alpha','legs_alpha'))):
+            raise ValueError('内置踢球须匹配左右脚、0.5 秒单次动作、零指令与缩放 1 的原始合同')
+        info['skill']=expected
     return info
-def package_files(path):
-    with zipfile.ZipFile(path) as z:
-        names=z.namelist()
-        if len(names)>200 or len(set(names))!=len(names) or sum(i.file_size for i in z.infolist())>128*1024*1024:raise ValueError('模型包大小或文件结构无效')
-        if any(Path(n).is_absolute() or '..' in Path(n).parts or '\\' in n for n in names):raise ValueError('模型包包含无效路径')
-        files={n:z.read(n) for n in ('policy.onnx',*SOURCE_FILES,EXECUTION_FILE) if n in names}
-    info=validate_export(files)
-    runtime=resolve_commands(files,info)
-    if runtime is not None:files[RUNTIME_FILE]=encode_commands(runtime)
-    return files,info
 def verify_directory(directory):
     directory=Path(directory)
     files={n:(directory/n).read_bytes() for n in ('policy.onnx',*SOURCE_FILES,EXECUTION_FILE) if (directory/n).is_file()}
@@ -243,7 +262,7 @@ def atomic(path,data):
     from configure import atomic_write
     atomic_write(Path(path),data)
 def describe_directory(directory):
-    """Read installed metadata; import/startup own model validation and derivation."""
+    """Read installed metadata; startup owns model validation and derivation."""
     directory=Path(directory)
     contract=json.loads((directory/'deployment-contract.json').read_text())
     manifest=json.loads((directory/'manifest.json').read_text())
@@ -255,109 +274,40 @@ def describe_directory(directory):
     return info
 def catalog(base=BASE,config_path=CONFIG):
     cfg=tomllib.loads(Path(config_path).read_text()) if Path(config_path).exists() else {};rows=[]
-    for directory in sorted((Path(base)/'models').glob('*')):
-        if not directory.is_dir() or not re.fullmatch('[a-f0-9]{32}',directory.name):continue
+    for built_in in PROFILE['builtin_models']:
+        ident=built_in['id']
+        if not isinstance(ident,str) or not re.fullmatch('[a-f0-9]{32}',ident):raise ValueError('内置模型标识无效')
+        directory=Path(base)/'models'/ident
         try:
             info=describe_directory(directory);meta=json.loads((directory/'model-info.json').read_text()) if (directory/'model-info.json').exists() else {}
             active=str(directory/'policy.onnx')==cfg.get('policy',{}).get(info['slot'])
-            rows.append({'id':directory.name,'name':meta.get('name',info['label']),'slot':info['slot'],'label':info['label'],'task':info['task'],'path':str(directory/'policy.onnx'),'active':active,'available':True,'official':False,'managed':True,'deletable':True,'sha256':info['sha256'],**({'execution_profile':info['execution_profile']} if 'execution_profile' in info else {})})
-        except (OSError,ValueError,KeyError) as e:rows.append({'id':directory.name,'name':directory.name,'available':False,'active':False,'official':False,'error':str(e)})
-    # Official action slots and a named skill bound to LB are separate routes.
+            rows.append({'id':directory.name,'name':built_in.get('name',meta.get('name',info['label'])),'slot':info['slot'],'label':info['label'],'task':info['task'],'path':str(directory/'policy.onnx'),'active':active,'available':True,'official':False,'builtin':True,'managed':False,'deletable':False,'hidden':built_in.get('hidden',False),'sha256':info['sha256'],**({'execution_profile':info['execution_profile']} if 'execution_profile' in info else {})})
+        except (OSError,ValueError,KeyError) as e:rows.append({'id':directory.name,'name':built_in.get('name',directory.name),'slot':built_in.get('slot'),'hidden':built_in.get('hidden',False),'available':False,'active':False,'official':False,'builtin':True,'managed':False,'deletable':False,'error':str(e)})
+    # Named skill bindings are read for display; deployment comes from the bundle.
     skills=cfg.get('policy',{}).get('skill',[]);pad=cfg.get('pad',{})
     for row in rows:
         path=str(Path(base)/'models'/row['id']/'policy.onnx')
         row['skill_bindings']=[{'name':skill['name'],'buttons':[button for button,value in pad.items() if value==skill['name']],'action_scale':skill.get('params',{}).get('action_scale',1.0)} for skill in skills if skill.get('path')==path]
-    lb=next((skill for skill in skills if skill.get('name')==pad.get('lb')),None)
-    manual_recovery=None
-    if lb:
-        model=next((row for row in rows if str(Path(base)/'models'/row['id']/'policy.onnx')==lb.get('path')),None)
-        manual_recovery={'button':'lb','skill':lb['name'],'path':lb.get('path'),'model':model,'action_scale':lb.get('params',{}).get('action_scale',1.0)}
-    current=next((x['id'] for x in rows if x.get('active') and x.get('slot')=='walk'),None)
-    slots=[{'slot':slot,'label':LABELS[slot],'import_supported':ACTION_INFO[slot]['import_supported'],'support_message':ACTION_INFO[slot]['support_message'],'model':next((row for row in rows if row.get('active') and row.get('slot')==slot),None)} for slot in SLOTS]
-    return {'models':rows,'slots':slots,'manual_recovery':manual_recovery,'configured_model':current,'fixed_profile':False,'model_source':'deployment_contract_disk'}
-def selected_config(base=BASE,config_path=CONFIG):return tomllib.loads(Path(config_path).read_text())
-def save_config(config_path,data):
-    data.setdefault('policy',{}).pop('r17_inference_scale',None)
-    path=Path(config_path);text=dumps(data)
-    atomic(path,text)
-    atomic(path.with_name(path.stem+'.saved'+path.suffix),text)
-def check_calibration(info,calibration_path=CALIBRATION):
-    if not Path(calibration_path).exists():return []
-    actual=tomllib.loads(Path(calibration_path).read_text());warnings=[]
-    joints={j['name']:j for j in actual.get('joints',[])}
-    for name,home in info['home'].items():
-        j=joints.get(name,{})
-        if not j or not j.get('min_rad',-math.inf)<=home<=j.get('max_rad',math.inf):raise ValueError('模型 HOME 超出本机机械限位：'+name)
-    trained=info['contract'].get('hardware_calibration',{}).get('data',{})
-    if trained.get('joints')!=actual.get('joints') or trained.get('imu_mount_quat')!=actual.get('imu_mount_quat'):warnings.append('本机标定与训练记录有差异；保留本机标定，请核对变化。')
-    return warnings
-def import_package(path,name,base=BASE,config_path=CONFIG,calibration_path=CALIBRATION,validator=True,target_slot=None):
-    if Path(name).name!=name or not name.lower().endswith('.zip') or len(name)>180:raise ValueError('请导入完整模型 ZIP')
-    if not 0<Path(path).stat().st_size<=MAX_SIZE:raise ValueError('模型包上限 64 MiB')
-    files,info=package_files(path)
-    if target_slot not in SLOTS or info['slot']!=target_slot:raise ValueError('所选动作 '+LABELS.get(target_slot,str(target_slot))+' 与模型合同动作 '+info['label']+' 不一致；请选择对应动作。')
-    warnings=check_calibration(info,calibration_path)
-    directory=Path(base)/'models'/info['id'];directory.parent.mkdir(parents=True,exist_ok=True)
-    if directory.exists() and EXECUTION_FILE not in files and (directory/EXECUTION_FILE).exists():
-        # Reimporting the original training ZIP must not silently erase the
-        # operator's matching deployment experiment. Validate it before staging.
-        files[EXECUTION_FILE]=(directory/EXECUTION_FILE).read_bytes()
-        info['execution_profile']=execution_profile(files[EXECUTION_FILE],info)
-    with tempfile.TemporaryDirectory(prefix='.import-',dir=directory.parent) as temp:
-        stage=Path(temp)
-        for n,data in files.items():
-            atomic(stage/n,data)
-        if validator:
-            result=subprocess.run([str(Path(base)/'robotd'),'validate-policy',str(stage/'policy.onnx')],env=runtime_environment(),capture_output=True,text=True,timeout=45)
-            if result.returncode:raise ValueError('Zero 模型加载检查失败：'+(result.stderr or result.stdout)[-1200:])
-        (stage/'model-info.json').write_text(json.dumps({'name':info['label']+' · '+name.removesuffix('.zip'),'source_filename':name},ensure_ascii=False,indent=2))
-        atomic(stage/EXPORT_DATA,export_data(files))
-        if directory.exists():
-            if hashlib.sha256((directory/'policy.onnx').read_bytes()).hexdigest()!=info['sha256']:raise ValueError('模型标识发生冲突')
-            if not any(n in files for n in PARAM_FILES) and (directory/EXPORT_DATA).exists():
-                try:
-                    with zipfile.ZipFile(directory/EXPORT_DATA) as archive:
-                        # A ZIP without YAML does not downgrade the same unchanged export.
-                        if all(n in archive.namelist() and archive.read(n)==files[n] for n in EXPORT_FILES[1:]):
-                            for n in PARAM_FILES:
-                                if n in archive.namelist():files[n]=archive.read(n)
-                except (ValueError,zipfile.BadZipFile,KeyError):pass
-            atomic(directory/EXPORT_DATA,export_data(files))
-            restore_export_data(directory)
-            if EXECUTION_FILE in files:atomic(directory/EXECUTION_FILE,files[EXECUTION_FILE])
-            verify_directory(directory)
-            return {'id':info['id'],'name':info['label'],'slot':info['slot'],'duplicate':True,'warnings':warnings,'message':'已重新写入原始导出数据并重建运行配置；当前模型选择保留',**({'execution_profile':info['execution_profile']} if 'execution_profile' in info else {})}
-        stage.chmod(0o755)
-        for f in stage.rglob('*'):f.chmod(0o755 if f.is_dir() else 0o644)
-        os.rename(stage,directory)
-    return {'id':info['id'],'name':info['label'],'slot':info['slot'],'warnings':warnings,'message':'已导入并通过接口检查；等待绑定所选动作并确认实际加载',**({'execution_profile':info['execution_profile']} if 'execution_profile' in info else {})}
-def assign_model(ident,slot,base=BASE,config_path=CONFIG,calibration_path=CALIBRATION):
-    if not re.fullmatch('[a-f0-9]{32}',ident):raise ValueError('模型标识无效')
-    directory=Path(base)/'models'/ident;info=verify_directory(directory)
-    if slot not in SLOTS or info['slot']!=slot:raise ValueError('所选动作与模型部署合同不一致，未修改绑定')
-    check_calibration(info,calibration_path)
-    cfg=selected_config(base,config_path);policy=cfg.setdefault('policy',{})
-    for slot in SLOTS:
-        path=policy.get(slot)
-        if slot!=info['slot'] and path and path!='none':
-            other=verify_directory(Path(path).parent)
-            if other['firmware_p']!=info['firmware_p']:raise ValueError('各动作模型使用的 BAM 固件 P 不一致')
-    policy[info['slot']]=str(directory/'policy.onnx')
-    if info.get('skill'):
-        policy['skill']=[s for s in policy.get('skill',[]) if s.get('name')!=info['skill']['name']]+[info['skill']]
-        cfg.setdefault('pad',{})['x']='roulade'
-    save_config(config_path,cfg)
-    return {'id':ident,'name':info['label'],'slot':info['slot'],'message':'已更新 '+info['label']+'；服务重启后重新 HOME'}
-def delete_model(ident,base=BASE,config_path=CONFIG):
-    listing=catalog(base,config_path);row=next((r for r in listing['models'] if r['id']==ident),None)
-    if not row or not re.fullmatch('[a-f0-9]{32}',ident):raise ValueError('模型不存在')
-    cfg=selected_config(base,config_path)
-    if row.get('active'):
-        if row['slot']=='walk':
-            replacement=next((r for r in listing['models'] if r.get('slot')=='walk' and r.get('available') and r['id']!=ident),None)
-            if replacement is None:raise ValueError('至少保留一个可用行走模型；请先导入另一份行走模型')
-            assign_model(replacement['id'],'walk',base,config_path)
-        else:
-            cfg['policy'][row['slot']]='none';save_config(config_path,cfg)
-    shutil.rmtree(Path(base)/'models'/ident)
-    return {'id':ident,'active_deleted':bool(row.get('active')),'message':'模型已删除'}
+    current=next((row['id'] for row in rows if row.get('active') and row.get('slot')=='walk'),None)
+    slots=[{'slot':slot,'label':LABELS[slot],'model':next((row for row in rows if row.get('active') and row.get('slot')==slot),None)} for slot in SLOTS]
+    rollers=[]
+    for name,label in (('swizzle','滑轮对称滑 10000 轮'),('crouch','滑轮蹲下 8000 轮'),('spin','滑轮原地转 8000 轮'),('standup','滑轮倒地起身 11000 轮')):
+        directory=Path(base)/'roller'/name
+        row={'id':name,'name':label,'path':str(directory/'policy.onnx'),'available':False}
+        try:
+            manifest=json.loads((directory/'manifest.json').read_text())
+            contract=json.loads((directory/'deployment-contract.json').read_text())
+            if not (directory/'policy.onnx').is_file() or contract.get('robot_mode')!='roller':
+                raise ValueError('滑轮模型文件或模式不匹配')
+            required=contract['required_policy_settings']
+            scale=contract['runtime_action_scale'] if name=='standup' else required['ground_pick_action_scale' if name in ('crouch','spin') else 'action_scale']
+            row.update(available=True,sha256=manifest['onnx_sha256'],
+                action_scale=scale,head_lowpass=required['head_lowpass'],legs_lowpass=required['legs_lowpass'],
+                trigger_bound=True,
+                deployment_status='physical_gamepad_l3_guarded_test' if name=='standup' else 'physical_gamepad',
+                trigger='L3' if name=='standup' else None,
+                test_duration_s=5.0 if name=='standup' else None,
+                checkpoint=manifest.get('training',{}).get('checkpoint'))
+        except (OSError,ValueError,KeyError) as exc:row['error']=str(exc)
+        rollers.append(row)
+    return {'models':rows,'roller_models':rollers,'slots':slots,'configured_model':current,'fixed_profile':True,'model_source':'built_in_deployment_contract'}

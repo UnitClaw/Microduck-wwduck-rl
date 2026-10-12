@@ -502,6 +502,17 @@ impl Model {
                 "refusing to write a config robotd would reject: {e}"
             ));
         }
+        if let Ok(previous) = std::fs::read(&self.path) {
+            if previous == text.as_bytes() {
+                let _ = std::fs::remove_file(&staged);
+                return Ok(());
+            }
+            let backup = self.path.with_extension("previous.toml");
+            let temporary = self.path.with_extension("previous.toml.new");
+            let mut file = std::fs::File::create(&temporary).map_err(|e| writable_hint(&temporary,&e))?;
+            file.write_all(&previous).and_then(|()| file.sync_all()).map_err(|e| writable_hint(&temporary,&e))?;
+            std::fs::rename(&temporary,&backup).map_err(|e| writable_hint(&backup,&e))?;
+        }
         std::fs::rename(&staged, &self.path).map_err(|e| writable_hint(&self.path, &e))?;
         // The rename is only durable once the directory entry is. A robot switched off at the
         // wall is the normal case here, not the exceptional one — same discipline as `configd`'s

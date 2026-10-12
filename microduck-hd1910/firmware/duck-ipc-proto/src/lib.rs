@@ -2369,6 +2369,8 @@ pub struct ModeResult {
     /// `"walk"` or `"roller"`. A string rather than an enum so a client older than a new
     /// mode reports it instead of failing to parse the answer.
     pub mode: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub roller_action: Option<String>,
 }
 
 /// Which slot to change, and to what, for [`Call::RobotLoadPolicy`].

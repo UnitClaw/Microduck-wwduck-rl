@@ -18,18 +18,32 @@ from training.official_spec import ENGINE, PIN, REVISION, RUNTIME_VERSION, JOINT
 from training import zero_calibration
 from training.official_spec import ignored_legacy_bam_overrides
 from training.training_queue import TrainingQueueMixin
+from training.target_limit_profile import validate_profile as validate_target_limit_profile
+from training.limit_comparison_request import validate_request as validate_comparison_request
 
 ROOT=Path(__file__).resolve().parent
 PINS=json.loads((ROOT/'data/pins.json').read_text(encoding='utf-8'))
 ACTIVE=('starting','running','stopping')
 TASK_CATALOG=json.loads((ROOT/'data/tasks.json').read_text(encoding='utf-8'))
 TASKS={t['id']:t for t in TASK_CATALOG['tasks']}
+def prune_unavailable_task_overrides(recipe):
+    """Drop entries for tasks absent from the current catalog, without archiving them."""
+    overrides = recipe.get('task_overrides', {})
+    if not isinstance(overrides, dict):
+        return recipe, False
+    removed = any(task not in TASKS for task in overrides)
+    if not removed:
+        return recipe, False
+    updated = copy.deepcopy(recipe)
+    updated['task_overrides'] = {task: values for task, values in overrides.items() if task in TASKS}
+    return updated, True
+
 
 
 def fresh_recipe():
     recipe = json.loads((ROOT/'examples/recipe-official-0151.json').read_text(encoding='utf-8'))
     recipe['version'] = 1
-    recipe['training_action_scale'] = 0.9
+    recipe['training_action_scale'] = 1.0
     return recipe
 
 
@@ -119,6 +133,19 @@ def enhance(Base,save_json):
             except (OSError,ValueError):computer={}
             changed=bool(computer and computer.get('id')!=self.computer_id)
             if changed:self.environment_cache={}
+            # Reuse the installed CUDA environment while refreshing source
+            # descriptions made by older adapters (including old reward indices).
+            refreshed = False
+            for cached in self.environment_cache.values():
+                if cached.get('revision') == REVISION:
+                    # The 35 frozen task configurations are unchanged; moving the
+                    # adapter label must not force another GPU/environment check.
+                    configs = {task:{**data, 'training_adapter_revision':TRAINING_ADAPTER_REVISION}
+                               for task,data in cached.get('configs',{}).items()
+                               if task in TASKS and isinstance(data,dict)}
+                    if configs != cached.get('configs',{}) or cached.get('tasks') != list(TASKS):
+                        cached.update(configs=configs,tasks=list(TASKS));refreshed = True
+            if refreshed:save_json(self.directory/'environments.json',self.environment_cache)
             self.computer_verified=bool(not changed and computer.get('verified'))
             self.recipe=fresh_recipe()
             try:self.recipe=json.loads((self.directory/'recipe.json').read_text(encoding='utf-8'))
@@ -131,12 +158,31 @@ def enhance(Base,save_json):
                 self.recipe['version']=previous.get('version',0)+1
                 save_json(self.directory/'recipe-before-official0151.json',previous)
                 save_json(self.directory/'recipe.json',self.recipe)
+            # Do not keep old task parameter archives or preserve unavailable
+            # task overrides after an upgrade. Existing current-task values stay intact.
+            (self.directory/'recipe-before-retired-tasks.json').unlink(missing_ok=True)
+            normalized, removed = prune_unavailable_task_overrides(self.recipe)
+            if removed:
+                normalized['version'] = self.recipe.get('version', 0) + 1
+                self.recipe = normalized
+                save_json(self.directory/'recipe.json', self.recipe)
             routed=task_profile(self.profile)
             if routed != self.profile:self.set_execution_profile(routed)
             self.frozen=None
             self.archives=[]
             try:self.archives=json.loads((self.directory/'recipes.json').read_text(encoding='utf-8'))
             except (OSError,ValueError):pass
+            # Archives tied to unavailable tasks are removed rather than retained.
+            if isinstance(self.archives, list):
+                valid_archives=[item for item in self.archives if not (
+                    isinstance(item,dict) and isinstance(item.get('recipe'),dict)
+                    and item['recipe'].get('baseline')==ENGINE
+                    and isinstance(item['recipe'].get('task_overrides'),dict)
+                    and any(task not in TASKS for task in item['recipe']['task_overrides'])
+                )]
+                if len(valid_archives)!=len(self.archives):
+                    self.archives=valid_archives
+                    save_json(self.directory/'recipes.json',self.archives)
             if not (self.directory/'profile.json').exists():self.profile['repo']=PINS[self.recipe['baseline']]['repo']
             # Only source-matched task snapshots are reused. Machine verification
             # remains shared across tasks; calibration imports never invalidate it.
@@ -217,8 +263,14 @@ def enhance(Base,save_json):
                 if r.get('purpose') not in ('replication','sim2real'):raise ValueError('实验目标无效。')
                 if not isinstance(r.get('overrides'),list) or not isinstance(r.get('robot'),dict):raise ValueError('覆盖参数无效。')
                 r=copy.deepcopy(r)
-                r['training_action_scale']=0.9  # New walk-slot experiment default; source records remain immutable.
-                if not isinstance(r.get('task_overrides',{}),dict) or any(k not in TASKS or not isinstance(v,list) for k,v in r.get('task_overrides',{}).items()):raise ValueError('动作参数覆盖格式无效。')
+                r['training_action_scale']=1.0  # New-job default; source records remain immutable.
+                overrides=r.get('task_overrides',{})
+                if not isinstance(overrides,dict) or any(not isinstance(v,list) for v in overrides.values()):raise ValueError('动作参数覆盖格式无效。')
+                if any(not isinstance(k,str) or (k not in TASKS and not k.startswith('Mjlab-')) for k in overrides):
+                    raise ValueError('动作参数包含本版不支持的任务。')
+                # Outdated tabs may still submit retired task settings. Discard
+                # them rather than archiving or blocking the current task.
+                r, removed = prune_unavailable_task_overrides(r)
                 validate_servo_mass(r['robot'], r['baseline'])
                 # Calibration changes use the import endpoints. An autosave from
                 # another tab must never restore an older calibration snapshot.
@@ -226,12 +278,12 @@ def enhance(Base,save_json):
                 if r.get('calibration'):
                     parse_calibration(json.dumps(r['calibration'].get('data')), 'recipe-calibration.json')
                 r['version']=self.recipe.get('version',0)
-                if digest(r)==digest(self.recipe): return {'okay':True}
+                if digest(r)==digest(self.recipe): return {'okay':True, **({'recipe':r} if removed else {})}
                 r['version']+=1
                 json.dumps(r,allow_nan=False)
                 self.recipe=r;self.frozen=None
                 save_json(self.directory/'recipe.json',r)
-                return {'okay':True}
+                return {'okay':True, **({'recipe':r} if removed else {})}
 
         def import_calibration(self,value):
             with self.lock:
@@ -292,9 +344,15 @@ def enhance(Base,save_json):
 
         def launch(self,op,value):
             with self.lock:
+                validate_comparison_request(value,op)
+                if 'target_limit_comparison' in value and op!='onnx':
+                    raise ValueError('限幅对照仅用于所选倒地起身老师的 ONNX 仿真。')
                 if op=='train' and self.training_queue['enabled'] and not self._launching_queue_entry:
                     raise ValueError('训练队列正在执行；请加入队列，按列表顺序开始训练。')
                 value=dict(value)
+                if op in ('train','preflight','preview') and not value.get('source_job') and not self._launching_queue_entry:
+                    from training.action_filter import validate_new_training
+                    value['action_filter'] = validate_new_training(value.get('action_filter'))
                 if not self.computer_verified and self.environment.get('ready'):self.remember_environment()
                 if op=='probe' and self.computer_verified:return {'cached':True}
                 if op in ('train','preview','play','onnx','export') and not self.computer_verified:
@@ -412,6 +470,10 @@ def enhance(Base,save_json):
 
         def decorate_request(self,request,value):
             op=request['op']
+            comparison_mode=validate_comparison_request(value,op)
+            comparison_requested='target_limit_comparison' in value
+            if comparison_requested and op!='onnx':
+                raise ValueError('限幅对照仅用于所选倒地起身老师的 ONNX 仿真。')
             recovery_evaluation=value.get('recovery_evaluation',False)
             if type(recovery_evaluation) is not bool:
                 raise ValueError('翻身检查参数无效。')
@@ -470,6 +532,16 @@ def enhance(Base,save_json):
                 request['recovery_evaluation']=recovery_evaluation
                 if recovery_evaluation:
                     request['eval_pushes']=False
+            if comparison_requested:
+                # Bind to the selected export after restoring its model task.
+                # This profile belongs to this evaluation only, never the recipe.
+                request['target_limit_comparison']=validate_target_limit_profile(
+                    value['target_limit_comparison'], expected_sha=request.get('onnx_sha256'),
+                    expected_task=request.get('task'))
+                validate_comparison_request(value,op,profile=request['target_limit_comparison'])
+                request['target_limit_start_mode']=comparison_mode
+                request['recovery_evaluation']=True
+                request['eval_pushes']=False
             if op in ('train','preflight'):
                 request['sample_alignment_version']=1
                 if request.get('source_job'):

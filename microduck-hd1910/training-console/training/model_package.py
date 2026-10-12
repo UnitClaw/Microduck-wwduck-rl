@@ -40,6 +40,7 @@ def model_package(request):
             manifest = policy.with_suffix('.manifest.json')
             if manifest.is_file():
                 z.write(manifest, 'manifest.json')
+                manifest_data = json.loads(manifest.read_text(encoding='utf-8'))
                 for suffix, name in [('.deployment.toml', 'deployment-profile.toml'), ('.deployment.md', '使用说明.md')]:
                     sidecar = policy.with_suffix(suffix)
                     if not sidecar.is_file():
@@ -48,7 +49,7 @@ def model_package(request):
                 snapshot = policy.with_suffix('.training.json')
                 if snapshot.is_file():
                     z.write(snapshot, 'training-config.json')
-                elif json.loads(manifest.read_text(encoding='utf-8')).get('export_contract_revision', 1) >= 2:
+                elif manifest_data.get('export_contract_revision', 1) >= 2:
                     raise ValueError('新版模型缺少原训练配置快照，请重新导出。')
                 params = checkpoint.parent / 'params'
                 if params.is_dir():

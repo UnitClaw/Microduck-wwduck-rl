@@ -1,6 +1,6 @@
 seed: 42
 num_steps_per_env: 24
-max_iterations: 5000
+max_iterations: 10000
 obs_groups:
   actor: !!python/tuple
   - actor
@@ -8,7 +8,7 @@ obs_groups:
   - critic
 save_interval: 1000
 experiment_name: ground_pick
-run_name: console_20261004_110100_f3cbc3
+run_name: console_20261008_041738_4eb094
 logger: tensorboard
 wandb_project: mjlab_microduck
 wandb_tags: !!python/tuple []

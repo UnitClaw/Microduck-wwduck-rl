@@ -93,7 +93,7 @@ class EventProtocolTests(unittest.TestCase):
         self.assertIn("'event_protocol.py'",source)
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
-            for name in ('event_protocol.py','sample_alignment.py','live_view.py','runtime_adapter.py','sim_protocol.py','recipe.py','official_spec.py','action_filter.py'):
+            for name in ('event_protocol.py','sample_alignment.py','live_view.py','runtime_adapter.py','sim_protocol.py','recipe.py','official_spec.py','action_filter.py','config_audit.py'):
                 (root/name).write_bytes(Path(worker.__file__).with_name(name).read_bytes())
             result=subprocess.run([sys.executable,'-c','import live_view,runtime_adapter,event_protocol; assert live_view.emit is runtime_adapter.emit is event_protocol.emit'],cwd=root,capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)

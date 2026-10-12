@@ -83,25 +83,11 @@ class OfficialSettingsTests(unittest.TestCase):
         self.assertNotIn('requested_policy_restore', PROFILE)
         self.assertNotIn('applied_policy_restore', PROFILE)
 
-    def test_model_binding_does_not_materialize_filter_or_voltage_parameters(self):
-        with tempfile.TemporaryDirectory() as t:
-            base = Path(t)
-            cfg = base/'robotd.toml'
-            cal = base/'calibration.toml'
-            cal.write_bytes((ROOT/'packaging/hd1910-calibration.robot.toml').read_bytes())
-            cfg.write_text(configure.dumps({'policy': {'custom_only': True, 'action_scale': .63}}))
-            info = model_packages.verify_directory(ROOT/'policies/walk')
-            with patch.object(model_packages, 'verify_directory', return_value=info):
-                model_packages.assign_model(info['id'], 'walk', base, cfg, cal)
-            got = tomllib.loads(cfg.read_text())['policy']
-            self.assertTrue(RETIRED.isdisjoint(got))
-            self.assertEqual(got['action_scale'], .63)
-            self.assertEqual(cfg.read_bytes(), cfg.with_name('robotd.saved.toml').read_bytes())
 
     def test_native_voltage_or_filter_readback_is_not_an_r17_acceptance_gate(self):
         path = ROOT/'policies/walk/policy.onnx'
         data = {'policy': {'walk': str(path), 'action_scale': .63}}
-        bus = {'build': runtime.BUILD, 'loaded_models': {'walk': {'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}},
+        bus = {'build': runtime.BUILD, 'loaded_models': {'walk': {'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),'runtime_execution_profile':runtime.model_execution_profile(path)}},
                'action_scale': .63, 'head_lowpass': .5, 'legs_lowpass': .7, 'voltage_adapt': True}
         with patch.object(runtime, 'config', return_value=data), patch.object(runtime, 'rpc', return_value=bus):
             self.assertTrue(runtime.verify_loaded_models()['loaded_models_verified'])

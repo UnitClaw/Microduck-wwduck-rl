@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preserve installation settings and record successfully loaded configuration."""
+"""Preserve installation settings during explicit installation only."""
 import argparse
 import copy
 from pathlib import Path
@@ -9,7 +9,6 @@ from configure import atomic_write, dumps
 BASE=Path(__file__).resolve().parent
 CONFIG=Path('/etc/robot/feetech-ft5/robotd.toml')
 CALIBRATION=CONFIG.with_name('hd1910-calibration.toml')
-STATE=Path('/var/lib/robot/feetech-ft5/r5/uart-state.json')
 
 def saved_path(path):return path.with_name(path.stem+'.saved'+path.suffix)
 
@@ -88,17 +87,9 @@ def prepare_calibration(path,base=BASE):
         print('安装恢复装配标定：补齐 '+str(len(restored))+' 个关节；头部 ID 33 零位 '+str(data['joints'][8]['zero_raw'])+'；IMU '+('已恢复' if imu_source is not None else '保留本机设置'),flush=True)
     return data
 
-def record(params=CONFIG,calibration=CALIBRATION):
-    # Called only after robotd accepted UART setup, or after a calibration save.
-    values=[read_config(params,'params'),read_config(calibration,'calibration')]
-    if any(data is None for data in values):raise ValueError('未保存不完整的配置副本')
-    for path,data in zip((params,calibration),values):atomic_write(saved_path(path),dumps(data))
-
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     actions=parser.add_mutually_exclusive_group(required=True)
-    actions.add_argument('--record',action='store_true')
     actions.add_argument('--prepare',type=Path)
     args=parser.parse_args()
-    if args.prepare:prepare(args.prepare)
-    else:record()
+    prepare(args.prepare)

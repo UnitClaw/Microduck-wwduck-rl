@@ -18,7 +18,7 @@ import tempfile
 import threading
 import time
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'console'))
@@ -126,16 +126,22 @@ console.log('PASS uniform metadata, actual values and null clear survive browser
         self.assertTrue(fresh.empty(),'A retired SSH generation cannot refill the new connection')
 
     def test_native_stream_and_tof_are_forwarded_byte_for_byte_through_actual_production_loop(self):
-        channels={};received={};stop=threading.Event();hub=raw.Hub();browser=hub.subscribe();browser.get_nowait();events=[]
+        channels=[];received={};stop=threading.Event();hub=raw.Hub();browser=hub.subscribe();browser.get_nowait();events=[]
+        startup_seen=threading.Event();log=Mock()
+        def emit(event):
+            events.append(event)
+            if event['channel']=='startup':startup_seen.set()
         raw_frames=[frame(1,{'schema':'r17.raw.v1','channels':{},'capabilities':{'accepted':True}}),frame(2,{'state':{'joints':[.1]},'bus':{'cycle':1}}),frame(4,{'system':{'cpu_temp_c':88}})]
         tof_messages=[{'jsonrpc':'2.0','id':1,'result':{'accepted':True,'rows':8,'cols':8}},{'jsonrpc':'2.0','method':'tof.frame','params':{'seq':5,'rows':8,'cols':8,'distance_mm':[10]*64,'status':[5]*64}}]
         def remote(target,path,system_log=None,timeout=10,stop=None):
-            client,server=socket.socketpair();channels[path]=(client,server)
+            client,server=socket.socketpair();channels.append((client,server))
             def daemon():
                 request=b''
                 while not request.endswith(b'\n'):request+=server.recv(1)
-                received[path]=json.loads(request)
-                if path=='robot':
+                row=json.loads(request);received[row['method']]=row
+                if row['method']=='robot.startupSubscribe':
+                    wire=json.dumps({'id':1,'result':{'steps':{str(n):{'status':'success','detail':'配置与 IPC 已启动' if n==1 else 'ready'} for n in range(1,5)}}}).encode()+b'\n'
+                elif path=='robot':
                     wire=json.dumps({'id':1,'result':{'accepted':True,'schema':'r17.raw.v1','framing':'u32le'}}).encode()+b'\n'+b''.join(raw_frames)
                 else:wire=b''.join(json.dumps(m,separators=(',',':')).encode()+b'\n' for m in tof_messages)
                 # Split through the length header, typed scalar and UTF-8 payload.
@@ -145,7 +151,7 @@ console.log('PASS uniform metadata, actual values and null clear survive browser
             threading.Thread(target=daemon,daemon=True).start()
             return client
         with patch('socket_transport.open_remote_socket',remote):
-            worker=threading.Thread(target=raw.raw_loop,args=('duck',{'hub':hub,'robotd_socket':'robot','tofd_socket':'tof'},events.append,stop),daemon=True);worker.start()
+            worker=threading.Thread(target=raw.raw_loop,args=('duck',{'hub':hub,'robotd_socket':'robot','tofd_socket':'tof'},emit,stop,log),daemon=True);worker.start()
             try:
                 output=[];until=time.monotonic()+3
                 while len(output)<5 and time.monotonic()<until:
@@ -153,11 +159,16 @@ console.log('PASS uniform metadata, actual values and null clear survive browser
                     if opcode==2:output.append(payload)
                 self.assertEqual([p for p in output if p[4]!=3],raw_frames)
                 self.assertEqual([p[5:] for p in output if p[4]==3],[json.dumps(m,separators=(',',':')).encode()+b'\n' for m in tof_messages])
-                self.assertEqual(received['robot']['method'],'robot.rawSubscribe');self.assertEqual(received['tof']['method'],'tof.stream')
-                self.assertEqual({e['channel'] for e in events},{'capabilities','state','bus','system','tof'})
+                self.assertTrue(startup_seen.wait(1),'separate startup subscription must deliver its snapshot')
+                self.assertEqual(set(received),{'robot.rawSubscribe','robot.startupSubscribe','tof.stream'})
+                self.assertEqual(next(e['data']['steps']['1']['detail'] for e in events if e['channel']=='startup'),'配置与 IPC 已启动')
+                self.assertEqual({e['channel'] for e in events},{'capabilities','state','bus','system','tof','ssh_transport','robotd_stream','startup'})
+                connected = {e['data']['endpoint'] for e in events
+                             if e['channel'] == 'ssh_transport' and e['data']['connected']}
+                self.assertEqual(connected, {'robotd', 'tof'})
             finally:stop.set();worker.join(2)
             self.assertFalse(worker.is_alive())
-            self.assertTrue(all(client.fileno()==-1 for client,_ in channels.values()))
+            self.assertTrue(all(client.fileno()==-1 for client,_ in channels))
 
     def test_ssh_authentication_failure_is_reported_without_killing_the_collector(self):
         events=[];stop=threading.Event();hub=raw.Hub()
@@ -167,8 +178,10 @@ console.log('PASS uniform metadata, actual values and null clear survive browser
             while not any(e['channel']=='state' for e in events) and time.monotonic()<limit:time.sleep(.005)
             self.assertTrue(worker.is_alive(),'The live connection can retry after an SSH login/network failure')
             stop.set();worker.join(2)
-        self.assertEqual({e['channel'] for e in events},set(raw.TTL))
-        self.assertTrue(all('Permission denied' in e['error'] for e in events))
+        self.assertEqual({e['channel'] for e in events},(set(raw.TTL)-{'startup'}) | {'ssh_transport','robotd_stream'})
+        errors = [e for e in events if 'error' in e]
+        self.assertTrue(all('Permission denied' in e['error'] and e['error_source'] == 'ssh' for e in errors))
+        self.assertTrue(all(not e['data']['connected'] for e in events if e['channel'] == 'ssh_transport'))
         self.assertFalse(worker.is_alive())
 
     def test_tof_quiet_ack_refreshes_once_and_a_real_frame_rearms_the_next_quiet_period(self):
@@ -180,7 +193,9 @@ console.log('PASS uniform metadata, actual values and null clear survive browser
             def daemon():
                 request=b''
                 while not request.endswith(b'\n'):request+=server.recv(1)
-                if path=='robot':
+                if json.loads(request)['method']=='robot.startupSubscribe':
+                    server.sendall((json.dumps({'id':1,'result':{'steps':{str(n):{'status':'success','detail':'ready'} for n in range(1,5)}}})+'\n').encode())
+                elif path=='robot':
                     server.sendall(b'{"id":1,"result":{"accepted":true,"schema":"r17.raw.v1","framing":"u32le"}}\n'+frame(1,{'schema':'r17.raw.v1','channels':{}}))
                 else:
                     tof.append(server)

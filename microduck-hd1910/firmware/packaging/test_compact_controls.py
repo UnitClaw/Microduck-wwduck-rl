@@ -44,14 +44,14 @@ class CompactTests(unittest.TestCase):
    self.assertFalse(m.motion_readiness()['motion_ready'])
  def test_model_catalog_can_be_read_when_motor_daemon_has_failed(self):
   class Transport:
-   def manage(self,action,privileged=False):
+   def manage(self,action,privileged=False,record_output=True):
     return {'management_revision':'R17'} if action=='connection' else {'models':[{'id':'saved-walk'}]}
   c=ServiceController(Store(),transport=Transport())
   c.store.snapshot=lambda:{'bus':{},'service_sample_fresh':False}
   self.assertEqual(c.models()['models'][0]['id'],'saved-walk')
  def test_model_catalog_still_requires_the_installed_management_helper(self):
   class Transport:
-   def manage(self,action,privileged=False):return {'management_revision':'unrelated'}
+   def manage(self,action,privileged=False,record_output=True):return {'management_revision':'unrelated'}
   c=ServiceController(Store(),transport=Transport());c.store.snapshot=lambda:{'bus':{}}
   with self.assertRaises(ControlError):c.models()
  def test_volume_roundtrip_is_finite_native_audio_and_does_not_open_input(self):

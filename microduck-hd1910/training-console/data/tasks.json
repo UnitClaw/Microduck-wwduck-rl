@@ -1,6 +1,6 @@
 {
   "revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
-  "version": "1.5.13",
+  "version": "1.5.27",
   "runtime_version": "0.15.1",
   "runtime_revision": "1fa84386f07884e27866411bc1ba166977bced95",
   "aliases": {},
@@ -28,7 +28,9 @@
       "default_task": "Mjlab-SitStand-Flat-MicroDuck",
       "variants": [
         "Mjlab-SitStand-Flat-MicroDuck",
-        "Mjlab-SitStand-Flat-Backlash-MicroDuck"
+        "Mjlab-SitStand-Flat-Backlash-MicroDuck",
+        "Mjlab-SitStand-Rough-MicroDuck",
+        "Mjlab-SitStand-Rough-Backlash-MicroDuck"
       ]
     },
     {
@@ -38,7 +40,9 @@
       "default_task": "Mjlab-GroundPick-Flat-MicroDuck",
       "variants": [
         "Mjlab-GroundPick-Flat-MicroDuck",
-        "Mjlab-GroundPick-Flat-Backlash-MicroDuck"
+        "Mjlab-GroundPick-Flat-Backlash-MicroDuck",
+        "Mjlab-GroundPick-Rough-MicroDuck",
+        "Mjlab-GroundPick-Rough-Backlash-MicroDuck"
       ]
     },
     {
@@ -113,6 +117,44 @@
         "Mjlab-RollerCrouch-Flat-MicroDuck",
         "Mjlab-RollerCrouch-Flat-Backlash-MicroDuck"
       ]
+    },
+    {
+      "role": "swizzle",
+      "name": "轮滑对称蹬滑 / Swizzle",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "default_task": "Mjlab-Velocity-Swizzle-MicroDuck",
+      "variants": [
+        "Mjlab-Velocity-Swizzle-MicroDuck",
+        "Mjlab-Velocity-Swizzle-Backlash-MicroDuck"
+      ]
+    },
+    {
+      "role": "slope",
+      "name": "轮滑下坡 / Roller slope",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "default_task": "Mjlab-RollerSlope-Flat-MicroDuck",
+      "variants": [
+        "Mjlab-RollerSlope-Flat-MicroDuck",
+        "Mjlab-RollerSlope-Flat-Backlash-MicroDuck"
+      ]
+    },
+    {
+      "role": "roller_stand",
+      "name": "轮滑倒地起身 / Roller recovery",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "default_task": "Mjlab-RollerStandUp-Flat-MicroDuck",
+      "variants": [
+        "Mjlab-RollerStandUp-Flat-MicroDuck"
+      ]
+    },
+    {
+      "role": "spin",
+      "name": "轮滑原地旋转 / Roller spin",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "default_task": "Mjlab-Spin-Flat-MicroDuck",
+      "variants": [
+        "Mjlab-Spin-Flat-MicroDuck"
+      ]
     }
   ],
   "tasks": [
@@ -133,7 +175,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-VelStand-Flat-Backlash-MicroDuck",
@@ -152,7 +195,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-VelStand-Rough-MicroDuck",
@@ -171,7 +215,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-VelStand-Rough-Backlash-MicroDuck",
@@ -190,7 +235,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-SitStand-Flat-MicroDuck",
@@ -209,6 +255,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
+      "deployment_note": "",
       "training_action_scale": 1.0
     },
     {
@@ -228,6 +275,47 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
+      "deployment_note": "",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-SitStand-Rough-MicroDuck",
+      "upstream": "Mjlab-SitStand-Rough-MicroDuck",
+      "upstream_task": "Mjlab-SitStand-Rough-MicroDuck",
+      "role": "sitstand",
+      "name": "坐下与站起 / Sit–stand",
+      "description": "当前坐站配方含坐姿头部突变和后仰扰动训练；vx=1 坐下，vx=0 站起。",
+      "iterations": 15000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_sitstand_env_cfg.py",
+      "group": "当前实机动作 / Current actions",
+      "terrain": "Rough",
+      "backlash": false,
+      "backlash_total_deg": 0.0,
+      "hardware": "feet",
+      "deployment_note": "",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-SitStand-Rough-Backlash-MicroDuck",
+      "upstream": "Mjlab-SitStand-Rough-Backlash-MicroDuck",
+      "upstream_task": "Mjlab-SitStand-Rough-Backlash-MicroDuck",
+      "role": "sitstand",
+      "name": "坐下与站起 / Sit–stand",
+      "description": "当前坐站配方含坐姿头部突变和后仰扰动训练；vx=1 坐下，vx=0 站起。",
+      "iterations": 15000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_sitstand_env_cfg.py",
+      "group": "当前实机动作 / Current actions",
+      "terrain": "Rough",
+      "backlash": true,
+      "backlash_total_deg": 2.0,
+      "hardware": "feet",
+      "deployment_note": "",
       "training_action_scale": 1.0
     },
     {
@@ -247,6 +335,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
+      "deployment_note": "",
       "training_action_scale": 1.0
     },
     {
@@ -266,6 +355,47 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
+      "deployment_note": "",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-GroundPick-Rough-MicroDuck",
+      "upstream": "Mjlab-GroundPick-Rough-MicroDuck",
+      "upstream_task": "Mjlab-GroundPick-Rough-MicroDuck",
+      "role": "ground_pick",
+      "name": "低头捡取 / Ground pick",
+      "description": "官方相位动作：周期4秒、运行窗口2.8秒。",
+      "iterations": 20000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_ground_pick_env_cfg.py",
+      "group": "当前实机动作 / Current actions",
+      "terrain": "Rough",
+      "backlash": false,
+      "backlash_total_deg": 0.0,
+      "hardware": "feet",
+      "deployment_note": "",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-GroundPick-Rough-Backlash-MicroDuck",
+      "upstream": "Mjlab-GroundPick-Rough-Backlash-MicroDuck",
+      "upstream_task": "Mjlab-GroundPick-Rough-Backlash-MicroDuck",
+      "role": "ground_pick",
+      "name": "低头捡取 / Ground pick",
+      "description": "官方相位动作：周期4秒、运行窗口2.8秒。",
+      "iterations": 20000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_ground_pick_env_cfg.py",
+      "group": "当前实机动作 / Current actions",
+      "terrain": "Rough",
+      "backlash": true,
+      "backlash_total_deg": 2.0,
+      "hardware": "feet",
+      "deployment_note": "",
       "training_action_scale": 1.0
     },
     {
@@ -285,6 +415,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
+      "deployment_note": "独立左脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。",
       "kick_foot": "left",
       "training_action_scale": 1.0
     },
@@ -305,6 +436,7 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
+      "deployment_note": "独立左脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。",
       "kick_foot": "left",
       "training_action_scale": 1.0
     },
@@ -325,6 +457,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
+      "deployment_note": "独立右脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。",
       "training_action_scale": 1.0
     },
     {
@@ -344,6 +477,7 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
+      "deployment_note": "独立右脚模型；当前R148尚不接收此任务，运行接入条件随导出包提供。",
       "training_action_scale": 1.0
     },
     {
@@ -363,6 +497,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
+      "deployment_note": "",
       "training_action_scale": 1.0
     },
     {
@@ -382,7 +517,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-Velocity-Flat-Backlash-MicroDuck",
@@ -401,7 +537,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-Velocity-Rough-MicroDuck",
@@ -420,7 +557,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-Velocity-Rough-Backlash-MicroDuck",
@@ -439,7 +577,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-StandUp-Flat-MicroDuck",
@@ -447,7 +586,7 @@
       "upstream_task": "Mjlab-StandUp-Flat-MicroDuck",
       "role": "stand",
       "name": "倒地起身老师 / Recovery teacher",
-      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的动作系数和滤波需一致。",
+      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的 P、动作映射与机器人合同需一致。",
       "iterations": 15000,
       "enabled": true,
       "engine": "official_0151",
@@ -458,7 +597,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-StandUp-Flat-Backlash-MicroDuck",
@@ -466,7 +606,7 @@
       "upstream_task": "Mjlab-StandUp-Flat-Backlash-MicroDuck",
       "role": "stand",
       "name": "倒地起身老师 / Recovery teacher",
-      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的动作系数和滤波需一致。",
+      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的 P、动作映射与机器人合同需一致。",
       "iterations": 15000,
       "enabled": true,
       "engine": "official_0151",
@@ -477,7 +617,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-StandUp-Rough-MicroDuck",
@@ -485,7 +626,7 @@
       "upstream_task": "Mjlab-StandUp-Rough-MicroDuck",
       "role": "stand",
       "name": "倒地起身老师 / Recovery teacher",
-      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的动作系数和滤波需一致。",
+      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的 P、动作映射与机器人合同需一致。",
       "iterations": 15000,
       "enabled": true,
       "engine": "official_0151",
@@ -496,7 +637,8 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-StandUp-Rough-Backlash-MicroDuck",
@@ -504,7 +646,7 @@
       "upstream_task": "Mjlab-StandUp-Rough-Backlash-MicroDuck",
       "role": "stand",
       "name": "倒地起身老师 / Recovery teacher",
-      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的动作系数和滤波需一致。",
+      "description": "联合训练的起身老师；不是旧版单独原地站立模型。两位老师的 P、动作映射与机器人合同需一致。",
       "iterations": 15000,
       "enabled": true,
       "engine": "official_0151",
@@ -515,7 +657,8 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "feet",
-      "training_action_scale": 0.9
+      "deployment_note": "",
+      "training_action_scale": 1.0
     },
     {
       "id": "Mjlab-Velocity-Flat-MicroDuck-Rollers",
@@ -534,6 +677,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "rollers",
+      "deployment_note": "轮滑的x表示推进/滑行/刹车；y、yaw、head、body需为0。当前R148实机中控尚不接收此任务。",
       "training_action_scale": 1.0
     },
     {
@@ -553,6 +697,7 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "rollers",
+      "deployment_note": "轮滑的x表示推进/滑行/刹车；y、yaw、head、body需为0。当前R148实机中控尚不接收此任务。",
       "training_action_scale": 1.0
     },
     {
@@ -572,6 +717,7 @@
       "backlash": false,
       "backlash_total_deg": 0.0,
       "hardware": "rollers",
+      "deployment_note": "0.15.1需使用相位入口，周期5秒、窗口3.5秒；当前R148尚不接收此任务。",
       "training_action_scale": 1.0
     },
     {
@@ -591,46 +737,127 @@
       "backlash": true,
       "backlash_total_deg": 2.0,
       "hardware": "rollers",
+      "deployment_note": "0.15.1需使用相位入口，周期5秒、窗口3.5秒；当前R148尚不接收此任务。",
       "training_action_scale": 1.0
     },
     {
-      "id": "Mjlab-SitStand-Rough-MicroDuck",
-      "upstream": "Mjlab-SitStand-Rough-MicroDuck",
-      "upstream_task": "Mjlab-SitStand-Rough-MicroDuck",
-      "role": "sitstand",
-      "name": "坐下与站起 / Sit–stand",
-      "description": "当前坐站配方含坐姿头部突变和后仰扰动训练；vx=1 坐下，vx=0 站起。",
+      "id": "Mjlab-Velocity-Swizzle-MicroDuck",
+      "upstream": "Mjlab-Velocity-Swizzle-MicroDuck",
+      "upstream_task": "Mjlab-Velocity-Swizzle-MicroDuck",
+      "role": "swizzle",
+      "name": "轮滑对称蹬滑 / Swizzle",
+      "description": "需要滑轮；转向槽表示航向误差，不能直接按普通行走的转速指令使用。0.15.1现成路径仅核定直行子集。",
+      "iterations": 50000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_velocity_swizzle_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Flat",
+      "backlash": false,
+      "backlash_total_deg": 0.0,
+      "hardware": "rollers",
+      "deployment_note": "完整转向需支持航向误差的控制端；当前R148尚不接收此任务，本次提供训练与导出。",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-Velocity-Swizzle-Backlash-MicroDuck",
+      "upstream": "Mjlab-Velocity-Swizzle-Backlash-MicroDuck",
+      "upstream_task": "Mjlab-Velocity-Swizzle-Backlash-MicroDuck",
+      "role": "swizzle",
+      "name": "轮滑对称蹬滑 / Swizzle",
+      "description": "需要滑轮；转向槽表示航向误差，不能直接按普通行走的转速指令使用。0.15.1现成路径仅核定直行子集。",
+      "iterations": 50000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_velocity_swizzle_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Flat",
+      "backlash": true,
+      "backlash_total_deg": 2.0,
+      "hardware": "rollers",
+      "deployment_note": "完整转向需支持航向误差的控制端；当前R148尚不接收此任务，本次提供训练与导出。",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-RollerSlope-Flat-MicroDuck",
+      "upstream": "Mjlab-RollerSlope-Flat-MicroDuck",
+      "upstream_task": "Mjlab-RollerSlope-Flat-MicroDuck",
+      "role": "slope",
+      "name": "轮滑下坡 / Roller slope",
+      "description": "官方坡面滑行任务；任务 ID 虽含 Flat，实际使用斜坡模型。需要安装滑轮。",
+      "iterations": 8000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_roller_slope_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Slope",
+      "backlash": false,
+      "backlash_total_deg": 0.0,
+      "hardware": "rollers",
+      "deployment_note": "运行时twist/head/body均须为0；当前R148尚不接收此任务，不能当作普通遥控行走模型。",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-RollerSlope-Flat-Backlash-MicroDuck",
+      "upstream": "Mjlab-RollerSlope-Flat-Backlash-MicroDuck",
+      "upstream_task": "Mjlab-RollerSlope-Flat-Backlash-MicroDuck",
+      "role": "slope",
+      "name": "轮滑下坡 / Roller slope",
+      "description": "官方坡面滑行任务；任务 ID 虽含 Flat，实际使用斜坡模型。需要安装滑轮。",
+      "iterations": 8000,
+      "enabled": true,
+      "engine": "official_0151",
+      "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
+      "source": "microduck_roller_slope_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Slope",
+      "backlash": true,
+      "backlash_total_deg": 2.0,
+      "hardware": "rollers",
+      "deployment_note": "运行时twist/head/body均须为0；当前R148尚不接收此任务，不能当作普通遥控行走模型。",
+      "training_action_scale": 1.0
+    },
+    {
+      "id": "Mjlab-RollerStandUp-Flat-MicroDuck",
+      "upstream": "Mjlab-RollerStandUp-Flat-MicroDuck",
+      "upstream_task": "Mjlab-RollerStandUp-Flat-MicroDuck",
+      "role": "roller_stand",
+      "name": "轮滑倒地起身 / Roller recovery",
+      "description": "从地面恢复到滑轮站姿；需要安装滑轮。官方未注册此任务的齿隙版本。",
       "iterations": 15000,
-      "enabled": false,
+      "enabled": true,
       "engine": "official_0151",
       "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
-      "source": "microduck_sitstand_env_cfg.py",
-      "group": "当前实机动作 / Current actions",
-      "terrain": "Rough",
+      "source": "microduck_roller_standup_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Flat",
       "backlash": false,
       "backlash_total_deg": 0.0,
-      "hardware": "feet",
-      "reason": "历史配方，仅评估、导出或原配置续训。",
+      "hardware": "rollers",
+      "deployment_note": "0.15.1轮滑模式不会自动触发此模型，需另配零指令技能与执行窗口；当前R148尚不接收此任务。",
       "training_action_scale": 1.0
     },
     {
-      "id": "Mjlab-GroundPick-Rough-MicroDuck",
-      "upstream": "Mjlab-GroundPick-Rough-MicroDuck",
-      "upstream_task": "Mjlab-GroundPick-Rough-MicroDuck",
-      "role": "ground_pick",
-      "name": "低头捡取 / Ground pick",
-      "description": "官方相位动作：周期4秒、运行窗口2.8秒。",
-      "iterations": 20000,
-      "enabled": false,
+      "id": "Mjlab-Spin-Flat-MicroDuck",
+      "upstream": "Mjlab-Spin-Flat-MicroDuck",
+      "upstream_task": "Mjlab-Spin-Flat-MicroDuck",
+      "role": "spin",
+      "name": "轮滑原地旋转 / Roller spin",
+      "description": "官方滑轮旋转任务；需要安装滑轮。官方未注册此任务的齿隙版本。",
+      "iterations": 8000,
+      "enabled": true,
       "engine": "official_0151",
       "source_revision": "8d0db74916a4f833d1d9b95d6a1d7f4d13b9d5ec",
-      "source": "microduck_ground_pick_env_cfg.py",
-      "group": "当前实机动作 / Current actions",
-      "terrain": "Rough",
+      "source": "microduck_spin_env_cfg.py",
+      "group": "滑轮硬件动作 / Requires rollers",
+      "terrain": "Flat",
       "backlash": false,
       "backlash_total_deg": 0.0,
-      "hardware": "feet",
-      "reason": "历史配方，仅评估、导出或原配置续训。",
+      "hardware": "rollers",
+      "deployment_note": "0.15.1需使用相位入口，周期4秒、窗口2.8秒；当前R148尚不接收此任务。",
       "training_action_scale": 1.0
     }
   ]

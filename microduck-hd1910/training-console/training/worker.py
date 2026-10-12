@@ -366,7 +366,7 @@ def run(req):
     threading.Thread(target=controls, daemon=True).start()
     with tempfile.TemporaryDirectory(prefix='microduck-console-') as directory:
         bundle = globals().get('WORKER_BUNDLE', {})
-        for name in ('runtime_adapter.py','recovery_evaluation.py','sample_alignment.py','checkpoint_policy.py','live_view.py','event_protocol.py','sim_protocol.py','recipe.py','official_spec.py','official_adapter.py','hd1910_actuator.py','hd1910_m6.json','deployment.py','action_filter.py','filtered_actions.py'):
+        for name in ('runtime_adapter.py','recovery_evaluation.py','target_limit_profile.py','target_limit_actions.py','limit_comparison_request.py','recorded_start.py','limit_comparison.py','sample_alignment.py','checkpoint_policy.py','live_view.py','event_protocol.py','sim_protocol.py','recipe.py','config_audit.py','official_spec.py','official_adapter.py','hd1910_actuator.py','hd1910_m6.json','deployment.py','action_filter.py','filtered_actions.py'):
             source = bundle.get(name)
             if source is None: source = Path(__file__).with_name(name).read_text(encoding='utf-8')
             (Path(directory)/name).write_text(source,encoding='utf-8')

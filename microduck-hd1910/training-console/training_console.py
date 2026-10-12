@@ -24,6 +24,7 @@ from training.control_channel import ControlChannel
 from training.recipe import validate_training_action_scale, validate_training_firmware_p
 from training.durable_manager import DurableTrainingMixin
 from training.remote_ssh import RemoteTraining, RELEASE
+from training.limit_comparison_request import validate_request as validate_comparison_request
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT/'training'/'static'
@@ -47,9 +48,65 @@ def save_json(path, value):
     temp.replace(path)
 
 
+def target_limit_summary(result):
+    """Keep polling small; complete 50Hz traces remain in the download."""
+    summary={k:v for k,v in result.items() if k!='groups'}
+    summary['groups']=[]
+    for group in result.get('groups',[]):
+        small={k:v for k,v in group.items() if k!='trace'}
+        ranges={}
+        for key in ('joint21_target_before_rad','joint21_target_after_rad','joint21_actual_rad'):
+            values=[row[key] for row in group.get('trace',[])
+                    if type(row.get(key)) in (int,float) and math.isfinite(row[key])]
+            if values:ranges[key]=[min(values),max(values)]
+        small['trace_ranges_rad']=ranges
+        summary['groups'].append(small)
+    summary['trace_in_download']=True
+    return summary
+
+
 def event_log_text(event):
     kind = event.get('kind')
     if kind == 'log': return event.get('line','')+'\n'
+    if kind=='limit_comparison_state':
+        data=event.get('data',{})
+        step=data.get('step')
+        suffix=(' · %s / %s 步' % (step,data.get('total_steps',300))) if type(step) is int else ''
+        return '[限幅对照] '+str(data.get('message',''))+suffix+'\n'
+    if kind=='limit_comparison_result':
+        data=event.get('data',{})
+        checked='初态按数值公差核对通过，A/B有效。' if data.get('initial_state_method') else '初态核对通过，A/B有效。'
+        title='真机起点对照结果' if data.get('start_mode')=='recorded' else '限幅对照结果'
+        lines=['['+title+'] '+(checked if data.get('valid') else '对照无效。')]
+        if data.get('error'):lines.append('原因：'+str(data['error']))
+        for row in data.get('initial_state_differences',[])[:6]:
+            if not isinstance(row,dict):continue
+            detail='%s.%s：%s' % (row.get('component','?'),row.get('field','?'),row.get('reason','不一致'))
+            delta=row.get('max_abs_diff')
+            if type(delta) in (int,float) and math.isfinite(delta):
+                detail+='；最大绝对差=%g，atol=%s，rtol=%s' % (delta,row.get('atol','—'),row.get('rtol','—'))
+            lines.append('初态字段 '+detail)
+        for group in data.get('groups',[]):
+            pose_check=group.get('recorded_start_check')
+            if isinstance(pose_check,dict):
+                errors=pose_check.get('errors') or {}
+                def pose_number(key):
+                    v=errors.get(key)
+                    return '%g'%v if type(v) in (int,float) and math.isfinite(v) else '—'
+                lines.append('%s组真机起点回读：%s；关节最大误差=%s°；重力误差=%s；姿态/机身数据差=%s。' %
+                    (group.get('label','?'),'通过' if pose_check.get('passed') else '未通过',
+                     pose_number('encoder_max_abs_deg'),pose_number('gravity_l2'),
+                     pose_number('gravity_data_vs_qpos_l2')))
+            if group.get('status') in ('invalid','error') and not (
+                    type(group.get('steps')) is int and group['steps']>0):
+                reason=('真机起点回读未通过' if isinstance(pose_check,dict) and not pose_check.get('passed') else
+                        '初态核对未通过' if group.get('status')=='invalid' else '初始化出错')
+                lines.append('%s组：未运行（%s）。' % (group.get('label','?'),reason))
+                continue
+            lines.append('%s组：%s；最大翻身角=%s°；ID21限幅步数=%s。' %
+                (group.get('label','?'),group.get('status','未完成'),group.get('max_roll_deg','—'),
+                 group.get('joint21_clamp_steps','—')))
+        return '\n'.join(lines)+'\n'
     if kind=='training_view_error':return '[训练画面] '+event.get('message','')+'\n'
     if kind == 'command':
         return '[运行目录] '+event.get('cwd','')+'\n[启动命令] '+json.dumps(event.get('argv',[]),ensure_ascii=False)+'\n'
@@ -72,7 +129,8 @@ def validate_profile(value):
 def validate_parameters(value, environment):
     if not isinstance(value, dict): raise ValueError('训练参数无效。')
     task = value.get('task', DEFAULT_TASK)
-    if task not in environment.get('tasks', []): raise ValueError('所选任务不在本版官方任务列表中。')
+    from training.official_spec import TASKS
+    if task not in TASKS or task not in environment.get('tasks', []): raise ValueError('所选任务不在本版官方任务列表中。')
     value={**value,'save_interval':1000}
     from training.recipe import validate_training_action_scale
     from training.action_filter import validate as validate_action_filter
@@ -80,6 +138,8 @@ def validate_parameters(value, environment):
     result = {'task': task, 'training_action_scale': validate_training_action_scale(value.get('training_action_scale', new_training_action_scale(task))), 'action_filter': validate_action_filter(value.get('action_filter'))}
     if value.get('training_firmware_p') is not None:
         result['training_firmware_p'] = validate_training_firmware_p(value['training_firmware_p'])
+    elif not value.get('source_job'):
+        result['training_firmware_p'] = 5
     for key, label, low, high, default in [('num_envs','并行环境数',1,8192,4096), ('iterations','新增迭代数',1,409600000,50000),
                                            ('save_interval','模型保存间隔',1,10000,1000)]:
         n = value.get(key, default)
@@ -182,6 +242,12 @@ class TrainingManager(DurableTrainingMixin):
             try:
                 job = json.loads(path.read_text(encoding='utf-8'))
                 if not isinstance(job, dict) or not re.fullmatch(r'[a-f0-9]{16}', job.get('id', '')): continue
+                from training.official_spec import TASKS, LEGACY_V2_TASKS
+                if (job.get('op')=='train' and job.get('request',{}).get('task') not in TASKS
+                        and job.get('request',{}).get('task') not in LEGACY_V2_TASKS
+                        and job.get('status') not in ('starting','running','stopping')):
+                    shutil.rmtree(path.parent)
+                    continue
                 job.pop('_monitor_thread',None)
                 if job.get('status') in ('starting', 'running', 'stopping'):
                     if job.get('durable') and job.get('op')=='train':
@@ -305,6 +371,9 @@ class TrainingManager(DurableTrainingMixin):
             items = [{**j, 'metrics':j['metrics'] if j is training or j['id'] in comparisons else [],
                       'latest_metric':j['metrics'][-1] if j['metrics'] else None, 'progress':progress_for(j),
                       'logs':j['logs'] if j is current else []} for j in jobs]
+            for item in items:
+                if isinstance(item.get('limit_comparison_result'),dict):
+                    item['limit_comparison_result']=target_limit_summary(item['limit_comparison_result'])
             return json.loads(json.dumps({'profile':self.profile,'environment':self.environment,'jobs':items,
                                          'resources':self.resources,'presets':self.presets}))
 
@@ -345,8 +414,11 @@ class TrainingManager(DurableTrainingMixin):
 
     def launch(self, op, value):
         with self.lock:
+            validate_comparison_request(value,op)
             if self.closed: raise ValueError('训练台正在退出。')
             if op not in ('probe','setup','preflight','describe','train','preview','play','onnx','export'): raise ValueError('未知任务。')
+            if 'target_limit_comparison' in value and op!='onnx':
+                raise ValueError('限幅对照仅用于所选倒地起身老师的 ONNX 仿真。')
             busy = [j for j in self.jobs.values() if j['status'] in ('starting','running','stopping')]
             previous_viewers = [j for j in busy if j['op'] in VIEWER_OPS] if op in VIEWER_OPS else []
             if any(j.get('wait_for_viewers') and j['status']=='starting' for j in previous_viewers):
@@ -378,6 +450,8 @@ class TrainingManager(DurableTrainingMixin):
                         request['action_filter']=validate_action_filter(value.get('action_filter'))
                         if value.get('training_firmware_p') is not None:
                             request['training_firmware_p'] = validate_training_firmware_p(value['training_firmware_p'])
+                        else:
+                            request['training_firmware_p'] = 5
                 if op in VIEWER_OPS:
                     if type(value.get('eval_pushes',False)) is not bool: raise ValueError('仿真扰动参数无效。')
                     request['eval_pushes'] = value.get('eval_pushes',False)
@@ -449,6 +523,8 @@ class TrainingManager(DurableTrainingMixin):
                     self.environment.setdefault('configs',{})[event['data']['task']] = event['data']
                     if job['op']=='describe':self.remember_environment()
             elif kind == 'effective_config': job['effective_config'] = event['data']
+            elif kind == 'friction_readback': job['friction_readback'] = event['data']
+            elif kind == 'adapter_correction': job.setdefault('adapter_corrections',[]).append(event['data'])
             elif kind == 'sample_clock': job['sample_clock'] = event['data']
             elif kind == 'gpu_sample': self.resources = {**event['data'],'received':time.time()}
             elif kind == 'training_view_ready' and job['op']=='train':
@@ -466,6 +542,13 @@ class TrainingManager(DurableTrainingMixin):
                     job.update(viewer_url=url,sim_controls=event['controls'],viewer_checkpoint=event.get('model'),
                                viewer_iteration=job['request'].get('source_iteration'),message='物理仿真已就绪。')
             elif kind == 'sim_state': job['sim_state'] = {**event['data'],'received':time.time()}
+            elif kind in ('limit_comparison_state','limit_comparison_result'):
+                if job['op']!='onnx' or not job['request'].get('target_limit_comparison'):
+                    return
+                if not isinstance(event.get('data'),dict): return
+                job[kind]=json.loads(json.dumps(event['data'],allow_nan=False))
+                if kind=='limit_comparison_state':
+                    job[kind]['received']=time.time()
             elif kind == 'identity': job['revision'] = event.get('revision')
             elif kind == 'command':
                 job.update(argv=event['argv'],cwd=event['cwd'])
@@ -511,7 +594,7 @@ class TrainingManager(DurableTrainingMixin):
                 job.update(status={'failed':'failed','stopped':'stopped','complete':'completed'}[kind], message=event.get('message',''))
             log_text = event_log_text(event)
             if log_text: job['logs'] = (job.get('logs',[]) + [line[:4000] for line in log_text.splitlines()])[-160:]
-            if kind in ('identity','command','checkpoints','viewer','viewer_ready','viewer_model','artifact','failed','stopped','complete','environment','effective_config','task_config','sample_clock','training_view_ready','training_view_error') or (kind == 'metric' and time.monotonic()-self.last_save.get(job['id'],0) >= 2):
+            if kind in ('identity','command','checkpoints','viewer','viewer_ready','viewer_model','artifact','failed','stopped','complete','environment','effective_config','friction_readback','adapter_correction','task_config','sample_clock','training_view_ready','training_view_error','limit_comparison_result') or (kind == 'metric' and time.monotonic()-self.last_save.get(job['id'],0) >= 2):
                 self.persist(job)
 
     def _run(self, job):
@@ -528,7 +611,7 @@ class TrainingManager(DurableTrainingMixin):
                 if not pending:break
                 if time.monotonic()>deadline:raise RuntimeError('旧仿真尚未退出，未启动新模型。训练任务不受此切换影响。请查看旧仿真日志。')
                 time.sleep(.05)
-            bundle = {name:(ROOT/'training'/name).read_text(encoding='utf-8') for name in ('runtime_adapter.py','recovery_evaluation.py','sample_alignment.py','checkpoint_policy.py','live_view.py','event_protocol.py','sim_protocol.py','recipe.py','official_spec.py','official_adapter.py','hd1910_actuator.py','hd1910_m6.json','deployment.py','action_filter.py','filtered_actions.py')}
+            bundle = {name:(ROOT/'training'/name).read_text(encoding='utf-8') for name in ('runtime_adapter.py','recovery_evaluation.py','target_limit_profile.py','target_limit_actions.py','limit_comparison_request.py','recorded_start.py','limit_comparison.py','sample_alignment.py','checkpoint_policy.py','live_view.py','event_protocol.py','sim_protocol.py','recipe.py','config_audit.py','official_spec.py','official_adapter.py','hd1910_actuator.py','hd1910_m6.json','deployment.py','action_filter.py','filtered_actions.py')}
             payload = ('WORKER_REQUEST = '+repr(job['request'])+'\nWORKER_BUNDLE = '+repr(bundle)+'\n'+(ROOT/'training'/'worker.py').read_text(encoding='utf-8')).encode('utf-8')
             with self.lock:
                 if self.closed or job['status'] == 'stopping':
@@ -615,8 +698,16 @@ class TrainingManager(DurableTrainingMixin):
             if action == 'move':
                 if not job['sim_controls'].get('movement'): raise ValueError('当前任务不支持行走遥控。')
                 velocity = value.get('velocity')
-                if not isinstance(velocity,list) or len(velocity)!=3 or any(type(v) not in (int,float) or not math.isfinite(v) or abs(v)>limit for v,limit in zip(velocity,(.4,.3,1.0))):
-                    raise ValueError('仿真速度超出范围。')
+                # Same validation bounds as the frozen task and the Linux simulation adapter.
+                # Roller X is a push/brake control, not a linear velocity (m/s).
+                from training.official_spec import TASKS
+                task_name = job.get('resolved_task') or job.get('request', {}).get('task')
+                roller = TASKS.get(task_name, {}).get('role') == 'roller'
+                bounds = ((-.5, .6), (0., 0.), (0., 0.)) if roller else ((-.4, .4), (-.3, .3), (-1., 1.))
+                if (not isinstance(velocity, list) or len(velocity) != 3
+                        or any(type(v) not in (int, float) or not math.isfinite(v) or v < lo or v > hi
+                               for v, (lo, hi) in zip(velocity, bounds))):
+                    raise ValueError('轮滑推进/制动控制量超出范围。' if roller else '仿真速度超出范围。')
                 message['velocity'] = velocity
             channel = self.control_channels.get(job['id'])
             if channel is None:
@@ -694,6 +785,9 @@ def handler_for(manager, token):
 
         def reply(self, value, status=200, mime='application/json'):
             body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode('utf-8')
+            # UI-only alias: do not rewrite actual BAM type, snapshots or audit hashes.
+            if mime=='application/json' and self.path.split('?',1)[0] in ('/api/studio','/api/state'):
+                body = body.replace(b'"STS3215Actuator"', b'"HD1910Actuator"')
             self.send_response(status)
             self.send_header('Content-Type', mime if mime=='application/zip' else mime+'; charset=utf-8')
             if mime=='application/zip': self.send_header('Content-Disposition','attachment; filename='+('Microduck-Policy.zip' if self.path.startswith('/api/model.zip') else 'Microduck-Training-Record.zip'))
@@ -721,8 +815,18 @@ def handler_for(manager, token):
             if path == '/api/state':
                 query = parse_qs(parsed.query)
                 return self.reply(manager.snapshot(query.get('selected',[None])[0],query.get('compare',[''])[0].split(',')))
-            if path == '/api/config': return self.reply({'token': token, 'version':'Studio R1.5.17 · 固件0.15.1 · 翻身检查', 'platform':sys.platform, 'release':RELEASE, 'remote_workspace':os.environ.get('MICRODUCK_REMOTE_WORKSPACE','')})
+            if path == '/api/config': return self.reply({'token': token, 'version':'Studio R1.5.27 · 固件 0.15.1', 'platform':sys.platform, 'release':RELEASE, 'remote_workspace':os.environ.get('MICRODUCK_REMOTE_WORKSPACE','')})
             if path == '/api/studio': return self.reply(manager.studio_state())
+            if path == '/api/target-limit-comparison':
+                jid=parse_qs(parsed.query).get('job',[''])[0]
+                with manager.lock:
+                    job=manager.jobs.get(jid)
+                    if not job or job['op']!='onnx' or not job['request'].get('target_limit_comparison'):
+                        return self.reply({'error':'没有找到这次限幅对照。'},404)
+                    result=job.get('limit_comparison_result')
+                    if not isinstance(result,dict):
+                        return self.reply({'error':'限幅对照尚未生成完整结果，请等待运行结束。'},409)
+                    return self.reply(result)
             if path == '/api/task-reference':
                 task=parse_qs(parsed.query).get('task',[''])[0]
                 from training.official_spec import TASKS
@@ -790,6 +894,9 @@ def handler_for(manager, token):
                 if self.path == '/api/models/import':
                     from training.model_import import import_model
                     return self.reply(import_model(manager, value, ROOT))
+                if self.path == '/api/target-limit-profile':
+                    from training.target_limit_profile import from_recording
+                    return self.reply({'profile':from_recording(value)})
                 if self.path == '/api/model/content':
                     jid = value.get('job_id')
                     if not isinstance(jid,str) or not re.fullmatch(r'[a-f0-9]{16}',jid):
@@ -835,9 +942,9 @@ def main(argv=None):
     manager.remote = RemoteTraining(manager.directory, ROOT, manager, save_json)
     try: server = ThreadingHTTPServer(('127.0.0.1',args.port),handler_for(manager,secrets.token_urlsafe(32)))
     except OSError:
-        print('训练台端口已被中控占用，请打开现有页面。更新界面时覆盖原目录 training/static，再刷新浏览器。',flush=True);return 2
+        print(f'端口 {args.port} 已被占用，请先关闭旧训练中控。', flush=True);return 2
     server.daemon_threads = True
-    print('Microduck Training Studio R1.5.17 · 固件0.15.1 · 独立训练中控\nhttp://127.0.0.1:%s\n不需要 Zero；本机首次检查后共用缓存，加入队列后点击开始训练。打开页面不会自动训练。\n本版修复倒地老师的评估课程并新增翻身检查，需要运行完整新版后端。' % args.port, flush=True)
+    print('Microduck Training Studio R1.5.27\n中控：http://127.0.0.1:%s\n开源：https://github.com/kissqy/Microduck-kissqy' % args.port, flush=True)
     try:
         manager.reconnect_training()
         manager.start_queue_scheduler()

@@ -16,7 +16,12 @@ from management_profile import PROFILE, SLOTS
 
 def atomic_write(path: Path, text: str | bytes, mode=None) -> None:
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    encoded=text.encode() if isinstance(text,str) else text
     previous=path.stat() if path.exists() else None
+    if previous and path.read_bytes()==encoded:return
+    if previous and path.suffix in ('.toml','.json','.conf') and not any(x in path.stem for x in ('.saved','.previous')):
+        # A backup of a systemd .conf must not itself be another active .conf.
+        atomic_write(path.with_name(path.name+'.previous'),path.read_bytes(),mode=previous.st_mode & 0o777)
     fd,name=tempfile.mkstemp(prefix='.'+path.name+'-',dir=path.parent)
     try:
         if previous:os.fchown(fd,previous.st_uid,previous.st_gid)
@@ -88,6 +93,7 @@ def main() -> None:
     except (OSError,ValueError,UnicodeError):
         data={}
         print('读取服务参数失败，按随包配置重建。',file=sys.stderr)
+    source_pad=dict(data.get('pad',{})) if isinstance(data.get('pad'),dict) else {}
     changes = tomllib.loads(args.overrides.read_text())
     previous_defaults = {}
     previous_profile = {}
@@ -111,10 +117,23 @@ def main() -> None:
         and isinstance(replacement_path,str)
         and '/models/'+str(replacement.get('id'))+'/' in replacement_path
         and previous_defaults.get('walk')!=replacement_path)
-    recovery_request=PROFILE.get('requested_skill_replacement',{})
-    requested_recovery=next((s for s in changes.get('policy',{}).get('skill',[]) if s.get('name')==recovery_request.get('name')),None)
-    previous_recovery=next((s for s in previous_defaults.get('skill',[]) if s.get('name')==recovery_request.get('name')),None)
-    replace_requested_recovery=bool(requested_recovery and '/models/'+str(recovery_request.get('id'))+'/' in requested_recovery.get('path','') and (previous_recovery or {}).get('path')!=requested_recovery['path'])
+    # Replacing the shipped action is a one-time request, measured against the
+    # previous bundle, so a later operator binding survives reinstalling it.
+    requested_actions={}
+    retired_ids=set(PROFILE.get('retired_model_ids',[]))
+    for request in PROFILE.get('requested_action_replacements',[]):
+        slot=request.get('slot')
+        path=changes.get('policy',{}).get(slot)
+        saved_paths=[old_policy.get(slot)] if isinstance(old_policy,dict) else []
+        if slot=='roulade' and isinstance(old_policy,dict):
+            saved_paths.extend(s.get('path') for s in old_policy.get('skill',[]) if s.get('name')=='roulade')
+        # Files can finish installing before the atomic params commit. Retired
+        # saved paths prove that interrupted migration still needs its scale.
+        pending_retirement=any(isinstance(p,str) and Path(p).parent.name in retired_ids for p in saved_paths)
+        if (slot in ('roulade','ground_pick','kick_left','kick_right') and isinstance(path,str)
+            and Path(path).parent.name==request.get('id')
+            and (previous_defaults.get(slot)!=path or pending_retirement)):
+            requested_actions[slot]=path
     preserve_custom=(not args.replace_models and isinstance(old_policy,dict) and old_policy.get('custom_only') is True)
     for table_name, values in changes.items():
         if not isinstance(values, dict):
@@ -137,18 +156,6 @@ def main() -> None:
                 # parameter. Model reset remains a separate explicit operation.
                 selected.update({name:value for name,value in old.items()
                                  if name not in (*SLOTS,'skill')})
-            # Recovery is independent of the saved gait scale. Update only
-            # these scales, preserving skill paths, timing and pad bindings.
-            if replace_requested_recovery and not any(s.get('name')==requested_recovery['name'] for s in selected.get('skill',[])):
-                selected['skill']=[*selected.get('skill',[]),requested_recovery]
-            if 'standing_action_scale' in values:
-                selected['standing_action_scale']=values['standing_action_scale']
-            recovery=next((s for s in values.get('skill',[]) if s.get('name')=='stand_test'),None)
-            if recovery:
-                for skill in selected.get('skill',[]):
-                    if skill.get('name')=='stand_test':
-                        skill['params']={**skill.get('params',{}),'action_scale':recovery['params']['action_scale']}
-                        if replace_requested_recovery:skill['path']=requested_recovery['path']
             # The console now controls the official action_scale directly.
             # Move an unchanged installed default to this release's default.
             # Once the new profile is installed, later operator choices survive
@@ -166,7 +173,24 @@ def main() -> None:
                 # This release explicitly replaces Walk only. Keep the saved
                 # official action scale and all other action bindings.
                 selected['walk']=replacement_path
-                print('已替换唯一 Walk 为 9600 轮联合模型；全程使用基础缩放 0.9、头滤波 0.5、腿滤波 0.7，全局参数及其他动作沿用本机设置。')
+                print('已替换唯一 Walk 为 9600 轮联合模型；基础缩放与头腿滤波读取该模型执行配置，全局参数及其他动作沿用本机设置。')
+            for slot,path in requested_actions.items():
+                selected[slot]=path
+                if slot=='ground_pick':
+                    selected['ground_pick_action_scale']=values['ground_pick_action_scale']
+                else:
+                    supplied=next(s for s in values['skill'] if s['name']==slot)
+                    skill=next((s for s in selected.get('skill',[]) if s.get('name')==slot),None)
+                    if skill is None:
+                        skill={**supplied,'params':dict(supplied.get('params',{}))}
+                        selected['skill']=[*selected.get('skill',[]),skill]
+                    # The slot is authoritative in robotd; keep any explicit
+                    # named-skill path consistent with the same replacement.
+                    if 'path' in skill:skill['path']=path
+                    skill['params']={**skill.get('params',{}),'action_scale':supplied['params']['action_scale']}
+                    if slot in ('kick_left','kick_right'):
+                        skill.update({key:value for key,value in supplied.items() if key!='params'})
+                print(f'已更新随包动作 {slot}；基础缩放 1，按原合同无目标滤波。')
             for name in retired_managed:selected.pop(name,None)
             selected.pop('r17_inference_scale',None)
             for name in ('walk_action_scale','hold_action_scale','action_scales'):
@@ -186,11 +210,8 @@ def main() -> None:
                     if value and not table_values.get(name) and not previous_profile.get('pad',{}).get(name):
                         data[table_name][name]=value
         else:table_values.update(values)
-    if replace_requested_recovery:
-        data.setdefault('pad',{})[recovery_request['button']]=recovery_request['name']
-        print('已替换 LB 为起身老师 11000 轮；起身基础动作系数 1.0，其他动作和本机标定保留。')
     # Explicit retirement must not leave configuration pointing at deleted files.
-    retired=set(PROFILE.get('retired_model_ids',[]))
+    retired=retired_ids
     def retired_path(path):
         return isinstance(path,str) and Path(path).parent.name in retired
     policy=data.setdefault('policy',{})
@@ -204,11 +225,27 @@ def main() -> None:
             replacement=supplied_skills.get(skill['name'])
             if not replacement:
                 removed.add(skill['name']);continue
-            skill={**skill,'path':replacement['path']}
+            # A built-in named skill may inherit its model from the slot and
+            # omit path entirely (roulade does). Never retain a deleted path.
+            path=replacement.get('path',changes.get('policy',{}).get(skill['name']))
+            if not path or path=='none':
+                removed.add(skill['name']);continue
+            skill={**skill,'path':path}
         skills.append(skill)
     if 'skill' in policy:policy['skill']=skills
     for button,name in data.get('pad',{}).items():
         if name in removed:data['pad'][button]=''
+    # The joint Walk policy owns recovery; retire only the former standalone
+    # teacher name and its default pad bindings, preserving operator mappings.
+    if PROFILE.get('retire_standalone_recovery'):
+        policy['stand']='none'
+        policy['skill']=[skill for skill in policy.get('skill',[]) if skill.get('name')!='stand_test']
+        old_pad=source_pad
+        pad=data.setdefault('pad',{})
+        if old_pad.get('lb')=='stand_test':pad['lb']='kick_left'
+        elif 'lb' in old_pad and old_pad['lb'] not in removed:pad['lb']=old_pad['lb']
+        if not old_pad.get('rb'):pad['rb']='kick_right'
+        elif old_pad['rb'] not in removed:pad['rb']=old_pad['rb']
     result = dumps(data)
     if tomllib.loads(result) != data:
         raise ValueError('TOML serialization changed the parameter values')

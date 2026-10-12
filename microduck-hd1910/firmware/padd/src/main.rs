@@ -89,6 +89,19 @@ use clap::Parser;
 use duck_ipc_proto as proto;
 use gilrs::{Axis, Button, Gilrs};
 mod input_settings;
+mod roller_test;
+
+#[cfg(test)]
+mod roller_click_tests {
+    use super::*;
+    #[test]
+    fn inherited_l3_waits_for_release_before_a_new_test_press() {
+        let mut gate = ReleaseGate::baseline(|button| button == Button::LeftThumb);
+        assert!(!gate.allows(Button::LeftThumb));
+        assert!(!gate.release(Button::LeftThumb));
+        assert!(gate.allows(Button::LeftThumb));
+    }
+}
 
 #[cfg(target_os = "linux")]
 mod tap;
@@ -267,6 +280,7 @@ impl SelectButton {
 /// direction anybody might lean on for a moment while driving; the mode switch takes the robot
 /// home and reloads its policies, so it has to be a hold nobody performs by accident.
 const MODE_HOLD: Duration = Duration::from_secs(3);
+const ROLLER_ACTION_HOLD: Duration = Duration::from_secs(2);
 
 /// Body-pose stick ranges, from the training env via the prototype: z is asymmetric
 /// (little headroom up at the standing height, more crouch down), angles capped at ~15°.
@@ -288,6 +302,31 @@ enum Mode {
     Drive,
     Head,
     BodyPose,
+}
+
+/// The bridge grabs this exact raw device and emits its mapped Xbox device. Reading the
+/// grabbed node as well leaves gilrs with a connected controller that receives no input.
+fn pad_priority(name: &str) -> Option<u8> {
+    match name {
+        "GameSir-Nova 2 Lite" => None,
+        "Xbox 360 Controller (GameSir Nova 2 Lite)" => Some(2),
+        "Microduck R17 Web Xbox" => Some(0),
+        _ => Some(1),
+    }
+}
+
+fn preferred_pad<I: Copy>(pads: impl Iterator<Item = (I, Option<u8>)>) -> Option<I> {
+    let mut selected = None;
+    let mut priority = None;
+    for (id, rank) in pads {
+        if let Some(rank) = rank
+            && priority.is_none_or(|best| rank > best)
+        {
+            selected = Some(id);
+            priority = Some(rank);
+        }
+    }
+    selected
 }
 
 /// How often to look for a rewritten config. See the loop.
@@ -341,6 +380,163 @@ enum PadImuHead {
     Following { reference: [f32; 4] },
     /// The head stays where the last pose left it; nothing is sent for it. The sticks drive.
     Holding,
+}
+
+const CONTROL_BUTTONS: [Button; 13] = [
+    Button::Start,
+    Button::Select,
+    Button::West,
+    Button::DPadUp,
+    Button::DPadLeft,
+    Button::North,
+    Button::East,
+    Button::South,
+    Button::LeftTrigger,
+    Button::RightTrigger,
+    Button::DPadDown,
+    Button::DPadRight,
+    Button::LeftThumb,
+];
+
+fn button_mask(button: Button) -> u16 {
+    match button {
+        Button::Start => 1 << 0,
+        Button::Select => 1 << 1,
+        Button::West => 1 << 2,
+        Button::DPadUp => 1 << 3,
+        Button::DPadLeft => 1 << 11,
+        Button::North => 1 << 4,
+        Button::East => 1 << 5,
+        Button::South => 1 << 6,
+        Button::LeftTrigger => 1 << 7,
+        Button::RightTrigger => 1 << 8,
+        Button::DPadDown => 1 << 9,
+        Button::DPadRight => 1 << 10,
+        Button::LeftThumb => 1 << 12,
+        _ => 0,
+    }
+}
+
+#[derive(Default)]
+struct ReleaseGate {
+    blocked: u16,
+}
+
+impl ReleaseGate {
+    fn baseline(mut held: impl FnMut(Button) -> bool) -> Self {
+        let mut blocked = 0;
+        for button in CONTROL_BUTTONS {
+            if held(button) {
+                blocked |= button_mask(button);
+            }
+        }
+        Self { blocked }
+    }
+
+    fn allows(&self, button: Button) -> bool {
+        self.blocked & button_mask(button) == 0
+    }
+
+    /// The release of a button inherited from another session only arms it; in
+    /// particular it must not become Select's emergency-stop release.
+    fn release(&mut self, button: Button) -> bool {
+        let allowed = self.allows(button);
+        self.blocked &= !button_mask(button);
+        allowed
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn button_baseline(pad: &gilrs::Gamepad<'_>) -> ReleaseGate {
+    use gilrs::LinuxGamepadExt;
+    // gilrs starts with an empty button cache on Linux. One kernel snapshot on
+    // connection covers already-held buttons without another periodic reader.
+    let snapshot = (|| -> std::io::Result<_> {
+        let device = evdev::raw_stream::RawDevice::open(pad.devpath())?;
+        Ok((device.get_key_state()?, device.get_abs_state()?))
+    })();
+    match snapshot {
+        Ok((keys, axes)) => ReleaseGate::baseline(|button| {
+            if pad.is_pressed(button) {
+                return true;
+            }
+            if let Some(code) = pad.button_code(button).map(|code| code.into_u32())
+                && code >> 16 == 1
+            {
+                return keys.contains(evdev::KeyCode((code & 0xffff) as u16));
+            }
+            let hat_x = axes[evdev::AbsoluteAxisCode::ABS_HAT0X.0 as usize].value;
+            let hat_y = axes[evdev::AbsoluteAxisCode::ABS_HAT0Y.0 as usize].value;
+            match button {
+                Button::DPadUp => hat_y < 0,
+                Button::DPadDown => hat_y > 0,
+                Button::DPadRight => hat_x > 0,
+                Button::DPadLeft => hat_x < 0,
+                _ => false,
+            }
+        }),
+        Err(error) => {
+            tracing::warn!(%error, "cannot read pad button baseline; release controls once to arm them");
+            ReleaseGate::baseline(|_| true)
+        }
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn button_baseline(pad: &gilrs::Gamepad<'_>) -> ReleaseGate {
+    ReleaseGate::baseline(|button| pad.is_pressed(button))
+}
+
+struct PadInput {
+    mode: Mode,
+    imu_head: PadImuHead,
+    select: SelectButton,
+    dpad_up_held_since: Option<Instant>,
+    mode_switch_sent: bool,
+    dpad_left_held_since: Option<Instant>,
+    roller_action_switch_sent: bool,
+    prev_rt: f64,
+    prev_lt: f64,
+    up: bool,
+    pose_reset_pending: bool,
+    buttons: ReleaseGate,
+}
+
+impl Default for PadInput {
+    fn default() -> Self {
+        Self {
+            mode: Mode::Drive,
+            imu_head: PadImuHead::Off,
+            select: SelectButton::default(),
+            dpad_up_held_since: None,
+            mode_switch_sent: false,
+            dpad_left_held_since: None,
+            roller_action_switch_sent: false,
+            prev_rt: 0.0,
+            prev_lt: 0.0,
+            up: false,
+            pose_reset_pending: false,
+            buttons: ReleaseGate::default(),
+        }
+    }
+}
+
+impl PadInput {
+    fn reset(&mut self) {
+        // A reconnect is a new input session. Head/body modes must not silently keep
+        // zeroing the sticks, and the next explicit Start must be HOME again.
+        self.pose_reset_pending |= self.mode == Mode::BodyPose;
+        self.mode = Mode::Drive;
+        self.imu_head = PadImuHead::Off;
+        self.select.reset();
+        self.dpad_up_held_since = None;
+        self.mode_switch_sent = false;
+        self.dpad_left_held_since = None;
+        self.roller_action_switch_sent = false;
+        self.prev_rt = 0.0;
+        self.prev_lt = 0.0;
+        self.up = false;
+    }
 }
 
 impl PadImuHead {
@@ -421,7 +617,7 @@ fn main() -> std::process::ExitCode {
         }
     };
 
-    let mut stream = match UnixStream::connect(&args.socket) {
+    let mut stream = match connect_robot(&args.socket) {
         Ok(stream) => stream,
         Err(e) => {
             tracing::error!(error = %e, socket = %args.socket.display(), "cannot reach robotd");
@@ -434,12 +630,16 @@ fn main() -> std::process::ExitCode {
     // Which robot is this? A roller duck wants the roller stick shaping. Asked once at startup,
     // then kept in step by the D-pad-up switch below — which is this process asking for the
     // change, so it knows the answer without asking again.
-    let mut roller = match request(&mut stream, &mut next_id, &proto::Call::RobotMode) {
+    let (mut roller, mut roller_spin) = match request(&mut stream, &mut next_id, &proto::Call::RobotMode) {
         Ok(Some(answer)) => match answer.result_as::<proto::ModeResult>() {
-            Ok(mode) => mode.mode == "roller",
-            Err(_) => false,
+            Ok(mode) => (mode.mode == "roller", mode.roller_action.as_deref() == Some("spin")),
+            Err(_) => (false, false),
         },
-        _ => false,
+        Ok(None) => (false, false),
+        Err(e) => {
+            tracing::error!(error = %e, "cannot read robot mode");
+            return std::process::ExitCode::FAILURE;
+        }
     };
     tracing::warn!(
         socket = %args.socket.display(),
@@ -447,7 +647,7 @@ fn main() -> std::process::ExitCode {
         roller,
         "driving — Start once stands up, Start again toggles the policy, Y head mode, B body pose, \
          A ground pick, LB/RB kicks, DPad-Down sit, triggers mouth, DPad-Right reboot servos, \
-         DPad-Up (3s) walk/roller, Select (release) torque off, Select (2s) sit and shutdown"
+         DPad-Up (3s) walk/roller, roller DPad-Left (2s) crouch/spin, Select (release) torque off, Select (2s) sit and shutdown"
     );
 
     let period = Duration::from_secs_f64(1.0 / args.hz as f64);
@@ -461,23 +661,11 @@ fn main() -> std::process::ExitCode {
     let mut bindings_at = config_mtime(&args.config);
     let mut bindings_checked = Instant::now();
 
-    let mut mode = Mode::Drive;
-    // IMU head control, when `[pad_imu_head_control]` is on and the pad has one. Off whenever the pad is
-    // gone: a reference taken against one pad means nothing to the next.
-    let mut imu_head = PadImuHead::Off;
-    // Whether a pad was there last tick, so appearing and disappearing are each logged once.
+    let mut input = PadInput::default();
+    // Kept separately from the robot state: replacing the pad must also end a mode/hold
+    // even if the old disconnect and the new connect land inside one control tick.
+    let mut active_pad = None;
     let mut driving = false;
-    let mut select = SelectButton::default();
-    let mut dpad_up_held_since: Option<Instant> = None;
-    let mut mode_switch_sent = false;
-    // Trigger levels last tick, for the sound edges: RT quacks on its rising edge, LT
-    // starts the wheee ride. The prototype's threshold.
-    let mut prev_rt = 0.0f64;
-    let mut prev_lt = 0.0f64;
-    // Does this pad think the robot is up (torque on, at the home pose)? When not, Start sends
-    // `robot.init` (stand up and hold) instead of enabling the policy; the next Start enables it.
-    // Starts false: padd starts with the robot, and a robotd restart restarts padd too.
-    let mut up = false;
     // The continuous intents, and the buffer this tick's are built in. Both live across
     // ticks so a steady state neither allocates nor re-sends — see [`Continuous`].
     let mut continuous = Continuous::default();
@@ -508,10 +696,28 @@ fn main() -> std::process::ExitCode {
         // Drain the queue so axis polling below sees present state, and catch button
         // *edges* — a held Start must toggle once, not fifty times a second.
         //
-        // The driving pad is the first one, and only its events may act: with two pads
+        // Only the selected pad's events may act: with two pads
         // connected, a Start or Select from the *other* one would otherwise steer a robot
         // whose sticks belong to somebody else.
-        let pad_id = gilrs.gamepads().next().map(|(id, _)| id);
+        let pad_id = preferred_pad(
+            gilrs
+                .gamepads()
+                .map(|(id, pad)| (id, pad_priority(pad.name()))),
+        );
+        if active_pad != pad_id {
+            if active_pad.is_some() {
+                input.reset();
+                continuous.at = None;
+                driving = false;
+            }
+            if let Some(pad) = pad_id.and_then(|id| gilrs.connected_gamepad(id)) {
+                // Before tap.watch: the web device is born neutral and waits for that
+                // acknowledgement before sending its first real Start press.
+                input.buttons = button_baseline(&pad);
+            }
+        }
+        active_pad = pad_id;
+        let mut pad_disconnected = false;
         let mut toggle_enable = false;
         let mut toggle_head = false;
         let mut toggle_body = false;
@@ -521,20 +727,30 @@ fn main() -> std::process::ExitCode {
         let mut relax = false;
         let mut select_released = false;
         let mut reboot_motors = false;
+        let mut roller_stand_test = false;
         while let Some(event) = gilrs.next_event() {
             if Some(event.id) != pad_id {
                 continue;
             }
+            if matches!(event.event, gilrs::EventType::Disconnected) {
+                pad_disconnected = true;
+            }
             // Select is the one button read on its release: a short press stops, a long hold shuts
             // down, and which it was is only known when the thumb comes off.
-            if let gilrs::EventType::ButtonReleased(Button::Select, _) = event.event {
-                select_released = true;
+            if let gilrs::EventType::ButtonReleased(button, _) = event.event {
+                let allowed = input.buttons.release(button);
+                if button == Button::Select && allowed {
+                    select_released = true;
+                }
             }
-            if let gilrs::EventType::ButtonPressed(button, _) = event.event {
+            if let gilrs::EventType::ButtonPressed(button, _) = event.event
+                && input.buttons.allows(button)
+            {
                 match button {
                     Button::Start => toggle_enable = true,
                     Button::North => toggle_head = true,
                     Button::East => toggle_body = true,
+                    Button::LeftThumb => roller_stand_test = true,
                     // The five bindable ones. What each runs is `[pad]` in the config; this
                     // only knows which physical control was pressed.
                     //
@@ -559,7 +775,10 @@ fn main() -> std::process::ExitCode {
         // Re-read the pad by id after the drain: a `Disconnected` dequeued above may have
         // taken it, and asking for the first pad again would silently hand the robot the
         // *other* pad's sticks. One tick of "pad gone" beats that.
-        let Some(pad) = pad_id.and_then(|id| gilrs.connected_gamepad(id)) else {
+        let Some(pad) = pad_id
+            .filter(|_| !pad_disconnected)
+            .and_then(|id| gilrs.connected_gamepad(id))
+        else {
             // No pad. Send nothing: `robotd`'s deadman stops the robot on its own, which is
             // exactly the wanted behaviour, and inventing a zero command here would mask a
             // disconnected pad as a deliberate stop.
@@ -574,10 +793,9 @@ fn main() -> std::process::ExitCode {
             // A hold in flight was measured against the pad that just left: drop it, or a
             // Select (or D-pad up) still down when the pad returns lands its full hold time
             // at once — a shutdown or a mode switch nobody asked for.
-            select.reset();
-            dpad_up_held_since = None;
-            mode_switch_sent = false;
-            imu_head = PadImuHead::Off;
+            input.reset();
+            active_pad = None;
+            continuous.at = None;
             if let Some(tap) = tap.as_ref() {
                 tap.idle();
             }
@@ -588,6 +806,22 @@ fn main() -> std::process::ExitCode {
         if !driving {
             tracing::warn!(pad = pad.name(), "pad connected — driving");
             driving = true;
+        }
+
+        if input.pose_reset_pending {
+            // Release this pad's old body-pose latch once; never HOME or enable merely
+            // because the radio returned. No extra polling or per-tick request is needed.
+            if let Err(e) = notify(
+                &mut stream,
+                &proto::Call::RobotPose(proto::PoseParams {
+                    active: false,
+                    ..Default::default()
+                }),
+            ) {
+                tracing::error!(error = %e, "body pose reset failed");
+                return std::process::ExitCode::FAILURE;
+            }
+            input.pose_reset_pending = false;
         }
 
         // Every tick rather than on the transition above: a pad that drops and comes back between
@@ -607,11 +841,11 @@ fn main() -> std::process::ExitCode {
         } else {
             None
         };
-        if attitude.is_none() && imu_head != PadImuHead::Off {
+        if attitude.is_none() && input.imu_head != PadImuHead::Off {
             // The feature went off, or the IMU went away under us. Not silent: a head that stops
             // following mid-turn wants a line in the journal saying why.
             tracing::info!("IMU head control off — no attitude to follow");
-            imu_head = PadImuHead::Off;
+            input.imu_head = PadImuHead::Off;
         }
 
         if toggle_head {
@@ -619,11 +853,11 @@ fn main() -> std::process::ExitCode {
                 Some(attitude) => {
                     // Y is the IMU's. The sticks never pose the head while this is possible: two
                     // sources for one joint set is a head that shakes.
-                    if mode == Mode::Head {
-                        mode = Mode::Drive;
+                    if input.mode == Mode::Head {
+                        input.mode = Mode::Drive;
                     }
-                    imu_head = imu_head.on_y(attitude);
-                    match imu_head {
+                    input.imu_head = input.imu_head.on_y(attitude);
+                    match input.imu_head {
                         PadImuHead::Following { .. } => tracing::info!(
                             "IMU head control: following the pad from here — sticks keep driving"
                         ),
@@ -641,19 +875,19 @@ fn main() -> std::process::ExitCode {
                             "the pad's IMU has no attitude yet; Y is stick head mode this once"
                         );
                     }
-                    mode = if mode == Mode::Head {
+                    input.mode = if input.mode == Mode::Head {
                         Mode::Drive
                     } else {
                         Mode::Head
                     };
-                    tracing::info!(?mode, "mode");
+                    tracing::info!(mode = ?input.mode, "mode");
                 }
             }
         }
         if toggle_body {
-            let leaving = mode == Mode::BodyPose;
-            mode = if leaving { Mode::Drive } else { Mode::BodyPose };
-            tracing::info!(?mode, "mode");
+            let leaving = input.mode == Mode::BodyPose;
+            input.mode = if leaving { Mode::Drive } else { Mode::BodyPose };
+            tracing::info!(mode = ?input.mode, "mode");
             if leaving {
                 // The prototype's B-button exit snaps the body back to nominal at once.
                 if let Err(e) = notify(
@@ -669,14 +903,14 @@ fn main() -> std::process::ExitCode {
             }
         }
 
-        if toggle_enable && !up {
+        if toggle_enable && !input.up {
             tracing::warn!("Start — robot.init: standing up. Press Start again to drive");
             match request(&mut stream, &mut next_id, &proto::Call::RobotInit) {
                 Err(e) => {
                     tracing::error!(error = %e, "init failed");
                     return std::process::ExitCode::FAILURE;
                 }
-                Ok(_) => up = true,
+                Ok(answer) => input.up = intent_accepted(answer.as_ref()),
             }
         } else if toggle_enable {
             // The robot owns the toggle. A local on/off belief here drifts from the
@@ -703,6 +937,16 @@ fn main() -> std::process::ExitCode {
                         .unwrap_or_else(|| "toggled".to_owned());
                     tracing::warn!(%outcome, "policy");
                 }
+            }
+        }
+
+        // This unbound click is a manual test only. Its short-lived reader exists
+        // only for the press; idle input adds no state polling or recovery loop.
+        if roller_stand_test && !toggle_enable && !select_released && !relax
+            && !pad.is_pressed(Button::Select) && pressed.is_empty() && !reboot_motors {
+            match roller_test::run(&args.socket) {
+                Ok(()) => tracing::warn!("L3 滑轮起身测试已接受；最多 5 秒，Start 可取消"),
+                Err(reason) => tracing::warn!(%reason, "L3 滑轮起身测试未执行"),
             }
         }
 
@@ -737,7 +981,8 @@ fn main() -> std::process::ExitCode {
         // refuses the resend, which costs a notification nobody reads. Only X, because it is the
         // button the prototype held and the only one anybody holds.
         let held = bindings.skill("x").unwrap_or_default();
-        if pad.is_pressed(Button::West)
+        if input.buttons.allows(Button::West)
+            && pad.is_pressed(Button::West)
             && !pressed.contains(&"x")
             && !held.is_empty()
             && let Err(e) = notify(
@@ -754,11 +999,15 @@ fn main() -> std::process::ExitCode {
         // Select: a short press is the emergency stop, on release; held two seconds it is the
         // shutdown sequence — sit down, torque off, power off — sent once per hold, and the
         // release after it does nothing. The robot owns the sequence from there.
-        match select.tick(pad.is_pressed(Button::Select), select_released, tick) {
+        match input.select.tick(
+            input.buttons.allows(Button::Select) && pad.is_pressed(Button::Select),
+            select_released,
+            tick,
+        ) {
             SelectAction::Nothing => {}
             SelectAction::Relax => relax = true,
             SelectAction::Shutdown => {
-                up = false;
+                input.up = false;
                 tracing::warn!("Select held — asking the robot to sit, torque off and power off");
                 if let Err(e) = request(&mut stream, &mut next_id, &proto::Call::RobotShutdown) {
                     tracing::error!(error = %e, "shutdown request failed");
@@ -771,7 +1020,7 @@ fn main() -> std::process::ExitCode {
             tracing::warn!("Select released — robot.relax: torque off");
             // Torque off leaves the robot limp, so the next Start stands it up again rather
             // than toggling the policy on a robot that is lying on the floor.
-            up = false;
+            input.up = false;
             if let Err(e) = request(&mut stream, &mut next_id, &proto::Call::RobotRelax) {
                 tracing::error!(error = %e, "relax request failed");
                 return std::process::ExitCode::FAILURE;
@@ -784,7 +1033,7 @@ fn main() -> std::process::ExitCode {
             );
             // The reboot leaves the robot limp, so the next Start has to stand it up again
             // rather than toggle the policy on a robot that is lying down.
-            up = false;
+            input.up = false;
             let call = proto::Call::RobotRebootMotors(proto::RebootMotorsParams::default());
             if let Err(e) = request(&mut stream, &mut next_id, &call) {
                 tracing::error!(error = %e, "reboot request failed");
@@ -796,10 +1045,10 @@ fn main() -> std::process::ExitCode {
         // put wheels on the duck (or taken them off) wants. Sent once per hold, and the target is
         // named rather than toggled — so a request that crosses a switch from somewhere else asks
         // for a mode rather than for "the other one", which could be either by the time it lands.
-        if pad.is_pressed(Button::DPadUp) {
-            let held = dpad_up_held_since.get_or_insert(tick);
-            if tick.duration_since(*held) >= MODE_HOLD && !mode_switch_sent {
-                mode_switch_sent = true;
+        if input.buttons.allows(Button::DPadUp) && pad.is_pressed(Button::DPadUp) {
+            let held = input.dpad_up_held_since.get_or_insert(tick);
+            if tick.duration_since(*held) >= MODE_HOLD && !input.mode_switch_sent {
+                input.mode_switch_sent = true;
                 let target = if roller { "walk" } else { "roller" };
                 tracing::warn!(
                     target,
@@ -815,6 +1064,7 @@ fn main() -> std::process::ExitCode {
                         // walking duck with roller curves.
                         Ok(result) if result.accepted => {
                             roller = target == "roller";
+                            roller_spin = false;
                             tracing::warn!(roller, "drive mode switched");
                         }
                         Ok(result) => tracing::warn!(
@@ -831,8 +1081,40 @@ fn main() -> std::process::ExitCode {
                 }
             }
         } else {
-            dpad_up_held_since = None;
-            mode_switch_sent = false;
+            input.dpad_up_held_since = None;
+            input.mode_switch_sent = false;
+        }
+
+        // V160: only the real pad can switch roller A crouch/spin. This leaves
+        // ordinary walk and all other buttons untouched. The native robotd mode
+        // request refuses a change while moving, sitting or mid-skill.
+        if roller && pad.name() != "Microduck R17 Web Xbox"
+            && input.buttons.allows(Button::DPadLeft) && pad.is_pressed(Button::DPadLeft) {
+            let held = input.dpad_left_held_since.get_or_insert(tick);
+            if tick.duration_since(*held) >= ROLLER_ACTION_HOLD && !input.roller_action_switch_sent {
+                input.roller_action_switch_sent = true;
+                let requested = if roller_spin { "roller_crouch" } else { "roller_spin" };
+                match request(&mut stream, &mut next_id,
+                              &proto::Call::RobotSetMode(proto::SetModeParams { mode: requested.to_owned() })) {
+                    Ok(Some(answer)) => match answer.result_as::<proto::IntentResult>() {
+                        Ok(result) if result.accepted => {
+                            roller_spin = !roller_spin;
+                            tracing::warn!(action = if roller_spin { "spin" } else { "crouch" },
+                                           "roller A action switching");
+                        }
+                        Ok(result) => tracing::warn!(reason = ?result.reason, "roller action change refused"),
+                        Err(error) => tracing::warn!(%error, "invalid roller action response"),
+                    },
+                    Ok(None) => tracing::warn!("no answer from robotd on roller action change"),
+                    Err(error) => {
+                        tracing::error!(%error,"roller action switch RPC failure");
+                        return std::process::ExitCode::FAILURE;
+                    }
+                }
+            }
+        } else {
+            input.dpad_left_held_since = None;
+            input.roller_action_switch_sent = false;
         }
 
         let deadzone = |v: f32| {
@@ -865,7 +1147,7 @@ fn main() -> std::process::ExitCode {
         // it instantly, as the prototype does.
         const SOUND_THRESHOLD: f64 = 0.3;
         let mut sound_calls: Vec<proto::SoundParams> = Vec::new();
-        if prev_rt < SOUND_THRESHOLD && rt >= SOUND_THRESHOLD {
+        if input.prev_rt < SOUND_THRESHOLD && rt >= SOUND_THRESHOLD {
             sound_calls.push(proto::SoundParams {
                 tag: proto::SoundTag::Chirp,
                 hold: None,
@@ -876,14 +1158,14 @@ fn main() -> std::process::ExitCode {
                 tag: proto::SoundTag::Wheee,
                 hold: Some(true),
             });
-        } else if prev_lt >= SOUND_THRESHOLD {
+        } else if input.prev_lt >= SOUND_THRESHOLD {
             sound_calls.push(proto::SoundParams {
                 tag: proto::SoundTag::Wheee,
                 hold: Some(false),
             });
         }
-        prev_rt = rt;
-        prev_lt = lt;
+        input.prev_rt = rt;
+        input.prev_lt = lt;
         for params in sound_calls {
             if let Err(e) = notify(&mut stream, &proto::Call::RobotSound(params)) {
                 tracing::error!(error = %e, "send failed");
@@ -895,7 +1177,7 @@ fn main() -> std::process::ExitCode {
         // a `Vec` per tick is an allocation fifty times a second to say what the sticks
         // were doing, which is the shape of thing this loop is meant not to do.
         frame.clear();
-        match mode {
+        match input.mode {
             Mode::Drive if roller => frame.push(proto::Call::RobotMove(proto::MoveParams {
                 // The prototype's roller shaping: push harder than you can brake, no
                 // strafe, heading capped independently of the walking limits.
@@ -959,8 +1241,8 @@ fn main() -> std::process::ExitCode {
         // IMU head control rides in the same frame as the drive: the pad's tilt and the sticks
         // describe one instant. Only while driving — body-pose mode owns the whole robot for as
         // long as it lasts, and stick head mode cannot coexist with this (see the Y handling).
-        if mode == Mode::Drive
-            && let (PadImuHead::Following { reference }, Some(now)) = (imu_head, attitude)
+        if input.mode == Mode::Drive
+            && let (PadImuHead::Following { reference }, Some(now)) = (input.imu_head, attitude)
         {
             frame.push(proto::Call::RobotHead(head_from_pad(
                 pad_imu::relative(reference, now),
@@ -978,6 +1260,29 @@ fn main() -> std::process::ExitCode {
             std::thread::sleep(remaining);
         }
     }
+}
+
+/// Bound socket stalls without adding another input or recovery loop.
+const ROBOT_IO_TIMEOUT: Duration = Duration::from_secs(3);
+
+fn connect_robot(socket: &Path) -> std::io::Result<UnixStream> {
+    let stream = UnixStream::connect(socket)?;
+    set_robot_timeouts(&stream)?;
+    Ok(stream)
+}
+
+fn set_robot_timeouts(stream: &UnixStream) -> std::io::Result<()> {
+    // An accepted connection is not proof that the restarted daemon is answering. A
+    // stalled request must let systemd recover padd rather than freeze its input loop.
+    stream.set_read_timeout(Some(ROBOT_IO_TIMEOUT))?;
+    stream.set_write_timeout(Some(ROBOT_IO_TIMEOUT))?;
+    Ok(())
+}
+
+fn intent_accepted(answer: Option<&proto::Response>) -> bool {
+    answer
+        .and_then(|answer| answer.result_as::<proto::IntentResult>().ok())
+        .is_some_and(|result| result.accepted)
 }
 
 /// Send a continuous intent: no `id`, no reply, nothing to wait for.
@@ -1079,7 +1384,7 @@ fn request(
 ) -> std::io::Result<Option<proto::Response>> {
     let id = proto::Id::Number(*next_id);
     *next_id += 1;
-    let mut line = serde_json::to_vec(&proto::Request::call(id, call))?;
+    let mut line = serde_json::to_vec(&proto::Request::call(id.clone(), call))?;
     line.push(b'\n');
     stream.write_all(&line)?;
     stream.flush()?;
@@ -1087,10 +1392,21 @@ fn request(
     // One line per request, in order, on a connection nothing else uses.
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut answer = String::new();
-    reader.read_line(&mut answer)?;
+    if reader.read_line(&mut answer)? == 0 {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::UnexpectedEof,
+            "robotd closed the intent socket",
+        ));
+    }
 
     match serde_json::from_str::<proto::Response>(&answer) {
         Ok(response) => {
+            if response.id.as_ref() != Some(&id) {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "robotd answered a different intent request",
+                ));
+            }
             if let Some(error) = &response.error {
                 tracing::warn!(code = error.code, message = %error.message, "refused");
             } else if let Ok(result) = response.result_as::<proto::IntentResult>()
@@ -1102,7 +1418,7 @@ fn request(
         }
         Err(e) => {
             tracing::warn!(error = %e, raw = %answer.trim(), "unparsable answer");
-            Ok(None)
+            Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
         }
     }
 }
@@ -1144,6 +1460,231 @@ mod tests {
 
     fn still() -> Vec<proto::Call> {
         vec![proto::Call::RobotMove(proto::MoveParams::default())]
+    }
+
+    #[test]
+    fn grabbed_gamesir_raw_node_cannot_hide_the_mapped_xbox() {
+        let pads = [
+            (0, "GameSir-Nova 2 Lite"),
+            (1, "Microduck R17 Web Xbox"),
+            (2, "Xbox 360 Controller (GameSir Nova 2 Lite)"),
+        ];
+        assert_eq!(
+            preferred_pad(pads.into_iter().map(|(id, name)| (id, pad_priority(name)))),
+            Some(2)
+        );
+        assert_eq!(
+            preferred_pad([(0, pad_priority("GameSir-Nova 2 Lite"))].into_iter()),
+            None,
+            "a bridge not ready yet must not give control to its grabbed source"
+        );
+        // Only the precise bridged model is excluded. Native pads keep their original
+        // enumeration order; a different GameSir still works without this bridge.
+        let native = ["Xbox Wireless Controller", "GameSir Other", "DualSense"];
+        assert_eq!(
+            preferred_pad(
+                native
+                    .into_iter()
+                    .enumerate()
+                    .map(|(id, name)| (id, pad_priority(name)))
+            ),
+            Some(0)
+        );
+        assert_eq!(pad_priority("GameSir Other"), Some(1));
+    }
+
+    #[test]
+    fn radio_reconnect_cannot_keep_head_or_body_mode_or_skip_explicit_home() {
+        let now = Instant::now();
+        for mode in [Mode::Head, Mode::BodyPose] {
+            let mut input = PadInput {
+                mode,
+                imu_head: PadImuHead::Following {
+                    reference: [1.0, 0.0, 0.0, 0.0],
+                },
+                dpad_up_held_since: Some(now),
+                mode_switch_sent: true,
+                prev_rt: 0.9,
+                prev_lt: 0.9,
+                up: true,
+                ..Default::default()
+            };
+            input.select.tick(true, false, now);
+            input.reset();
+            assert_eq!(
+                input.mode,
+                Mode::Drive,
+                "the sticks must drive after reconnect"
+            );
+            assert_eq!(input.imu_head, PadImuHead::Off);
+            assert!(!input.up, "the next Start must explicitly request HOME");
+            assert!(input.dpad_up_held_since.is_none());
+            assert!(!input.mode_switch_sent);
+            assert_eq!((input.prev_rt, input.prev_lt), (0.0, 0.0));
+            assert_eq!(input.pose_reset_pending, mode == Mode::BodyPose);
+            assert_eq!(
+                input
+                    .select
+                    .tick(true, false, now + SHUTDOWN_HOLD + Duration::from_secs(1)),
+                SelectAction::Nothing,
+                "a new session must not inherit an old shutdown hold"
+            );
+            // Resetting again while no device is present must preserve the one pending
+            // body-pose release until there is a new connection to send it on.
+            input.reset();
+            assert_eq!(input.pose_reset_pending, mode == Mode::BodyPose);
+        }
+    }
+
+    #[test]
+    fn inherited_buttons_wait_for_release_and_select_release_does_not_relax() {
+        let mut input = PadInput {
+            buttons: ReleaseGate::baseline(|button| {
+                matches!(
+                    button,
+                    Button::Start | Button::Select | Button::DPadUp | Button::West
+                )
+            }),
+            ..Default::default()
+        };
+        let at = Instant::now();
+        // These are the same gates used by the event dispatch and the three held
+        // paths. Waiting indefinitely must never restart a shutdown/mode/skill.
+        for elapsed in [0, 2, 3, 60] {
+            assert!(!input.buttons.allows(Button::Start));
+            assert!(!input.buttons.allows(Button::DPadUp));
+            assert!(!input.buttons.allows(Button::West));
+            let select_pressed = input.buttons.allows(Button::Select);
+            assert_eq!(
+                input
+                    .select
+                    .tick(select_pressed, false, at + Duration::from_secs(elapsed)),
+                SelectAction::Nothing
+            );
+        }
+        let released = input.buttons.release(Button::Select);
+        assert!(!released, "the baseline release only arms Select");
+        assert_eq!(
+            input
+                .select
+                .tick(false, released, at + Duration::from_secs(61)),
+            SelectAction::Nothing
+        );
+        for button in [Button::Start, Button::DPadUp, Button::West] {
+            assert!(!input.buttons.release(button));
+            assert!(
+                input.buttons.allows(button),
+                "a new deliberate press is now armed"
+            );
+        }
+        assert_eq!(
+            input.select.tick(true, false, at + Duration::from_secs(62)),
+            SelectAction::Nothing
+        );
+        let released = input.buttons.release(Button::Select);
+        assert!(released);
+        assert_eq!(
+            input
+                .select
+                .tick(false, released, at + Duration::from_secs(62)),
+            SelectAction::Relax
+        );
+    }
+
+    #[test]
+    fn neutral_web_attachment_preserves_the_first_deliberate_start_press() {
+        // webpad.py creates a neutral Xbox and delays its pending first input until
+        // tap.watch acknowledges it. The baseline precedes that acknowledgement.
+        let buttons = ReleaseGate::baseline(|_| false);
+        assert!(
+            buttons.allows(Button::Start),
+            "the first web Start must reach robot.init"
+        );
+        assert!(buttons.allows(Button::Select));
+        assert!(buttons.allows(Button::West));
+        assert!(buttons.allows(Button::DPadUp));
+    }
+
+    #[test]
+    fn refused_home_does_not_make_the_next_start_enable_the_policy() {
+        let (mut ours, mut theirs) = UnixStream::pair().unwrap();
+        let server = std::thread::spawn(move || {
+            let mut reader = BufReader::new(theirs.try_clone().unwrap());
+            for result in [
+                proto::IntentResult::refused("first sensor frame pending"),
+                proto::IntentResult::accepted(),
+            ] {
+                let mut line = String::new();
+                reader.read_line(&mut line).unwrap();
+                let call: proto::Request = serde_json::from_str(&line).unwrap();
+                assert_eq!(call.method, proto::method::ROBOT_INIT);
+                let response = proto::Response::ok(call.id, &result);
+                writeln!(theirs, "{}", serde_json::to_string(&response).unwrap()).unwrap();
+            }
+        });
+        let mut next_id = 1;
+        let mut input = PadInput::default();
+        for expected in [false, true] {
+            assert!(
+                !input.up,
+                "a refused HOME must leave the next Start on robot.init"
+            );
+            let answer = request(&mut ours, &mut next_id, &proto::Call::RobotInit).unwrap();
+            input.up = intent_accepted(answer.as_ref());
+            assert_eq!(input.up, expected);
+        }
+        assert!(!intent_accepted(None));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn restart_closing_the_socket_is_an_error_instead_of_successful_home() {
+        let (mut ours, theirs) = UnixStream::pair().unwrap();
+        let server = std::thread::spawn(move || {
+            let mut line = String::new();
+            BufReader::new(theirs).read_line(&mut line).unwrap();
+            // The peer exits after receiving the request, before answering it.
+        });
+        let error = request(&mut ours, &mut 1, &proto::Call::RobotInit).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::UnexpectedEof);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn stalled_robotd_is_bounded_without_a_background_poll() {
+        let (mut ours, _peer) = UnixStream::pair().unwrap();
+        set_robot_timeouts(&ours).unwrap();
+        assert_eq!(ours.read_timeout().unwrap(), Some(ROBOT_IO_TIMEOUT));
+        assert_eq!(ours.write_timeout().unwrap(), Some(ROBOT_IO_TIMEOUT));
+        ours.set_read_timeout(Some(Duration::from_millis(30)))
+            .unwrap();
+        let before = Instant::now();
+        let error = request(&mut ours, &mut 1, &proto::Call::RobotInit).unwrap_err();
+        assert!(matches!(
+            error.kind(),
+            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+        ));
+        assert!(before.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn malformed_or_wrong_id_reply_cannot_latch_home() {
+        for reply in [
+            "not-json\n",
+            "{\"jsonrpc\":\"2.0\",\"id\":9,\"result\":{\"accepted\":true}}\n",
+        ] {
+            let (mut ours, mut theirs) = UnixStream::pair().unwrap();
+            let server = std::thread::spawn(move || {
+                let mut line = String::new();
+                BufReader::new(theirs.try_clone().unwrap())
+                    .read_line(&mut line)
+                    .unwrap();
+                theirs.write_all(reply.as_bytes()).unwrap();
+            });
+            let error = request(&mut ours, &mut 1, &proto::Call::RobotInit).unwrap_err();
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+            server.join().unwrap();
+        }
     }
 
     /// The sticks are polled, so an untouched pad produces the same frame fifty times a

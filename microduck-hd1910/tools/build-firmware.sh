@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Portable local build of the R17 v1.0.146 Zero programs. Never deploys a robot.
+# Portable local build of the control.40 Zero programs shipped with R17 V164.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,7 +9,7 @@ BUILD_DIR="$REPO_ROOT/.build/firmware"
 TOOLS_DIR="$REPO_ROOT/.build/firmware-tools"
 RUST_VERSION=1.99.0
 CARGO_ZIGBUILD_VERSION=0.23.4
-ZIG_VERSION=0.14.1
+ZIG_VERSION=0.15.1
 RUST_TARGET=aarch64-unknown-linux-gnu
 ZIGBUILD_TARGET=aarch64-unknown-linux-gnu.2.31
 
@@ -25,7 +25,7 @@ usage() {
       robotd、robotctl、padd、sounds、gamesir-xboxd
       BUILD-LOCAL.json、SHA256SUMS
 
-环境：Linux / Windows WSL，Rust 1.99.0、cargo-zigbuild 0.23.4、Zig 0.14.1。
+环境：Linux / Windows WSL，Rust 1.99.0、cargo-zigbuild 0.23.4、Zig 0.15.1。
 安装步骤见 docs/BUILD.md。脚本优先使用 .build/firmware-tools Python 环境。
 本入口不调用 sudo、不安装系统软件、不连接机器人、不安装或发布固件。
 EOF
@@ -63,7 +63,7 @@ check_requirements() {
     command -v "$tool" >/dev/null 2>&1 || fail_check "$tool"
   done
   [[ -n "$PYTHON_BIN" ]] || fail_check 'python3'
-  for tool in Cargo.toml Cargo.lock rust-toolchain.toml gamepad-r7/gamesir-xboxd.c verification/native-dependencies146.json; do
+  for tool in Cargo.toml Cargo.lock rust-toolchain.toml gamepad-r7/gamesir-xboxd.c verification/build-environment150-libudev-sysroot.json; do
     [[ -f "$SOURCE_DIR/$tool" ]] || fail_check "firmware/$tool"
   done
 
@@ -111,22 +111,22 @@ check_requirements() {
   for tool in RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER CARGO_PROFILE_RELEASE_CODEGEN_UNITS; do
     [[ -z "${!tool:-}" ]] || fail_check "外部 $tool 已设置；请在干净终端运行，或先 unset $tool。"
   done
-  if [[ -n "$PYTHON_BIN" && -f "$SOURCE_DIR/verification/native-dependencies146.json" ]]; then
-    if ! "$PYTHON_BIN" - "$SOURCE_DIR/verification/native-dependencies146.json" <<'PY'
+  if [[ -n "$PYTHON_BIN" && -f "$SOURCE_DIR/verification/build-environment150-libudev-sysroot.json" ]]; then
+    if ! "$PYTHON_BIN" - "$SOURCE_DIR/verification/build-environment150-libudev-sysroot.json" <<'PY'
 import json, pathlib, sys
 record = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
 expected = {
-    "libudev-dev": ("247.3-7+deb11u5", "608eecca1c50230a5488ce436e30926f3b93c57ed018fd7318f1fd278070bdef"),
-    "libudev1": ("247.3-7+deb11u5", "df88275dafcc3b0759ef03d5027fa1f90f48bf7aeec461887798bd18298fe799"),
+    "libudev-dev": ("257.13-1~deb13u1", "4f63c79e9eec01eadf4a450d8ef12e327b82cf49f5106abc9ac39a3353f04314"),
+    "libudev1": ("257.13-1~deb13u1", "459b1c9c17cc3c586e90d13d2a991715d498c6eed6c046cabf321021167bc380"),
 }
-found = {p["package"]: p for g in record["groups"] if g["architecture"] == "arm64" for p in g["packages"]}
+found = {p["package"]: p for p in record["packages"]}
 if set(found) != set(expected):
-    raise SystemExit("ARM64 依赖清单与 v146 不一致。")
+    raise SystemExit("ARM64 依赖清单与 control.40 发布记录不一致。")
 for name, (version, digest) in expected.items():
     item = found[name]
     url = f"https://deb.debian.org/debian/pool/main/s/systemd/{name}_{version}_arm64.deb"
-    if (item["version"], item["sha256"], item["url"], item["architecture"]) != (version, digest, url, "arm64"):
-        raise SystemExit(f"{name} 的版本、来源或 SHA256 与 v146 不一致。")
+    if (item["version"], item["sha256"], item["url"]) != (version, digest, url):
+        raise SystemExit(f"{name} 的版本、来源或 SHA256 与 control.40 发布记录不一致。")
 print("ARM64 libudev 固定版本、下载地址和 SHA256 记录一致。")
 PY
     then fail_check '固定 ARM64 依赖记录'; fi
@@ -144,7 +144,7 @@ if [[ "$MODE" == check ]]; then
 fi
 
 mkdir -p "$BUILD_DIR/bin"
-"$PYTHON_BIN" - "$SOURCE_DIR/verification/native-dependencies146.json" "$BUILD_DIR" <<'PY'
+"$PYTHON_BIN" - "$SOURCE_DIR/verification/build-environment150-libudev-sysroot.json" "$BUILD_DIR" <<'PY'
 import hashlib, json, pathlib, subprocess, sys, urllib.request
 record = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
 root = pathlib.Path(sys.argv[2])
@@ -152,7 +152,7 @@ cache = root / "downloads"
 sysroot = root / "sysroot/arm64"
 cache.mkdir(parents=True, exist_ok=True)
 sysroot.mkdir(parents=True, exist_ok=True)
-packages = [p for g in record["groups"] if g["architecture"] == "arm64" for p in g["packages"]]
+packages = record["packages"]
 for item in packages:
     path = cache / item["url"].rsplit("/", 1)[1]
     if not path.exists():
@@ -183,7 +183,10 @@ unset PKG_CONFIG_PATH
 pkg-config --exists libudev
 (
   cd -- "$SOURCE_DIR"
-  rustup run "$RUST_VERSION" cargo zigbuild --locked --release \
+  rustup run "$RUST_VERSION" cargo \
+    --config 'profile.release.package.pet-detect.codegen-units=1' \
+    --config 'profile.release.package.robotd.codegen-units=1' \
+    zigbuild --locked --release \
     --target "$ZIGBUILD_TARGET" -p robotd -p robotctl -p padd -p sounds
 )
 "$ZIG_BIN" cc -target aarch64-linux-gnu.2.31 -O2 -Wall -Wextra -Werror \
@@ -208,9 +211,9 @@ for name in programs:
     records[name] = {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "bytes": path.stat().st_size,
                      "architecture": "AArch64", "glibc_versions": glibc}
 manifest = {
-    "kind": "local-source-build", "source_version": "R17-v1.0.146",
+    "kind": "local-source-build", "source_version": "R17-V164/control.40",
     "created_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    "rust": "1.99.0", "cargo_zigbuild": "0.23.4", "zig": "0.14.1",
+    "rust": "1.99.0", "cargo_zigbuild": "0.23.4", "zig": "0.15.1",
     "target": "aarch64-unknown-linux-gnu.2.31", "programs": records,
     "hardware_tested": False, "automatically_deployed": False,
     "byte_identical_to_published_release_claimed": False,

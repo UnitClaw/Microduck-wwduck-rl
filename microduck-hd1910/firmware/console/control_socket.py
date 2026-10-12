@@ -6,6 +6,8 @@ import secrets
 import socket
 import struct
 import time
+import queue
+import threading
 
 MAX_MESSAGE = 4096
 PROTOCOL = 'r17-control'
@@ -80,17 +82,39 @@ def upgrade(handler, config, controller):
     owner = None
     transport = controller.transport
     chunks = None
+    write_lock = threading.Lock()
+    notifications = queue.Queue(maxsize=8)
+    closed = threading.Event()
+    def send(opcode,payload):
+        with write_lock:send_frame(handler.wfile,opcode,payload)
+    def changed(status):
+        if closed.is_set():return
+        try:notifications.put_nowait(status)
+        except queue.Full:
+            # Drop this browser connection rather than delay the remote reader.
+            closed.set()
+            try:handler.connection.shutdown(socket.SHUT_RDWR)
+            except OSError:pass
+    def publish():
+        while True:
+            status=notifications.get()
+            if status is None:return
+            try:send(1,json.dumps({'event':'input-status','result':status},ensure_ascii=False).encode())
+            except (OSError,ValueError):return
+    notification_worker=threading.Thread(target=publish,daemon=True)
+    notification_worker.start()
+    unsubscribe=transport.subscribe_input_status(changed) if hasattr(transport,'subscribe_input_status') else lambda:None
     log = getattr(controller, 'log', None) or getattr(controller.transport, 'log', None)
     if log:
-        log.add('手柄长连接', '网页 WebSocket 已连接；Zero 输入接口只在操作时连接，无空闲动作轮询')
+        log.add('手柄长连接', '网页 WebSocket 已连接；持久 SSH 接收输入热插拔事件，无空闲动作轮询')
     try:
         while True:
             fin, opcode, payload = read_frame(handler.rfile)
             if opcode == 8:
-                send_frame(handler.wfile, 8, payload)
+                send(8, payload)
                 break
             if opcode == 9:
-                send_frame(handler.wfile, 10, payload)
+                send(10, payload)
                 continue
             if opcode == 10:
                 continue
@@ -125,17 +149,23 @@ def upgrade(handler, config, controller):
                 answer = {'id': row['id'], 'result': result, 'elapsed_ms': round((time.monotonic() - started) * 1000, 1)}
             except Exception as exc:
                 answer = {'id': row['id'], 'error': str(exc) or type(exc).__name__, 'status': getattr(exc, 'status', 503)}
-            send_frame(handler.wfile, 1, json.dumps(answer, ensure_ascii=False).encode('utf-8'))
+            send(1, json.dumps(answer, ensure_ascii=False).encode('utf-8'))
     except (EOFError, OSError):
         pass
     except (ValueError, UnicodeError) as exc:
         if log:
             log.add('手柄长连接错误', str(exc))
         try:
-            send_frame(handler.wfile, 8, struct.pack('!H', 1002))
+            send(8, struct.pack('!H', 1002))
         except OSError:
             pass
     finally:
+        unsubscribe()
+        closed.set()
+        while True:
+            try:notifications.get_nowait()
+            except queue.Empty:break
+        notifications.put_nowait(None)
         if owner is not None and controller.transport is transport:
             controller.release_owner(owner)
         if log:

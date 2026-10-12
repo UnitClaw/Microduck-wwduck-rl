@@ -31,7 +31,7 @@ def config(full, n):
 
 
 class SamplingTests(unittest.TestCase):
-    def test_all_twelve_tasks_keep_values_and_change_only_time_thresholds(self):
+    def test_all_tasks_keep_values_and_change_only_time_thresholds(self):
         total = 0
         for task in TASKS:
             full = loaded(task)
@@ -39,7 +39,12 @@ class SamplingTests(unittest.TestCase):
                 env, agent = config(full, n)
                 before = copy.deepcopy(env)
                 receipt = align.align_curricula(env, agent)
-                self.assertGreater(len(receipt['stages']), 0, task)
+                if TASKS[task]['role'] == 'slope':
+                    # Slope promotion is based on travel, not a timed schedule.
+                    self.assertEqual(receipt['stages'], [])
+                    self.assertEqual(receipt['untimed_terms'], ['terrain_levels'])
+                else:
+                    self.assertGreater(len(receipt['stages']), 0, task)
                 for entry in receipt['stages']:
                     total += 1
                     term, key, index = entry['term'], entry['key'], entry['index']

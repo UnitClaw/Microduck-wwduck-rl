@@ -8,7 +8,7 @@ NEW='1cbf8730eadd75a5704332c9f3c10f60'
 TEACHER='9e3ff8bde021be28a728c02dbd8e7aaf'
 OLD='ff30787a148229005d12bef353d57120'
 SIT='1c94934c6421ec72ed48079cea749668'
-PICK='2b69fa681ed06f7ded9e2a2d12ba5c67'
+PICK='b14e3a8b56ddbb8d2d831e727774a168'
 class WalkReplacementTests(unittest.TestCase):
  def test_default_change_migrates_once_and_preserves_operator_choices(self):
   profile=ROOT/'packaging/robotd-profile.toml'
@@ -42,11 +42,11 @@ class WalkReplacementTests(unittest.TestCase):
    subprocess.run([sys.executable,str(ROOT/'packaging/configure.py'),'--source',str(old),'--replace-models','--overrides',str(profile),'--output',str(out)],check=True,capture_output=True)
    self.assertEqual(tomllib.loads(out.read_text())['policy']['action_scale'],0.7)
  def test_legacy_teacher_fixture_sitstand_and_pick_keep_original_training_mapping(self):
-  for slot,ident,iteration in [('walk',TEACHER,13999),('sitstand',SIT,10000),('ground_pick',PICK,4999)]:
+  for slot,ident,iteration in [('walk',TEACHER,13999),('sitstand',SIT,10000),('ground_pick',PICK,9999)]:
    directory=ROOT/'test-data/walk-teacher14000' if slot=='walk' else ROOT/'policies'/slot
    info=models.verify_directory(directory);self.assertEqual(info['id'],ident);self.assertEqual(info['slot'],slot);self.assertEqual(info['contract']['actions']['joint_pos']['scale'],.7 if slot=='walk' else 1.0)
    req=json.loads((directory/'training-request.json').read_text());self.assertEqual(req['source_iteration'],iteration)
-  # Independent LB recovery remains a skill; it must not enable the Stand slot.
+  # Recovery is handled by the joint Walk; standalone Stand remains disabled.
   self.assertEqual(tomllib.loads((ROOT/'packaging/robotd-profile.toml').read_text())['policy']['stand'],'none')
  def test_new_joint_walk_is_the_release_default_with_separate_runtime_and_training_settings(self):
   info=models.verify_directory(ROOT/'policies/walk')
@@ -54,10 +54,10 @@ class WalkReplacementTests(unittest.TestCase):
   self.assertEqual(info['contract']['actions']['joint_pos']['scale'],1.0)
   self.assertEqual(info['policy_settings'],{'action_scale':1.0,'head_lowpass':1.0,'legs_lowpass':1.0})
   self.assertEqual(info['execution_profile'],{'schema':'microduck-runtime-execution/v1','model_sha256':info['sha256'],
-                   'mode':'uniform','action_scale':.9,'head_lowpass':.5,'legs_lowpass':.7})
+                   'mode':'uniform','action_scale':1.0,'head_lowpass':.5,'legs_lowpass':.7})
   self.assertEqual(json.loads((ROOT/'policies/walk/training-request.json').read_text())['source_iteration'],9599)
   self.assertIn('/'+NEW+'/',tomllib.loads((ROOT/'packaging/robotd-profile.toml').read_text())['policy']['walk'])
-  shipped=[models.verify_directory(p) for p in (ROOT/'policies').iterdir() if (p/'policy.onnx').is_file()]
+  shipped=[models.verify_directory(ROOT/'packaging/models'/r['id'] if r['slot']=='kick_right' else ROOT/'policies'/r['slot']) for r in models.PROFILE['builtin_models']]
   self.assertEqual(len(shipped),5)
   self.assertEqual([p['id'] for p in shipped if p['slot']=='walk'],[NEW])
   self.assertNotIn(TEACHER,[p['id'] for p in shipped])

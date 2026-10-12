@@ -34,6 +34,7 @@ const THEREMIN_UP: u8 = 1;
 const THEREMIN_DOWN: u8 = 2;
 const POWER_INIT: u8 = 1;
 const POWER_RELAX: u8 = 2;
+const POWER_HOME: u8 = 3;
 use std::time::{Duration, Instant};
 
 use arc_swap::{ArcSwap, ArcSwapOption};
@@ -147,7 +148,7 @@ pub struct Intents {
     /// Low bit is enabled; upper bits identify each explicit start, atomically.
     /// A stop/start between loop ticks must still get the HOME check.
     enabled: AtomicU64,
-    /// A pending `robot.init` / `robot.relax`, as [`PowerRequest`].
+    /// A pending torque or already-powered HOME request, as [`PowerRequest`].
     ///
     /// A request rather than a flag, and taken rather than read: powering the joints is an *edge*,
     /// not a state the loop should keep re-applying. One `set_torque` is a bus transaction per
@@ -238,6 +239,8 @@ pub enum PowerRequest {
     Init,
     /// Torque off. The robot collapses if nothing holds it.
     Relax,
+    /// Return already-powered joints directly HOME, without a new torque edge or ramp.
+    Home,
 }
 
 /// A manual LB edge, tied to the enable state that accepted it. This remains
@@ -539,6 +542,8 @@ impl Intents {
     pub fn set_enabled(&self, on: bool) {
         if !on {
             self.cancel_home_skill();
+            // A later enable starts a new episode, not a button queued before HOME.
+            self.skills.store(0, Ordering::Relaxed);
         }
         let _ = self
             .enabled
@@ -564,7 +569,16 @@ impl Intents {
     /// Ask the loop to power the joints and stand up.
     pub fn request_init(&self) {
         self.cancel_home_skill();
+        self.skills.store(0, Ordering::Relaxed);
         self.power.store(POWER_INIT, Ordering::Relaxed);
+    }
+
+    /// HOME after explicit policy stop is direct, unlike an Init bring-up ramp.
+    /// Sharing the one-shot slot retains the existing last-request-wins ordering.
+    pub fn request_home_hold(&self) {
+        self.cancel_home_skill();
+        self.skills.store(0, Ordering::Relaxed);
+        self.power.store(POWER_HOME, Ordering::Relaxed);
     }
 
     /// Ask the loop to cut power to the joints.
@@ -663,6 +677,7 @@ impl Intents {
         match self.power.swap(POWER_NONE, Ordering::Relaxed) {
             POWER_INIT => Some(PowerRequest::Init),
             POWER_RELAX => Some(PowerRequest::Relax),
+            POWER_HOME => Some(PowerRequest::Home),
             _ => None,
         }
     }
@@ -713,6 +728,40 @@ mod tests {
         let next = intents.snapshot();
         assert!(first.enabled && next.enabled);
         assert_ne!(first.enable_generation, next.enable_generation);
+    }
+
+    #[test]
+    fn home_discards_pending_skills_and_recovery_and_uses_the_existing_one_shot_slot() {
+        for request in 0..3 {
+            let intents = Intents::new();
+            intents.request_ground_pick();
+            intents.request_sit_toggle();
+            intents.request_skill(0);
+            intents.request_skill(4); // Any configurable kick shares the same request mask.
+            intents.request_home_skill(2);
+            match request {
+                0 => intents.set_enabled(false),
+                1 => intents.request_init(),
+                _ => intents.request_home_hold(),
+            }
+            assert!(!intents.take_skills().any());
+            assert!(!intents.home_skill_pending());
+            assert!(!intents.enabled());
+        }
+
+        let intents = Intents::new();
+        intents.request_home_hold();
+        intents.request_relax();
+        assert_eq!(intents.take_power_request(), Some(PowerRequest::Relax));
+        assert_eq!(intents.take_power_request(), None);
+        intents.request_relax();
+        intents.request_home_hold();
+        assert_eq!(intents.take_power_request(), Some(PowerRequest::Home));
+        assert_eq!(intents.take_power_request(), None);
+        intents.request_home_hold();
+        intents.request_init();
+        assert_eq!(intents.take_power_request(), Some(PowerRequest::Init));
+        assert_eq!(intents.take_power_request(), None);
     }
 
     /// A user stop must invalidate an LB request already consumed by the loop,

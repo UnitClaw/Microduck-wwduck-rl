@@ -22,6 +22,7 @@ class SystemLog:
         self.secrets = set()
         self.pending = queue.SimpleQueue()
         self.error = ''
+        self.closed = False
         self.worker = threading.Thread(target=self._write, daemon=True)
         self.worker.start()
 
@@ -31,6 +32,7 @@ class SystemLog:
 
     def add(self, source, text):
         with self.lock:
+            if self.closed: return self.counter
             text = str(text)
             for value in self.secrets: text = text.replace(value, '[已隐藏]')
             text = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', text)
@@ -41,17 +43,22 @@ class SystemLog:
             return item['seq']
 
     def _write(self):
-        while True:
-            item = self.pending.get()
-            if item is None: break
-            if isinstance(item, threading.Event):
-                self.stream.flush(); item.set(); continue
-            try:
-                stamp = datetime.fromtimestamp(item['at']).astimezone().isoformat(timespec='milliseconds')
-                self.stream.write(f"[{stamp}] [{item['source']}] " + item['text'].rstrip('\n') + '\n')
-                self.stream.flush()
-            except OSError as exc: self.error = str(exc)
-        self.stream.close()
+        try:
+            while True:
+                item = self.pending.get()
+                if item is None: break
+                if isinstance(item, threading.Event):
+                    try: self.stream.flush()
+                    except (OSError, ValueError) as exc: self.error = str(exc)
+                    finally: item.set()
+                    continue
+                try:
+                    stamp = datetime.fromtimestamp(item['at']).astimezone().isoformat(timespec='milliseconds')
+                    self.stream.write(f"[{stamp}] [{item['source']}] " + item['text'].rstrip('\n') + '\n')
+                    self.stream.flush()
+                except (OSError, ValueError) as exc: self.error = str(exc)
+        finally:
+            self.stream.close()
 
     def tail(self, after=0, limit=200):
         with self.lock:
@@ -62,10 +69,17 @@ class SystemLog:
                     'error':self.error, 'filename':self.path.name}
 
     def flush(self):
-        event = threading.Event(); self.pending.put(event); event.wait(5)
+        with self.lock:
+            if self.closed: return
+            event = threading.Event(); self.pending.put(event)
+        event.wait(5)
 
     def close(self):
-        self.pending.put(None); self.worker.join(timeout=5)
+        with self.lock:
+            if self.closed: return
+            self.closed = True
+            self.pending.put(None)
+        self.worker.join(timeout=5)
 
 
 def describe(command):

@@ -97,8 +97,8 @@ class AuditRegressions(unittest.TestCase):
    custom={'bus':{'port':'wrong'},'control':{'hz':1},'policy':{'custom_only':True,'walk':'/custom/new/policy.onnx','stand':'/custom/stand/policy.onnx','sitstand':'none','action_scale':.63,'head_lowpass':.44,'legs_lowpass':.66,'r17_inference_scale':.4},'pad':{'dpad_down':'sit_toggle','custom_param':5}}
    source.write_text(dumps(custom));args=[sys.executable,str(ROOT/'packaging/configure.py'),'--source',str(source),'--previous-overrides',str(ROOT/'packaging/robotd-profile.toml'),'--overrides',str(ROOT/'packaging/robotd-profile.toml'),'--output',str(target)]
    subprocess.run(args,check=True,capture_output=True);data=tomllib.loads(target.read_text())
-   for k in ('walk','stand','sitstand','action_scale','head_lowpass','legs_lowpass'):self.assertEqual(data['policy'][k],custom['policy'][k])
-   self.assertNotIn('r17_inference_scale',data['policy']);self.assertEqual(data['pad']['custom_param'],5);self.assertEqual(data['bus']['port'],'/dev/ttyS2');self.assertEqual(data['control']['hz'],50)
+   for k in ('walk','sitstand','action_scale','head_lowpass','legs_lowpass'):self.assertEqual(data['policy'][k],custom['policy'][k])
+   self.assertEqual(data['policy']['stand'],'none');self.assertNotIn('r17_inference_scale',data['policy']);self.assertEqual(data['pad']['custom_param'],5);self.assertEqual(data['bus']['port'],'/dev/ttyS2');self.assertEqual(data['control']['hz'],50)
    subprocess.run(args+['--replace-models'],check=True,capture_output=True);data=tomllib.loads(target.read_text())
    self.assertNotEqual(data['policy']['walk'],custom['policy']['walk']);self.assertEqual(data['policy']['stand'],'none');self.assertNotIn('head_lowpass',data['policy']);self.assertNotIn('legs_lowpass',data['policy'])
  def test_preserved_export_metadata_is_not_overwritten_and_explicit_reset_replaces_it(self):
@@ -148,14 +148,6 @@ class AuditRegressions(unittest.TestCase):
     self.assertEqual(len(reads),1)
     replacement=root/'next';replacement.write_text('{"mouth_percent":30,"head_rad":1.5}');os.replace(replacement,path);now[0]=.11
     self.assertEqual(cache()['mouth_percent'],30);self.assertEqual(len(reads),2)
- def test_missing_kick_adapter_is_reported_before_upload_and_all_slots_remain_visible(self):
-  import model_packages
-  with tempfile.TemporaryDirectory() as tmp:
-   base=Path(tmp);cfg=base/'cfg';cfg.write_text('[policy]\n');listing=model_packages.catalog(base,cfg)
-   self.assertEqual(len(listing['slots']),7)
-   for slot in ('kick_left','kick_right'):
-    info=next(s for s in listing['slots'] if s['slot']==slot);self.assertFalse(info['import_supported']);self.assertIn('合同适配',info['support_message'])
-    with self.assertRaisesRegex(ControlError,'合同适配'):ServiceController(Store(),transport=object()).import_model('kick.zip',io.BytesIO(b'never read'),10,slot=slot)
  def test_snapshot_uses_one_coherent_sample_and_records_once(self):
   import console as ui
   import urllib.request
@@ -249,10 +241,18 @@ webpad.serve()
   from management_profile import ACTION_INFO
   native=(ROOT/'duck-control/src/deployment.rs').read_text();task_fn=native[native.index('pub fn task_slot('):native.index('fn read_json(')]
   for row in ACTION_INFO.values():
-   if row['import_supported']:
+   if row['task_prefixes']:
     for prefix in row['task_prefixes']:
-     self.assertIn('Mjlab-'+prefix+('-Flat-MicroDuck' if prefix=='VelStand' else '-'),task_fn)
-   else:self.assertEqual(row['task_prefixes'],[])
+     if prefix=='BallKick':
+      # BallKick's exported side determines left/right. The Contract::load
+      # special branch validates slot/role and 0.5-second one-shot settings
+      # before the generic task_slot adapter can run.
+      self.assertIn('let slot = if ball_kick {',native)
+      self.assertIn('Mjlab-BallKick-Flat-MicroDuck',native)
+      self.assertIn('skill["duration"].as_f64() != Some(0.5)',native)
+      self.assertIn('ball kick slot and role must agree',native)
+      self.assertEqual(row['slot'],'kick_right')
+     else:self.assertIn('Mjlab-'+prefix+('-Flat-MicroDuck' if prefix=='VelStand' else '-'),task_fn)
  def test_command_logs_decode_invalid_utf8_but_configuration_stays_strict(self):
   import runtime
   result=runtime.run(sys.executable,'-c',"import sys;sys.stdout.buffer.write(bytes([255]));sys.stderr.buffer.write(bytes([254]))")

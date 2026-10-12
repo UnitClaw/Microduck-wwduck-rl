@@ -17,7 +17,7 @@ import urllib.error
 import urllib.request
 import zipfile
 
-RELEASE = 'R1.5.17'
+RELEASE = 'R1.5.26'
 DEFAULT_CONNECTION = {'host': '', 'user': 'ubuntu', 'port': 22, 'identity': '',
                       'workspace': '~/microduck-training-ssh', 'known_hosts': '', 'wsl_distro': '', 'auth': 'key'}
 
