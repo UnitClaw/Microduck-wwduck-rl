@@ -4,15 +4,15 @@
 
 <table>
 <tr>
-  <td align="center" width="20%"><a href="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad"><img src="docs/assets/microduck-demo-01.webp" width="120" height="160" alt="鸭鸭实机视频 1：点击播放完整视频" /></a><br /><a href="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad">▶ 视频 1</a></td>
-  <td align="center" width="20%"><a href="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5"><img src="docs/assets/microduck-demo-02.webp" width="120" height="160" alt="鸭鸭实机视频 2：点击播放完整视频" /></a><br /><a href="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5">▶ 视频 2</a></td>
-  <td align="center" width="20%"><a href="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3"><img src="docs/assets/microduck-demo-03.webp" width="120" height="160" alt="鸭鸭实机视频 3：点击播放完整视频" /></a><br /><a href="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3">▶ 视频 3</a></td>
-  <td align="center" width="20%"><a href="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d"><img src="docs/assets/microduck-demo-04.webp" width="120" height="160" alt="鸭鸭实机视频 4：点击播放完整视频" /></a><br /><a href="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d">▶ 视频 4</a></td>
-  <td align="center" width="20%"><a href="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f"><img src="docs/assets/microduck-demo-05.webp" width="120" height="160" alt="鸭鸭实机视频 5：点击播放完整视频" /></a><br /><a href="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f">▶ 视频 5</a></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
+  <td width="20%"><video src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
 </tr>
 </table>
 
-<sub>点击任意小动图，播放对应完整视频。<br />以上为实机视频。在线中控演示使用模拟数据，不连接你的实机，也不会真正训练；演示版本暂时仍为旧版。</sub>
+<sub>以上为实机视频。在线中控演示使用模拟数据，不连接你的实机，也不会真正训练；演示版本暂时仍为旧版。</sub>
 
 # 🦆 Microduck · 让桌面上的小鸭动起来
 
