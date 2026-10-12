@@ -1,6 +1,6 @@
-# Microduck R17 V163 / control.40 随包固件
+# Microduck R17 V164 / control.40 随包固件
 
-当前固件构建为 `1fa8438-feetech-ft6-control.40`，配套中控 `1.0.163` 和官方系统 `0.15.1`。robotd 与 padd 为本版 ARM64 编译程序；robotctl、mediad、输入桥及安装流程使用配套包内配置。
+当前固件构建为 `1fa8438-feetech-ft6-control.40`，配套中控 `1.0.164` 和官方系统 `0.15.1`。robotd 与 padd 为本版 ARM64 编译程序；robotctl、mediad、输入桥及安装流程使用配套包内配置。
 
 通过中控“系统维护 → 随包固件”安装。服务需要完成四步启动；执行运动须切到运动模式，完成 HOME 并启用策略。完整按键操作见中控根目录的 `README.zh-CN.md`。
 

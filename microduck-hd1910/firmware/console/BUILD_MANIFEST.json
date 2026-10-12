@@ -15,14 +15,14 @@
       "source_iteration": 9599,
       "num_envs": 2560,
       "source_policy_directory": "policies/walk",
-      "trained_action_scale": 1.0,
-      "trained_head_alpha": 1.0,
-      "trained_legs_alpha": 1.0,
+      "trained_action_scale": 1,
+      "trained_head_alpha": 1,
+      "trained_legs_alpha": 1,
       "execution_profile": {
         "schema": "microduck-runtime-execution/v1",
         "model_sha256": "1cbf8730eadd75a5704332c9f3c10f60bfa9412135b907831c9dbd731ce1795f",
         "mode": "uniform",
-        "action_scale": 1.0,
+        "action_scale": 1,
         "head_lowpass": 0.5,
         "legs_lowpass": 0.7
       },
@@ -40,9 +40,9 @@
       "epochs": 10000,
       "source_iteration": 9999,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "deployment_verified": false,
       "source_policy_directory": "policies/ground_pick"
@@ -54,9 +54,9 @@
       "epochs": 10000,
       "source_iteration": 9999,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "deployment_verified": false,
       "source_policy_directory": "policies/roulade"
@@ -67,9 +67,9 @@
       "task": "Mjlab-BallKick-Flat-MicroDuck",
       "epochs": 10000,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "duration_seconds": 0.5,
       "deployment_verified": false
@@ -156,111 +156,6 @@
       "path": "docs/joint-scale-design148.md",
       "bytes": 25032,
       "sha256": "af4e81c5ad4772e22c9a1321e1ad2b9d3d1c033e25fc8cc25c3ede140868a474"
-    },
-    {
-      "path": "docs/releases/R146.md",
-      "bytes": 6867,
-      "sha256": "5135e5ab09f26dd27d728e1fdaf54f1178367b68bf174f0c46b1b2d84d5d1f39"
-    },
-    {
-      "path": "docs/releases/R147.md",
-      "bytes": 4592,
-      "sha256": "ee2c08f1bb0e8b1f87ebbd43f2ecb082c20ad4f81f5333af8b6be39a5ed6f237"
-    },
-    {
-      "path": "docs/releases/R149.md",
-      "bytes": 969,
-      "sha256": "74dfcbd5c5bc7ff9fc90e52e86a7eaaaef90b21dbf88aa12ac00c08a5f63d60e"
-    },
-    {
-      "path": "docs/releases/R150.md",
-      "bytes": 2659,
-      "sha256": "07cb35e3e4a3ccb165651536bb44789c30eac49033ff9e43b7f55cce30e518ff"
-    },
-    {
-      "path": "docs/releases/R151.md",
-      "bytes": 3368,
-      "sha256": "0708ad6eed0a5c0280340a64e6006b7868c5929f6dfe0b36e07f5049721579cd"
-    },
-    {
-      "path": "docs/releases/R152.md",
-      "bytes": 2660,
-      "sha256": "64287ad04d69aa78b8219d8dd4c8e59fb6b20181cb9599c888de9a7936c13d3e"
-    },
-    {
-      "path": "docs/releases/R153.md",
-      "bytes": 3096,
-      "sha256": "661c150995c174fcc7ca7bb540eb153dfdf0a64aedf5e19c4127aeb9da6b7742"
-    },
-    {
-      "path": "docs/releases/R154.md",
-      "bytes": 2649,
-      "sha256": "bb9ac304055624e16f3176e3333749b0fa82bfa806457f80480dcb304b0ebb74"
-    },
-    {
-      "path": "docs/releases/R155.md",
-      "bytes": 3332,
-      "sha256": "354b40b31be7e8119646f541db6ae004c2829c9904b2f14319b8206a247b54c0"
-    },
-    {
-      "path": "docs/releases/R156.md",
-      "bytes": 2078,
-      "sha256": "5e76e07d9ec6a8bdc2a5f795a2c6d914c090c2fdc566a5db91252a2d0ded670d"
-    },
-    {
-      "path": "docs/releases/R157-Fix1.md",
-      "bytes": 2600,
-      "sha256": "201b5fb9ab334669432f7dae7bc7734b856453fc18136307c7fb7ae576e8b1e4"
-    },
-    {
-      "path": "docs/releases/R157-Fix10.md",
-      "bytes": 1576,
-      "sha256": "1c5c1d6cb20634b3e2143f84a132b3384f686edecd795a62d124bfe65965c4e4"
-    },
-    {
-      "path": "docs/releases/R157-Fix2.md",
-      "bytes": 3230,
-      "sha256": "cfea6e4a1922cdc68813571d36d94263105d70955c4c550290c8613cd77f3115"
-    },
-    {
-      "path": "docs/releases/R157-Fix3.md",
-      "bytes": 2751,
-      "sha256": "35a664f76c90b43b2447079d963e2c633701a5d56ba2cf5461f8827aa72634ca"
-    },
-    {
-      "path": "docs/releases/R157-Fix4.md",
-      "bytes": 4225,
-      "sha256": "65a481a1944e978d2a766a71f3a427d5dba7ea19f3444d4817783364bc52ed69"
-    },
-    {
-      "path": "docs/releases/R157-Fix5.md",
-      "bytes": 2466,
-      "sha256": "6c6f2188ac554951e6a41d5cf720390a1a1df321f74761163872a234ee6369de"
-    },
-    {
-      "path": "docs/releases/R157-Fix6.md",
-      "bytes": 4491,
-      "sha256": "97c6f6bdea0cda8021d2de84dd1cddf49c0ad09866b49c697fbe5ec298602fbe"
-    },
-    {
-      "path": "docs/releases/R157-Fix7.md",
-      "bytes": 495,
-      "sha256": "a4f5eacb1e934294fc0f412d9524caca9331f0248b94cc69b47db66f7da3611c"
-    },
-    {
-      "path": "docs/releases/R157-Fix8.md",
-      "bytes": 852,
-      "sha256": "1b49fdb042c0eafdee071a6b8ab2bb40a94f2fa03e069d330ade5afb6d48d871"
-    },
-    {
-      "path": "docs/releases/R157-Fix9.md",
-      "bytes": 1007,
-      "sha256": "de613a4b96028f1c2e1d06e4d2e4a10dfcb93080772cc02c4944ff2f2fd9b200"
-    },
-    {
-      "path": "docs/releases/R157.md",
-      "bytes": 3582,
-      "sha256": "686a7b5c135a584ad6a7d4c753710d8f1c6d5281515e45094fb688c969203646"
     },
     {
       "path": "firmware_packages.py",
@@ -1072,7 +967,7 @@
     ],
     "unbound_models": [],
     "standup_trigger": "physical_L3_guarded_manual_test",
-    "standup_test_duration_s": 5.0
+    "standup_test_duration_s": 5
   },
   "release_status": "compiled-unverified-hardware",
   "package_baseline": {
@@ -1175,5 +1070,10 @@
     "webpad_byte_comparison": "passed: all webpad and transport files unchanged",
     "full_regression_run": false,
     "robot_hardware_tested": false
+  },
+  "repository_documentation_cleanup": {
+    "date": "2026-10-12",
+    "omitted_legacy_release_notes": 21,
+    "shipped_archive_unchanged": true
   }
 }

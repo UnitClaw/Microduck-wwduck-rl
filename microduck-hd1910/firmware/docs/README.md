@@ -1,9 +1,9 @@
-# Microduck R17 V162 / control.39 documentation
+# Microduck R17 V164 / control.40 documentation
 
 The [R17 README](../README-R17.zh-CN.md) is the current package overview. For this robot's
 installation and physical gamepad mapping, use the [console guide](../console/README.zh-CN.md).
 The [firmware guide](../packaging/README.zh-CN.md) owns the shipped model and calibration list;
-the [build guide](../V162-构建说明.md) owns the ARM64 toolchain and verification scope.
+the [build guide](../../docs/BUILD.md) owns the ARM64 toolchain and verification scope.
 
 The references below cover the upstream daemon architecture and development interfaces.
 

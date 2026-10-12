@@ -36,14 +36,14 @@
       "source_iteration": 9599,
       "num_envs": 2560,
       "source_policy_directory": "policies/walk",
-      "trained_action_scale": 1.0,
-      "trained_head_alpha": 1.0,
-      "trained_legs_alpha": 1.0,
+      "trained_action_scale": 1,
+      "trained_head_alpha": 1,
+      "trained_legs_alpha": 1,
       "execution_profile": {
         "schema": "microduck-runtime-execution/v1",
         "model_sha256": "1cbf8730eadd75a5704332c9f3c10f60bfa9412135b907831c9dbd731ce1795f",
         "mode": "uniform",
-        "action_scale": 1.0,
+        "action_scale": 1,
         "head_lowpass": 0.5,
         "legs_lowpass": 0.7
       },
@@ -61,9 +61,9 @@
       "epochs": 10000,
       "source_iteration": 9999,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "deployment_verified": false,
       "source_policy_directory": "policies/ground_pick"
@@ -75,9 +75,9 @@
       "epochs": 10000,
       "source_iteration": 9999,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "deployment_verified": false,
       "source_policy_directory": "policies/roulade"
@@ -88,9 +88,9 @@
       "task": "Mjlab-BallKick-Flat-MicroDuck",
       "epochs": 10000,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
-      "head_alpha": 1.0,
-      "legs_alpha": 1.0,
+      "base_action_scale": 1,
+      "head_alpha": 1,
+      "legs_alpha": 1,
       "target_filter": "passthrough",
       "duration_seconds": 0.5,
       "deployment_verified": false
@@ -101,7 +101,7 @@
       "task": "Mjlab-BallKickLeft-Flat-Backlash-MicroDuck",
       "epochs": 10000,
       "num_envs": 4096,
-      "base_action_scale": 1.0,
+      "base_action_scale": 1,
       "target_filter": "passthrough",
       "duration_seconds": 0.5,
       "deployment_verified": false
@@ -152,5 +152,11 @@
     "sha256": "75da978b5d56acd9e4146256431732381de84523bb683e4ab7ac9f0580a7bce5",
     "reported_acceptance": "Previously verified by reflashing the card, first Wi-Fi setup, SSH, robot communication and R17 identification."
   },
-  "hardware_verified_in_source_sync": false
+  "hardware_verified_in_source_sync": false,
+  "repository_documentation_cleanup": {
+    "date": "2026-10-12",
+    "removed_legacy_documents": 49,
+    "firmware_programs_models_and_runtime_archives_unchanged": true,
+    "history": "Removed documents remain available in Git history."
+  }
 }

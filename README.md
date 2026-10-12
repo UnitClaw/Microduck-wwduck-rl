@@ -1,6 +1,18 @@
 <div align="center">
 
-<img src="docs/assets/microduck-mascot.webp" width="275" alt="我们的 Microduck：一只装有飞特 HD1910 舵机的真实机器鸭" />
+## 🎬 看看鸭鸭的真实表现（5 段视频）
+
+<table>
+<tr>
+  <td width="20%"><video width="140" src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
+  <td width="20%"><video width="140" src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
+  <td width="20%"><video width="140" src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
+  <td width="20%"><video width="140" src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
+  <td width="20%"><video width="140" src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
+</tr>
+</table>
+
+<sub>以上为实机视频。在线中控演示使用模拟数据，不连接你的实机，也不会真正训练；演示版本暂时仍为旧版。</sub>
 
 # 🦆 Microduck · 让桌面上的小鸭动起来
 
@@ -67,19 +79,6 @@
 
 **V164 版本准备了 10 份运动模型**（6 个常规 + 4 个滑轮）。不用手动编写舵机动作，模型由控制服务执行。滑轮动作、倒地起身的效果受装配、标定和模型训练影响，仍需实机谨慎验证。
 
-## 🎬 看看鸭鸭的真实表现（5 段视频）
-
-<table>
-<tr>
-  <td width="20%"><video src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
-  <td width="20%"><video src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
-  <td width="20%"><video src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
-  <td width="20%"><video src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
-  <td width="20%"><video src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
-</tr>
-</table>
-
-<sub>以上为实机视频。在线中控演示使用模拟数据，不连接你的实机，也不会真正训练；演示版本暂时仍为旧版。</sub>
 
 ## ❤️ 分享给大家，也尊重原创
 
