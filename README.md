@@ -82,6 +82,8 @@
 
 ## 🔧 HAT 与 IMU 自制记录
 
+自制 HAT 与独立躯干 IMU 均已在实机上经过长时间验证，运行正常，没有发现问题。
+
 [HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/)
 
 ## ❤️ 分享给大家，也尊重原创
