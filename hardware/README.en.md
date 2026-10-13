@@ -30,11 +30,100 @@ Read the parts and tools tables directly below; no spreadsheet download is requi
 
 Minimum pack counts below apply to each row for one set. Rows with the same product and variant can be combined before rounding up to whole packs.
 
-[Board components](#board-components) · [Accessories and external modules](#accessories-and-external-modules) · [Tools and consumables](#tools-and-consumables) · [Full reference-designator BOMs](#full-reference-designator-boms) · [Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[Build cost](#build-cost) · [Duck components](#duck-components) · [Build tools and consumables](#build-tools-and-consumables) · [Full reference-designator BOMs](#full-reference-designator-boms) · [Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
 
-### Board components
+### Build cost
 
-#### Capacitors
+**Historical order-based estimate for one HAT and one IMU.** These amounts cover board-mounted components and PCBs. Component costs allocate each order's actual payment, including its recorded shipping, by item value and then by the number of components used.
+
+#### Material cost per board
+
+| Item | 1 HAT | 1 IMU | 1 HAT + 1 IMU |
+| --- | --- | --- | --- |
+| Board-mounted components, including allocated historical shipping | ¥15.54 | ¥12.33 | ¥27.87 |
+| PCB with a free coupon | ¥0.00 | ¥0.00 | ¥0.00 |
+| **Material cost with free PCB coupons** | **¥15.54** | **¥12.33** | **¥27.87** |
+| PCB without a coupon, per-board allocation | ¥4.00 | ¥4.00 | ¥8.00 |
+| **Material cost without free PCB coupons** | **¥19.54** | **¥16.33** | **¥35.87** |
+
+PCB pricing supplied by the author: free with a coupon, or ¥20 for five boards of one design without a coupon, equivalent to ¥4 per board.
+
+#### Initial purchase budget
+
+Buying full packs leaves spare components. The estimates below use historical product prices and the package sizes listed here; shipping for a new order is separate. Shared variants are combined when purchasing both boards together.
+
+| Item | HAT only | IMU only | Both boards together |
+| --- | --- | --- | --- |
+| Packaged components, product amount | ¥67.64 | ¥27.15 | ¥86.93 |
+| **Initial budget with free PCB coupons** | **¥67.64** | **¥27.15** | **¥86.93** |
+| PCB batch without coupons: five of each design | ¥20.00 | ¥20.00 | ¥40.00 |
+| **Initial budget without free PCB coupons** | **¥87.64** | **¥47.15** | **¥126.93** |
+
+If you order a separate stencil for each board, add **¥24 total** at the latest recorded price of ¥12 per stencil. Stencils can be reused. Solder paste, other consumables, tools, the ZERO 3W, and external modules are separate.
+
+**Current power option:** NP-F550 2200mAh kit with two batteries and a standard dual charger, recorded product price **¥84.59 per kit**. Adding one kit to the allocated board material cost gives **¥112.46 with free PCB coupons** or **¥120.46 without coupons**. Other duck components and tools remain separate.
+
+<details>
+<summary>Component cost breakdown — 46 BOM groups</summary>
+
+Recorded product prices are per purchase unit. Allocated per-component costs include proportional historical shipping and payment adjustments. Totals are calculated before rounding.
+
+| Model / purchase variant | Pieces per pack | Recorded product price per pack | Allocated cost per piece | HAT: pcs / cost | IMU: pcs / cost |
+| --- | --- | --- | --- | --- | --- |
+| CC0603KRX5R9BB105<br>0603 1uF ±10% X7R;50V | 1 | ¥0.03 | ¥0.035843 | 15 / ¥0.537651 | 0 / ¥0.000000 |
+| C1608X5R1A106KT000E<br>0603 10uF ±10% X5R;10V | 1 | ¥0.06 | ¥0.066019 | 5 / ¥0.330095 | 0 / ¥0.000000 |
+| 0603CG221J500NT<br>0603 220pF ±5% NPO/COG;50V;100个 | 100 | ¥1.49 | ¥0.014900 | 2 / ¥0.029800 | 0 / ¥0.000000 |
+| CC0603KRX7R9BB104<br>0603 100nF ±10% X7R;50V;100个 | 100 | ¥1.98 | ¥0.023657 | 13 / ¥0.307536 | 0 / ¥0.000000 |
+| C3216X7R1V106KT000E<br>1206 10UF ±10% X7R;35V | 1 | ¥0.12 | ¥0.119223 | 1 / ¥0.119223 | 0 / ¥0.000000 |
+| GRM188R61A226ME15D<br>22UF 226K 10% X5R;10V;0603=100个 | 100 | ¥3.50 | ¥0.035000 | 2 / ¥0.070000 | 0 / ¥0.000000 |
+| CC0603KRX7R9BB103<br>0603 10NF 50V 10% 100个 | 100 | ¥2.00 | ¥0.020000 | 1 / ¥0.020000 | 0 / ¥0.000000 |
+| BAT54SW,115<br>BAT54SW 印字44t（20只） | 20 | ¥4.50 | ¥0.225000 | 1 / ¥0.225000 | 0 / ¥0.000000 |
+| BZT52C5V1S-7-F<br>BZT52C5V1S W8 SOD-323 (50个) | 50 | ¥1.53 | ¥0.030600 | 1 / ¥0.030600 | 0 / ¥0.000000 |
+| BLM18KG601SN1D<br>0603_600R_1.3A_±25%【100只】 | 100 | ¥5.60 | ¥0.056000 | 1 / ¥0.056000 | 0 / ¥0.000000 |
+| PE-0603PFB121ST<br>0603_120R_2A_±25%【100只】 | 100 | ¥4.00 | ¥0.040000 | 2 / ¥0.080000 | 0 / ¥0.000000 |
+| B2B-EH-A(LF)(SN)<br>EH2.5MM 2P直针座（50个） | 50 | ¥2.50 | ¥0.050000 | 3 / ¥0.150000 | 0 / ¥0.000000 |
+| FH-00339<br>2*20P 贴片排母【2个】 | 2 | ¥4.07 | ¥2.035000 | 1 / ¥2.035000 | 0 / ¥0.000000 |
+| BM04B-SRSS-TB(LF)(SN)<br>4P立贴（15个） | 15 | ¥2.22 | ¥0.148000 | 1 / ¥0.148000 | 0 / ¥0.000000 |
+| B3B-EH-A(LF)(SN)<br>EH2.5MM 3P直针座（50个） | 50 | ¥3.00 | ¥0.060000 | 2 / ¥0.120000 | 1 / ¥0.060000 |
+| SWPA6045S6R8MT<br>合金0630 6.8UH 印6R8 10个 6A 一体 | 10 | ¥2.00 | ¥0.200000 | 1 / ¥0.200000 | 0 / ¥0.000000 |
+| LMA2718T421-OA5-2<br>2718 上进音 硅麦克风【2个】 | 2 | ¥1.98 | ¥0.990000 | 1 / ¥0.990000 | 0 / ¥0.000000 |
+| MMBT3906<br>MMBT3906 丝印2A SOT-23(50个) | 50 | ¥1.77 | ¥0.035400 | 1 / ¥0.035400 | 0 / ¥0.000000 |
+| SI2312CDS-T1-GE3<br>SI2312DS（AE9T）N沟道（20只） | 20 | ¥3.00 | ¥0.150000 | 1 / ¥0.150000 | 0 / ¥0.000000 |
+| RC0603FR-0710KL<br>10K;0603 1%（100个） | 100 | ¥1.42 | ¥0.014200 | 12 / ¥0.170400 | 3 / ¥0.042600 |
+| 0603WAF0000T5E<br>0R/0欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 5 / ¥0.073000 | 1 / ¥0.014600 |
+| 0603WAF1000T5E<br>100R/100欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
+| 0603WAF2002T5E<br>20K;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
+| 22Ω 0603 ±1% 电阻<br>22R/22欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
+| PAM8406DR<br>PAM8406DR | 1 | ¥1.18 | ¥1.178000 | 1 / ¥1.178000 | 0 / ¥0.000000 |
+| TLV320AIC3104IRHBR<br>商品无选项，按商品标题完整型号购买 | 1 | ¥1.90 | ¥2.304000 | 1 / ¥2.304000 | 0 / ¥0.000000 |
+| XC6206P182MR<br>XC6206P182MR 65K5 SOT-23 (20个) | 20 | ¥1.80 | ¥0.090000 | 1 / ¥0.090000 | 0 / ¥0.000000 |
+| SN74LVC1G08DBVR<br>SN74LVC1G08DBVR;5个全国包邮 | 5 | ¥1.20 | ¥0.240000 | 1 / ¥0.240000 | 0 / ¥0.000000 |
+| SN74LVC1G125DBVR-TP<br>SN74LVC1G125DBVR;5个全国包邮 | 5 | ¥1.30 | ¥0.260000 | 1 / ¥0.260000 | 0 / ¥0.000000 |
+| SN74LVC1G126DBVR<br>SN74LVC1G126DBVR;5个全国包邮 | 5 | ¥1.80 | ¥0.360000 | 1 / ¥0.360000 | 0 / ¥0.000000 |
+| AP63205WU-7<br>AP63205WU-7 | 1 | ¥1.28 | ¥1.278000 | 1 / ¥1.278000 | 0 / ¥0.000000 |
+| LM5050MKX-1/NOPB<br>SOT-23;LM5050MKX-1/NOPB  原装正品 | 1 | ¥2.46 | ¥2.456000 | 1 / ¥2.456000 | 0 / ¥0.000000 |
+| OT3EL89CJI-111YLC-12M<br>12MHZ 1.2V~3.36V宽压[高精度10PPM];SMD2520-4P CMOS输出 | 1 | ¥1.45 | ¥1.452000 | 1 / ¥1.452000 | 0 / ¥0.000000 |
+| CL21A475KAQNNNE<br>0805 4.7UF ±10% X7R;25V | 1 | ¥0.06 | ¥0.069400 | 0 / ¥0.000000 | 2 / ¥0.138800 |
+| CL10B104JB8NNNC<br>0603 100nF ±10% X7R;50V;100个 | 100 | ¥1.98 | ¥0.023657 | 0 / ¥0.000000 | 6 / ¥0.141940 |
+| CL10A105KB8NNNC<br>0603 1uF ±10% X7R;50V | 1 | ¥0.03 | ¥0.035843 | 0 / ¥0.000000 | 2 / ¥0.071687 |
+| PESD5V0S1BA<br>商品无选项，按商品标题完整型号购买 | 1 | ¥0.06 | ¥0.090000 | 0 / ¥0.000000 | 1 / ¥0.090000 |
+| 19-217/GHC-YR1S2/3T<br>0603 蓝色=100个 | 100 | ¥1.80 | ¥0.018000 | 0 / ¥0.000000 | 1 / ¥0.018000 |
+| PZ254V-11-05P<br>1*5P直针 铜（30条） | 30 | ¥1.41 | ¥0.047000 | 0 / ¥0.000000 | 1 / ¥0.047000 |
+| RC0603FR-07100KL<br>100K;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 0 / ¥0.000000 | 1 / ¥0.014600 |
+| 0603WAF330JT5E<br>33R/33欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 0 / ¥0.000000 | 1 / ¥0.014600 |
+| 0603WAF1001T5E<br>1K;0603 1%（100个） | 100 | ¥1.44 | ¥0.014400 | 0 / ¥0.000000 | 1 / ¥0.014400 |
+| STM32G031F8P6<br>全新原装 | 1 | ¥4.83 | ¥4.967405 | 0 / ¥0.000000 | 1 / ¥4.967405 |
+| LSM6DSV16XTR<br>LSM6DSV16XTR | 1 | ¥5.75 | ¥5.750000 | 0 / ¥0.000000 | 1 / ¥5.750000 |
+| TLV70433DBVR<br>TLV70433DBVR | 1 | ¥0.47 | ¥0.470000 | 0 / ¥0.000000 | 1 / ¥0.470000 |
+| SN74LVC2G125DCUR<br>商品无选项，按商品标题完整型号购买 | 1 | ¥0.43 | ¥0.478000 | 0 / ¥0.000000 | 1 / ¥0.478000 |
+
+</details>
+
+### Duck components
+
+#### HAT and IMU board components
+
+##### Capacitors
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -49,7 +138,7 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 | [CL10B104JB8NNNC](https://item.szlcsc.com/25192.html)<br>0603；100nF / ±5% / 50V / X7R | **0603 100nF ±10% X7R;50V;100个**<br>实际采购：0603 / 100nF / ±10% / 50V / X7R。 | — | **6**<br>C2, C4, C5, C7, C8, C10 | 100 pcs / pack<br>**1 pack(s)** | 深圳市宏宸电子<br>[Product](https://item.taobao.com/item.htm?id=731471380840) |
 | [CL10A105KB8NNNC](https://item.szlcsc.com/16531.html)<br>0603；1uF / ±10% / 50V / X5R | **0603 1uF ±10% X7R;50V**<br>实际采购：0603 / 1uF / ±10% / 50V / X7R。 | — | **2**<br>C6, C9 | 1 pcs / pack<br>**2 pack(s)** | 深圳市宏宸电子<br>[Product](https://item.taobao.com/item.htm?id=630712731066) |
 
-#### Resistors
+##### Resistors
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -62,7 +151,7 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 | [0603WAF330JT5E](https://item.szlcsc.com/23867.html)<br>0603；33Ω / ±1% / ±100ppm/℃ / 100mW | **33R/33欧;0603 1%（100个）**<br>33Ω / ±1% / 0603，用于IMU R6。 | — | **1**<br>R6 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 | [0603WAF1001T5E](https://item.szlcsc.com/21904.html)<br>0603；1kΩ / ±1% / ±100ppm/℃ / 100mW | **1K;0603 1%（100个）**<br>1kΩ / ±1% / 0603，八月备料订单。 | — | **1**<br>R7 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 
-#### Ferrite beads, inductors, oscillator and microphone
+##### Ferrite beads, inductors, oscillator and microphone
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -72,7 +161,7 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 | [LMA2718T421-OA5-2](https://item.szlcsc.com/8705873.html)<br>SMD-4P,2.8x1.9mm；指向性:全指向；信噪比:55dB；灵敏度:-42dB；阻抗:300Ω | **2718 上进音 硅麦克风【2个】**<br>实际使用：2718 上进音模拟 MEMS 麦克风，按“2718 上进音 硅麦克风【2个】”购买。 | **1**<br>MK1 | — | 2 pcs / pack<br>**1 pack(s)** | 深圳市华源芯电子有限公司 电子元器件配单<br>[Product](https://item.taobao.com/item.htm?id=996702312391) |
 | [OT3EL89CJI-111YLC-12M](https://item.szlcsc.com/8414369.html)<br>SMD2520-4P；12MHz | **12MHZ 1.2V~3.36V宽压[高精度10PPM];SMD2520-4P CMOS输出**<br>实际使用：12MHz、2520-4P、CMOS输出有源晶振，宽压1.2V~3.36V（订单标称）。 | **1**<br>Y1 | — | 1 pcs / pack<br>**1 pack(s)** | 深圳市晶诺源电子<br>[Product](https://item.taobao.com/item.htm?id=944053669860) |
 
-#### Board connectors
+##### Board connectors
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -82,7 +171,7 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 | [B3B-EH-A(LF)(SN)](https://item.szlcsc.com/171639.html)<br>插件,P=2.5mm；250V / 3A | **EH2.5MM 3P直针座（50个）**<br>EH 3P 直针座，HAT 两只、IMU 一只。 | **2**<br>J13, J14 | **1**<br>J1 | 50 pcs / pack<br>**1 pack(s)** | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
 | [PZ254V-11-05P](https://item.szlcsc.com/502960.html)<br>插件,P=2.54mm；3A | **1*5P直针 铜（30条）**<br>1×5P / 2.54mm 直排针，用于SWD烧录口。 | — | **1**<br>J2 | 30 pcs / pack<br>**1 pack(s)** | zxin旗舰店<br>[Product](https://item.taobao.com/item.htm?id=606816197525) |
 
-#### ICs, diodes and transistors
+##### ICs, diodes and transistors
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -105,37 +194,98 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 | [TLV70433DBVR](https://www.lcsc.com/product-detail/C94917.html)<br>SOT-23-5；输出极性:正极；工作电压:24V；输出电压:3.3V；输出电流:150mA；电源纹波抑制比(PSRR):60dB@(100kHz)；输出类型:固定 | **TLV70433DBVR**<br>TLV70433DBVR / 3.3V / SOT-23-5。 | — | **1**<br>U3 | 1 pcs / pack<br>**1 pack(s)** | 深圳市恒芯科创电子<br>[Product](https://item.taobao.com/item.htm?id=747094785928) |
 | [SN74LVC2G125DCUR](https://www.lcsc.com/product-detail/C21404.html)<br>VSSOP-8；输入类型:-；工作电压:1.65V~5.5V；元件数:2；每个元件位数:1；灌电流(IOL):32mA；拉电流(IOH):32mA | **商品无选项，按商品标题完整型号购买**<br>SN74LVC2G125DCUR / VSSOP-8，按商品完整型号购买。 | — | **1**<br>U4 | 1 pcs / pack<br>**1 pack(s)** | 深圳市垚鑫电子科技<br>[Product](https://item.taobao.com/item.htm?id=705642638300) |
 
-### Accessories and external modules
+#### Controller, servos, sensors and speaker
 
-| Item | Exact variant / specification | Quantity / use | Purchase notes | Shop / product |
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
 | --- | --- | --- | --- | --- |
-| HAT 裸板 | **定制打样入口，不是现成商品**<br>HAT-V5，65×30.9mm，两层板；按对应工程生成生产资料 | 按打样订单确认 | 裸板需定制；当前 R33/TH1 用料变化在位号表中注明，不能拿官方多层 HAT 的 BOM 混买。 | PCB打样平台<br>[Order / custom PCB](https://www.jlc.com/) |
-| IMU 裸板 | **定制打样入口，不是现成商品**<br>IMU-TO-DLX-V2；按对应工程生成生产资料 | 按打样订单确认 | 使用对应 IMU 工程，裸板不是可直接购买的标准模块。 | PCB打样平台<br>[Order / custom PCB](https://www.jlc.com/) |
-| EH 2P 母壳 | **EH2.5MM 2P胶壳（50个）**<br>EH 2P，配 HAT J1/J2/J9 | 按实际接线；最多3只/板<br>Pack: 50 | 每只母壳还需2个压接端子；商品称 EH2.5，不混用 XH2.54。 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
-| EH 3P 母壳 | **EH2.5MM 3P胶壳（50个）**<br>EH 3P，配 HAT J13/J14、IMU J1 | 按实际接线；最多3只/套<br>Pack: 50 | 每只母壳还需3个压接端子。 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
-| EH 压接端子 | **EH2.5MM 端子（100个）**<br>EH2.5MM 端子 | 每个使用的插孔1个<br>Pack: 100 | 与 EH 母壳成套；不用 AMP2.0 端子替代。 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
-| SH1.0 4P 转杜邦母线 | **0.2m;1.0-4P转杜邦母（5条）**<br>SH1.0 4P / 20cm / 杜邦母 | 按连接方案选用<br>Pack: 5 | 用于外部接口转接；每根线的脚序按 HAT J5 与模块核对，不按线色猜。 | 信容芯旗舰店<br>[Product](https://item.taobao.com/item.htm?id=895049863252) |
-| SH1.0 4P 转 XH2.54 线 | **0.2m;1.0转2.54 4P （2条）**<br>SH1.0 4P / 20cm / XH2.54 | 与上一条二选一<br>Pack: 2 | 属于替代转接线方案，不计入板上器件数量。 | ruizhilk旗舰店<br>[Product](https://item.taobao.com/item.htm?id=1021140262048) |
-| 扬声器 | **3525腔体-4Ω3W/喇叭**<br>3525 腔体 / 4Ω 3W | 按音频方案选用<br>Pack: 1 | 订单自带1.25端子；HAT板座是 EH 2P，需改接或转接，不能直接认为插头相同。 | 深圳市优信电子科技有限公司<br>[Product](https://item.taobao.com/item.htm?id=683920556900) |
-| 8×8 ToF 测距模块 | **VL53L5X V2模块配盖片**<br>VL53L5X V2模块配盖片（商品标题 VL53L5CX） | 按功能需求选用<br>Pack: 1 | 外接模块，不是 PCB 上的裸芯片；模块接线和供电按已验证方案。 | 都会明武电子<br>[Product](https://item.taobao.com/item.htm?id=737603917521) |
-| Radxa ZERO 3W | **2GB RAM 无 eMMC 带排针[【Microduck 原版主板】]**<br>2GB RAM / 无eMMC / 带排针 | 1块/HAT（如未已有）<br>Pack: 1 | 已完成订单的主板款式；属于配套主控，不计入 HAT 84 个器件。 | 瑞莎计算机(深圳)有限公司<br>[Product](https://item.taobao.com/item.htm?id=763812025816) |
+| 扬声器 | **3525腔体-4Ω3W/喇叭**<br>3525 腔体 / 4Ω 3W | 按音频方案选用<br>订单自带1.25端子；HAT板座是 EH 2P，需改接或转接，不能直接认为插头相同。<br>Pack size: 1 | ¥3.08 | 深圳市优信电子科技有限公司<br>[Product](https://item.taobao.com/item.htm?id=683920556900) |
+| 8×8 ToF 测距模块 | **VL53L5X V2模块配盖片**<br>VL53L5X V2模块配盖片（商品标题 VL53L5CX） | 按功能需求选用<br>外接模块，不是 PCB 上的裸芯片；模块接线和供电按已验证方案。<br>Pack size: 1 | ¥49.50 | 都会明武电子<br>[Product](https://item.taobao.com/item.htm?id=737603917521) |
+| Radxa ZERO 3W | **2GB RAM 无 eMMC 带排针[【Microduck 原版主板】]**<br>2GB RAM / 无eMMC / 带排针 | 1块/HAT（如未已有）<br>已完成订单的主板款式；属于配套主控，不计入 HAT 84 个器件。<br>Pack size: 1 | ¥309.00 | 瑞莎计算机(深圳)有限公司<br>[Product](https://item.taobao.com/item.htm?id=763812025816) |
+| 飞特 HD1910 串口总线舵机 | **HD-1910-C001**<br>HD-1910-C001 | 15只/整机<br>作者两次订单分别购入13只和2只，共15只；选择 HD-1910-C001 款式。<br>Pack size: 1 | ¥99.00 | 深圳飞特舵机工厂店<br>[Product](https://item.taobao.com/item.htm?id=1078248851201) |
+| Radxa 8M 219 摄像头 | **8M 219 摄像头[【适配3W/3E/3A/3C/CM5/4系列】]**<br>IMX219 / 800万像素 / 瑞莎8M 219 | 按摄像头方案选用<br>按原订单的8M 219摄像头款式购买。<br>Pack size: 1 | ¥129.99 | 瑞莎计算机(深圳)有限公司<br>[Product](https://item.taobao.com/item.htm?id=768918125679) |
 
-### Tools and consumables
+#### NP-F battery and charging
 
-Tools you already own do not need to be purchased again. Choose one of the solder-paste packaging options according to your workflow.
-
-| Item | Exact variant / specification | Quantity / use | Purchase notes | Shop / product |
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
 | --- | --- | --- | --- | --- |
-| ST-LINK V2 | **ST-LINK V2 仿真器 进口芯片软件可升级版本（颜色随机发）1个**<br>STM32 仿真器，订单进口芯片版本 | 已有可不买<br>Pack: 1 | 用于 IMU STM32 的 SWD 烧录。 | zazr旗舰店<br>[Product](https://item.taobao.com/item.htm?id=581798084270) |
-| 定制贴片钢网 | **10*10cm**<br>10×10cm 规格 | HAT、IMU按各自Gerber定制<br>Pack: 1 | 这是定制商品链接，付款后需提供对应钢网文件；订单没有保存具体开孔内容。 | 皓越科技smt激光钢网<br>[Product](https://item.taobao.com/item.htm?id=851008959999) |
-| 183℃ 有铅锡膏 | **手机维修焊锡膏50g**<br>63/37，订单50g罐装 | 已有可不买<br>Pack: 1 | 与家庭回流工艺对应；按实际工具和温度流程使用。 | 中山市宝工电子有限公司<br>[Product](https://item.taobao.com/item.htm?id=19606507546) |
-| 183℃ 有铅锡膏针筒 | **183℃中温有铅锡膏30G/支(常用款)  【送推杆/针头】**<br>30g / 针筒 / 含推杆针头 | 与上一条按习惯选用<br>Pack: 1 | 与罐装锡膏是另一包装方案，不需要两种都买。 | 安立信旗舰店<br>[Product](https://item.taobao.com/item.htm?id=626569273184) |
-| 防静电镊子 | **防静电ESD-10【短尖头】**<br>ESD-10 短尖头 | 已有可不买<br>Pack: 1 | 用于贴装。 | 阔筹旗舰店<br>[Product](https://item.taobao.com/item.htm?id=979077591318) |
-| 恒温加热台 | **【150*100mm】智能定时/3组温度预设**<br>150×100mm / 定时 / 3组温度预设 | 已有可不买<br>Pack: 1 | 订单记录对应家庭回流工具。 | 汉邦电子<br>[Product](https://item.taobao.com/item.htm?id=956985590887) |
-| 热风枪焊台 | **SBK701D旋钮款（气泵式/收藏送2支烙铁头）**<br>SBK701D旋钮款（气泵式） | 按返修需求选用<br>Pack: 1 | 可用于返修；不计入 PCB BOM。 | 亚润五金专营店<br>[Product](https://item.taobao.com/item.htm?id=566089419587) |
-| 吸锡带 | **原装吸锡〖宽1.5mm长1.5米〗[X-100型1515]**<br>1.5mm宽 / 1.5m / X-100型1515 | 按返修需求选用<br>Pack: 1 | 用于焊盘清理。 | 凯特森工具<br>[Product](https://item.taobao.com/item.htm?id=972313702890) |
-| 助焊膏 | **YG-336环保无铅BGA针筒助焊膏10g**<br>YG-336 / 10g 针筒 | 已有可不买<br>Pack: 1 | 原订单款式；不计入 PCB BOM。 | YGTCTECH永冠同创<br>[Product](https://item.taobao.com/item.htm?id=744370287305) |
-| 洗板清洁套装 | **海绵清洗剂实惠组合**<br>海绵清洗剂组合 | 已有可不买<br>Pack: 1 | 原订单未提供清洗剂成分，不将其列为电气材料。 | 凯特森工具<br>[Product](https://item.taobao.com/item.htm?id=1049340097483) |
+| NP-F550 电池与双充套装 | **【NP-F550补光灯专用▲2200mAh】2电+标准双充套裝**<br>沣标 NP-F550 / 2200mAh / 2块电池＋标准双充 | 1套含2电＋双充；按NP-F供电安装方案使用<br>按“NP-F550补光灯专用▲2200mAh，2电+标准双充套裝”原款式购买。<br>Pack size: 1 | ¥84.59 | fb数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=585415365001) |
+
+#### Wiring and connectors
+
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
+| --- | --- | --- | --- | --- |
+| EH 2P 母壳 | **EH2.5MM 2P胶壳（50个）**<br>EH 2P，配 HAT J1/J2/J9 | 按实际接线；最多3只/板<br>每只母壳还需2个压接端子；商品称 EH2.5，不混用 XH2.54。<br>Pack size: 50 | ¥2.20 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
+| EH 3P 母壳 | **EH2.5MM 3P胶壳（50个）**<br>EH 3P，配 HAT J13/J14、IMU J1 | 按实际接线；最多3只/套<br>每只母壳还需3个压接端子。<br>Pack size: 50 | ¥2.80 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
+| EH 压接端子 | **EH2.5MM 端子（100个）**<br>EH2.5MM 端子 | 每个使用的插孔1个<br>与 EH 母壳成套；不用 AMP2.0 端子替代。<br>Pack size: 100 | ¥3.50 | 启色数码旗舰店<br>[Product](https://item.taobao.com/item.htm?id=832569969546) |
+| SH1.0 4P 转杜邦母线 | **0.2m;1.0-4P转杜邦母（5条）**<br>SH1.0 4P / 20cm / 杜邦母 | 按连接方案选用<br>用于外部接口转接；每根线的脚序按 HAT J5 与模块核对，不按线色猜。<br>Pack size: 5 | ¥4.56 | 信容芯旗舰店<br>[Product](https://item.taobao.com/item.htm?id=895049863252) |
+| SH1.0 4P 转 XH2.54 线 | **0.2m;1.0转2.54 4P （2条）**<br>SH1.0 4P / 20cm / XH2.54 | 与上一条二选一<br>属于替代转接线方案，不计入板上器件数量。<br>Pack size: 2 | ¥3.40 | ruizhilk旗舰店<br>[Product](https://item.taobao.com/item.htm?id=1021140262048) |
+| AMP2.0 3P 舵机线 20cm | **200mm;1007/24#;3P;AMP2.0**<br>200mm / 1007 / 24AWG / 3P / AMP2.0 | 按布线长度选择；原订单30条<br>用于飞特舵机线束；10cm和20cm按实际走线位置选择。<br>Pack size: 1 | ¥0.90 | 永茂电子<br>[Product](https://item.taobao.com/item.htm?id=825340808235) |
+| AMP2.0 3P 舵机线 10cm | **100mm;1007/24#;3P;AMP2.0**<br>100mm / 1007 / 24AWG / 3P / AMP2.0 | 按布线长度选择；原订单30条<br>与20cm线是不同长度选项，数量按实际线束方案准备。<br>Pack size: 1 | ¥0.90 | 永茂电子<br>[Product](https://item.taobao.com/item.htm?id=825340808235) |
+| AMP2.0 3P 胶壳 | **3P胶壳(179228-3)**<br>179228-3 / 3P / 2.0mm | 按自制线束准备；原订单50个<br>每个3P胶壳配3个AMP端子；原订单数量50是购入个数。<br>Pack size: 1 | ¥0.04 | 智基电子<br>[Product](https://item.taobao.com/item.htm?id=891600917698) |
+| AMP2.0 镀锡端子 | **镀锡端子100个**<br>AMP/TE2.0 配套端子 / 100个 | 按自制线束准备<br>与179228-3胶壳成套使用。<br>Pack size: 100 | ¥2.68 | 智基电子<br>[Product](https://item.taobao.com/item.htm?id=891600917698) |
+| AMP2.0 3P 直插板座 | **A2007WV-3P**<br>A2007WV-3P / 2.0mm / 直插 | 制作对应AMP转接接口时选用<br>直插版本，按A2007WV-3P完整型号选购。<br>Pack size: 1 | ¥0.30 | 深圳市加特信科技<br>[Product](https://item.taobao.com/item.htm?id=598425041338) |
+| AMP2.0 3P 弯插板座 | **按商品完整型号购买：AMP2.0 3P 弯插板座**<br>A2007WR-3P / 2.0mm / 弯插 | 制作对应AMP转接接口时选用<br>弯插版本，按A2007WR-3P完整型号选购。<br>Pack size: 1 | ¥0.27 | 深圳市加特信科技<br>[Product](https://item.taobao.com/item.htm?id=595594145847) |
+| 22AWG 三芯硅胶排线 | **黑色;3芯;22AWG;1m**<br>黑色 / 3芯 / 22AWG / 1m | 自制线束按长度裁剪<br>订单共购入3米；此行选用2米订单的商品链接与原款式。<br>Pack size: 1 | ¥3.63 | 萨牛旗舰店<br>[Product](https://item.taobao.com/item.htm?id=781764816472) |
+| 22AWG 单芯硅胶线 | **22AWG(0.33平方)黑色 2米**<br>黑色 / 22AWG / 0.33mm² / 2m | 按接线需求裁剪<br>用于自制接线，按22AWG黑色2米款式购买。<br>Pack size: 1 | ¥3.42 | 渡竹旗舰店<br>[Product](https://item.taobao.com/item.htm?id=736162720327) |
+| XH2.54 2P 胶壳 | **2P;胶壳**<br>XH2.54 / 2P / 胶壳 | 按电池及转接线方案选用<br>与XH端子成套使用，按2P胶壳款式购买。<br>Pack size: 1 | ¥0.01 | 深圳市腾达升宝电子有限公司<br>[Product](https://item.taobao.com/item.htm?id=701774753211) |
+| XH2.54 2P 直针座 | **2P;直针**<br>XH2.54 / 2P / 直针 | 按电池及转接接口方案选用<br>按2P直针款式购买。<br>Pack size: 1 | ¥0.02 | 深圳市腾达升宝电子有限公司<br>[Product](https://item.taobao.com/item.htm?id=701774753211) |
+| XH2.54 压接端子 | **2P;XH簧片**<br>XH2.54 / 簧片 | 每个接线孔1个端子<br>按“2P;XH簧片”原选项购买，与XH胶壳成套。<br>Pack size: 1 | ¥0.03 | 深圳市腾达升宝电子有限公司<br>[Product](https://item.taobao.com/item.htm?id=701774753211) |
+| 彩色热缩管套装 | **袋装 164片 彩色 【2倍收缩】**<br>164片 / 彩色 / 2倍收缩 | 按线束制作需要选用<br>用于接线处绝缘及整理。<br>Pack size: 1 | ¥0.99 | 圣佰路旗舰店<br>[Product](https://item.taobao.com/item.htm?id=945215173380) |
+
+#### Bearings
+
+Package sizes and historical purchase quantities include spare stock. Select the size for the corresponding printed-part mounting point.
+
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
+| --- | --- | --- | --- | --- |
+| 6700 开式薄壁轴承 | **6700开式【轴承钢·精品级】10\*15\*3MM**<br>6700开式 / 10×15×3mm / 轴承钢精品级 | 按打印模型轴承位；订单共购入5只（含备料）<br>尺寸顺序为内径×外径×宽度；两次订单为3只和2只。<br>Pack size: 1 | ¥1.94 | 优可吉轴承销售店<br>[Product](https://item.taobao.com/item.htm?id=625390659071) |
+| ET2216 薄壁轴承 | **ET2216【精品级】16\*22\*4MM[轴承钢]**<br>ET2216 / 16×22×4mm / 轴承钢精品级 | 按打印模型轴承位；订单共购入12只（含备料）<br>尺寸顺序为内径×外径×宽度；两次订单为10只和2只。<br>Pack size: 1 | ¥2.91 | 优可吉轴承销售店<br>[Product](https://item.taobao.com/item.htm?id=733598659967) |
+
+#### Screws
+
+Package sizes and historical purchase quantities include spare stock. Select the size for the corresponding printed-part mounting point.
+
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
+| --- | --- | --- | --- | --- |
+| M2×4 十字盘头平尾自攻螺丝 | **M2\*4[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×4 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.03 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2×5 十字盘头平尾自攻螺丝 | **M2\*5[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×5 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。原订单商品金额为0元（订单优惠），不代表常规售价。<br>Pack size: 200 | ¥0.00 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2×6 十字盘头平尾自攻螺丝 | **M2\*6[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×6 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.31 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2×8 十字盘头平尾自攻螺丝 | **M2\*8[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×8 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.59 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2×12 十字盘头平尾自攻螺丝 | **M2\*12[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×12 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.88 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2.6×8 十字盘头平尾自攻螺丝 | **M2.6\*8[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2.6×8 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.59 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
+| M2×4 薄头内六角平尾自攻螺丝 | **M2\*4(200个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×4 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 200 | ¥4.27 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
+| M2×6 薄头内六角平尾自攻螺丝 | **M2\*6(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×6 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.03 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
+| M2×8 薄头内六角平尾自攻螺丝 | **M2\*8(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×8 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.20 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
+| M2×12 薄头内六角平尾自攻螺丝 | **M2\*12(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×12 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.52 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
+
+#### Bare PCBs and fabrication
+
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
+| --- | --- | --- | --- | --- |
+| HAT 裸板 | **定制打样入口，不是现成商品**<br>HAT-V5，65×30.9mm，两层板；按对应工程生成生产资料 | 有券免费；无券20元5张（4元/张）<br>裸板需定制；当前 R33/TH1 用料变化在位号表中注明，不能拿官方多层 HAT 的 BOM 混买。 | — | PCB打样平台<br>[Product](https://www.jlc.com/) |
+| IMU 裸板 | **定制打样入口，不是现成商品**<br>IMU-TO-DLX-V2；按对应工程生成生产资料 | 有券免费；无券20元5张（4元/张）<br>使用对应 IMU 工程，裸板不是可直接购买的标准模块。 | — | PCB打样平台<br>[Product](https://www.jlc.com/) |
+
+### Build tools and consumables
+
+Choose the tools and consumables needed for soldering, reflow, assembly and debugging. Tools you already own can be reused.
+
+| Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
+| --- | --- | --- | --- | --- |
+| ST-LINK V2 | **ST-LINK V2 仿真器 进口芯片软件可升级版本（颜色随机发）1个**<br>STM32 仿真器，订单进口芯片版本 | 已有可不买<br>用于 IMU STM32 的 SWD 烧录。<br>Pack size: 1 | ¥9.84 | zazr旗舰店<br>[Product](https://item.taobao.com/item.htm?id=581798084270) |
+| 定制贴片钢网 | **10\*10cm**<br>10×10cm 规格 | HAT、IMU按各自Gerber定制<br>这是定制商品链接，付款后需提供对应钢网文件；订单没有保存具体开孔内容。<br>Pack size: 1 | ¥8.60 | 皓越科技smt激光钢网<br>[Product](https://item.taobao.com/item.htm?id=851008959999) |
+| 183℃ 有铅锡膏 | **手机维修焊锡膏50g**<br>63/37，订单50g罐装 | 已有可不买<br>与家庭回流工艺对应；按实际工具和温度流程使用。<br>Pack size: 1 | ¥20.99 | 中山市宝工电子有限公司<br>[Product](https://item.taobao.com/item.htm?id=19606507546) |
+| 183℃ 有铅锡膏针筒 | **183℃中温有铅锡膏30G/支(常用款)  【送推杆/针头】**<br>30g / 针筒 / 含推杆针头 | 与上一条按习惯选用<br>与罐装锡膏是另一包装方案，不需要两种都买。<br>Pack size: 1 | ¥13.80 | 安立信旗舰店<br>[Product](https://item.taobao.com/item.htm?id=626569273184) |
+| 防静电镊子 | **防静电ESD-10【短尖头】**<br>ESD-10 短尖头 | 已有可不买<br>用于贴装。<br>Pack size: 1 | ¥1.98 | 阔筹旗舰店<br>[Product](https://item.taobao.com/item.htm?id=979077591318) |
+| 恒温加热台 | **【150\*100mm】智能定时/3组温度预设**<br>150×100mm / 定时 / 3组温度预设 | 已有可不买<br>订单记录对应家庭回流工具。<br>Pack size: 1 | ¥188.00 | 汉邦电子<br>[Product](https://item.taobao.com/item.htm?id=956985590887) |
+| 热风枪焊台 | **SBK701D旋钮款（气泵式/收藏送2支烙铁头）**<br>SBK701D旋钮款（气泵式） | 按返修需求选用<br>可用于返修；不计入 PCB BOM。<br>Pack size: 1 | ¥268.00 | 亚润五金专营店<br>[Product](https://item.taobao.com/item.htm?id=566089419587) |
+| 吸锡带 | **原装吸锡〖宽1.5mm长1.5米〗[X-100型1515]**<br>1.5mm宽 / 1.5m / X-100型1515 | 按返修需求选用<br>用于焊盘清理。<br>Pack size: 1 | ¥3.91 | 凯特森工具<br>[Product](https://item.taobao.com/item.htm?id=972313702890) |
+| 助焊膏 | **YG-336环保无铅BGA针筒助焊膏10g**<br>YG-336 / 10g 针筒 | 已有可不买<br>原订单款式；不计入 PCB BOM。<br>Pack size: 1 | ¥3.28 | YGTCTECH永冠同创<br>[Product](https://item.taobao.com/item.htm?id=744370287305) |
+| 洗板清洁套装 | **海绵清洗剂实惠组合**<br>海绵清洗剂组合 | 已有可不买<br>原订单未提供清洗剂成分，不将其列为电气材料。<br>Pack size: 1 | ¥14.16 | 凯特森工具<br>[Product](https://item.taobao.com/item.htm?id=1049340097483) |
+| 飞特 USB 调试转接板 | **FE-URT2-C001**<br>FE-URT2-C001 | 烧录、配置及调试时选用<br>调试工具，按FE-URT2-C001选项购买。<br>Pack size: 1 | ¥45.00 | 深圳飞特舵机工厂店<br>[Product](https://item.taobao.com/item.htm?id=1078248851201) |
+| 安立信937A 数显焊台 | **安立信937A升级数显（套餐二）**<br>937A升级数显 / 套餐二 | 已有可省<br>订单购买的电烙铁焊台，用于手工焊接。<br>Pack size: 1 | ¥106.68 | 安立信旗舰店<br>[Product](https://item.taobao.com/item.htm?id=588102758150) |
+| 900M-T-LI 长尖头 | **900M-T-LI长尖头**<br>900M-T-LI | 按焊接习惯选用<br>按900M-T-LI长尖头款式购买。<br>Pack size: 1 | ¥3.63 | 白光安泰信品牌经营店<br>[Product](https://item.taobao.com/item.htm?id=567201709691) |
+| 900M-T-SK 小刀头 | **900M-T-SK小刀头**<br>900M-T-SK | 按焊接习惯选用<br>按900M-T-SK小刀头款式购买。<br>Pack size: 1 | ¥3.30 | 白光安泰信品牌经营店<br>[Product](https://item.taobao.com/item.htm?id=567201709691) |
+| 183℃ 有铅锡膏 10g 针筒 | **183℃熔点有铅锡浆10g+杆针**<br>183℃熔点 / 有铅 / 10g / 配杆针 | 按包装习惯选购<br>与50g罐装、30g针筒是不同包装选择。<br>Pack size: 1 | ¥4.69 | OLK唐宏五金工具店<br>[Product](https://item.taobao.com/item.htm?id=621018369847) |
 
 ### Full reference-designator BOMs
 
