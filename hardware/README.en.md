@@ -33,6 +33,8 @@ The timelines follow the build history organized on October 12, 2026. The publis
 >
 > The listed items have been verified through a period of actual use. **HAT and IMU communication, functionality, and operating stability meet the project's requirements.** Use the product links and select the exact models and variants listed in the tables.
 
+**Current procurement: TH1 can use the original Murata PRG18BB101MB1RB (100Ω PTC, 0603); R33 uses 0Ω / 0603.**
+
 This is the duck build’s **🔧 PCB procurement branch**. Preview the HAT and IMU shopping tables directly below; no spreadsheet download is required.
 
 **Quantities:** one HAT plus one IMU, with **84 + 25 = 109 board-mounted components** across 46 BOM groups. Duck body parts and tools are separate categories in the main duck guide. Select the **exact purchase variant** in each row; project model links provide the engineering reference. Taobao variant labels, specifications, and purchase notes are retained in Chinese to match the seller pages.
@@ -49,11 +51,11 @@ Minimum pack counts below apply to each row for one set. Rows with the same prod
 
 | Item | 1 HAT | 1 IMU | 1 HAT + 1 IMU |
 | --- | --- | --- | --- |
-| Board-mounted components, including allocated historical shipping | ¥15.54 | ¥12.33 | ¥27.87 |
+| Board-mounted components, including allocated historical shipping | ¥16.72 | ¥12.33 | ¥29.06 |
 | PCB with a free coupon | ¥0.00 | ¥0.00 | ¥0.00 |
-| **Material cost with free PCB coupons** | **¥15.54** | **¥12.33** | **¥27.87** |
+| **Material cost with free PCB coupons** | **¥16.72** | **¥12.33** | **¥29.06** |
 | PCB without a coupon, per-board allocation | ¥4.00 | ¥4.00 | ¥8.00 |
-| **Material cost without free PCB coupons** | **¥19.54** | **¥16.33** | **¥35.87** |
+| **Material cost without free PCB coupons** | **¥20.72** | **¥16.33** | **¥37.06** |
 
 PCB pricing supplied by the author: free with a coupon, or ¥20 for five boards of one design without a coupon, equivalent to ¥4 per board.
 
@@ -63,10 +65,10 @@ Buying full packs leaves spare components. The estimates below use historical pr
 
 | Item | HAT only | IMU only | Both boards together |
 | --- | --- | --- | --- |
-| Packaged components, product amount | ¥67.64 | ¥27.15 | ¥86.93 |
-| **Initial budget with free PCB coupons** | **¥67.64** | **¥27.15** | **¥86.93** |
+| Packaged components, product amount | ¥66.88 | ¥27.15 | ¥86.17 |
+| **Initial budget with free PCB coupons** | **¥66.88** | **¥27.15** | **¥86.17** |
 | PCB batch without coupons: five of each design | ¥20.00 | ¥20.00 | ¥40.00 |
-| **Initial budget without free PCB coupons** | **¥87.64** | **¥47.15** | **¥126.93** |
+| **Initial budget without free PCB coupons** | **¥86.88** | **¥47.15** | **¥126.17** |
 
 If you order a separate stencil for each board, add **¥24 total** at the latest recorded price of ¥12 per stencil. Stencils can be reused. Solder paste, other consumables, tools, the ZERO 3W, and external modules are separate.
 
@@ -100,7 +102,7 @@ Recorded product prices are per purchase unit. Allocated per-component costs inc
 | 0603WAF0000T5E<br>0R/0欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 5 / ¥0.073000 | 1 / ¥0.014600 |
 | 0603WAF1000T5E<br>100R/100欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
 | 0603WAF2002T5E<br>20K;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
-| 22Ω 0603 ±1% 电阻<br>22R/22欧;0603 1%（100个） | 100 | ¥1.46 | ¥0.014600 | 1 / ¥0.014600 | 0 / ¥0.000000 |
+| PRG18BB101MB1RB<br>100R  PRG18BB101MB1RB | 1 | ¥0.70 | ¥1.200000 | 1 / ¥1.200000 | 0 / ¥0.000000 |
 | PAM8406DR<br>PAM8406DR | 1 | ¥1.18 | ¥1.178000 | 1 / ¥1.178000 | 0 / ¥0.000000 |
 | TLV320AIC3104IRHBR<br>商品无选项，按商品标题完整型号购买 | 1 | ¥1.90 | ¥2.304000 | 1 / ¥2.304000 | 0 / ¥0.000000 |
 | XC6206P182MR<br>XC6206P182MR 65K5 SOT-23 (20个) | 20 | ¥1.80 | ¥0.090000 | 1 / ¥0.090000 | 0 / ¥0.000000 |
@@ -145,7 +147,7 @@ Recorded product prices are per purchase unit. Allocated per-component costs inc
 | [CL10B104JB8NNNC](https://item.szlcsc.com/25192.html)<br>0603；100nF / ±5% / 50V / X7R | **0603 100nF ±10% X7R;50V;100个**<br>实际采购：0603 / 100nF / ±10% / 50V / X7R。 | — | **6**<br>C2, C4, C5, C7, C8, C10 | 100 pcs / pack<br>**1 pack(s)** | 深圳市宏宸电子<br>[Product](https://item.taobao.com/item.htm?id=731471380840) |
 | [CL10A105KB8NNNC](https://item.szlcsc.com/16531.html)<br>0603；1uF / ±10% / 50V / X5R | **0603 1uF ±10% X7R;50V**<br>实际采购：0603 / 1uF / ±10% / 50V / X7R。 | — | **2**<br>C6, C9 | 1 pcs / pack<br>**2 pack(s)** | 深圳市宏宸电子<br>[Product](https://item.taobao.com/item.htm?id=630712731066) |
 
-##### Resistors
+##### Resistors and PTC thermistors
 
 | Project model / current component | Exact purchase variant and notes | HAT: pcs / refs | IMU: pcs / refs | Pack / minimum packs per set | Shop / product |
 | --- | --- | --- | --- | --- | --- |
@@ -153,7 +155,7 @@ Recorded product prices are per purchase unit. Allocated per-component costs inc
 | [0603WAF0000T5E](https://item.szlcsc.com/21903.html)<br>0603；0Ω / ±1% / 0603 | **0R/0欧;0603 1%（100个）**<br>0Ω / 0603；HAT R33 按后续 0Ω / C21189 补丁计入。 | **5**<br>R3, R4, R5, R7, R33 | **1**<br>R1 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 | [0603WAF1000T5E](https://www.lcsc.com/product-detail/C22775.html)<br>0603；100Ω / ±1% / ±200ppm/℃ / 100mW | **100R/100欧;0603 1%（100个）**<br>100Ω / ±1% / 0603，用于 HAT R8。 | **1**<br>R8 | — | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 | [0603WAF2002T5E](https://item.szlcsc.com/4591.html)<br>0603；20kΩ / ±1% / ±100ppm/℃ / 100mW | **20K;0603 1%（100个）**<br>20kΩ / ±1% / 0603。 | **1**<br>R28 | — | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
-| 22Ω 0603 ±1% 电阻<br>0603；22Ω / ±1% / 0603 | **22R/22欧;0603 1%（100个）**<br>TH1 位置实际使用 22Ω / ±1% / 0603 电阻；工程原值保留在位号表。 | **1**<br>TH1 | — | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
+| [PRG18BB101MB1RB](https://item.szlcsc.com/984022.html)<br>0603；100Ω / PTC / 村田 | **100R  PRG18BB101MB1RB**<br>TH1可使用原村田PRG18BB101MB1RB（100Ω PTC，0603），按原订单100R款式采购；R33使用0Ω。 | **1**<br>TH1 | — | 1 pc / purchase unit<br>**1 unit minimum** | 贤辉亿芯<br>[Product](https://item.taobao.com/item.htm?id=582129955778) |
 | [RC0603FR-07100KL](https://item.szlcsc.com/15343.html)<br>0603；100kΩ / ±1% / ±100ppm/℃ / 100mW | **100K;0603 1%（100个）**<br>100kΩ / ±1% / 0603。 | — | **1**<br>R3 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 | [0603WAF330JT5E](https://item.szlcsc.com/23867.html)<br>0603；33Ω / ±1% / ±100ppm/℃ / 100mW | **33R/33欧;0603 1%（100个）**<br>33Ω / ±1% / 0603，用于IMU R6。 | — | **1**<br>R6 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
 | [0603WAF1001T5E](https://item.szlcsc.com/21904.html)<br>0603；1kΩ / ±1% / ±100ppm/℃ / 100mW | **1K;0603 1%（100个）**<br>1kΩ / ±1% / 0603，八月备料订单。 | — | **1**<br>R7 | 100 pcs / pack<br>**1 pack(s)** | 深圳市永芯泰电子企业店<br>[Product](https://item.taobao.com/item.htm?id=947267344247) |
@@ -205,12 +207,12 @@ Recorded product prices are per purchase unit. Allocated per-component costs inc
 
 | Item | Exact variant / specification | Quantity / use | Recorded price / purchase unit | Shop / product |
 | --- | --- | --- | --- | --- |
-| HAT 裸板 | **定制打样入口，不是现成商品**<br>HAT-V5，65×30.9mm，两层板；按对应工程生成生产资料 | 有券免费；无券20元5张（4元/张）<br>裸板需定制；当前 R33/TH1 用料变化在位号表中注明，不能拿官方多层 HAT 的 BOM 混买。 | — | PCB打样平台<br>[Product](https://www.jlc.com/) |
+| HAT 裸板 | **定制打样入口，不是现成商品**<br>HAT-V5，65×30.9mm，两层板；按对应工程生成生产资料 | 有券免费；无券20元5张（4元/张）<br>裸板需定制；R33按0Ω采购，TH1可用原村田PRG18BB101MB1RB；使用本项目对应工程。 | — | PCB打样平台<br>[Product](https://www.jlc.com/) |
 | IMU 裸板 | **定制打样入口，不是现成商品**<br>IMU-TO-DLX-V2；按对应工程生成生产资料 | 有券免费；无券20元5张（4元/张）<br>使用对应 IMU 工程，裸板不是可直接购买的标准模块。 | — | PCB打样平台<br>[Product](https://www.jlc.com/) |
 
 ### Full reference-designator BOMs
 
-Expand either table to inspect each component. Project attributes and the actual purchase variant are shown side by side. HAT R33 uses 0Ω; TH1 uses a 22Ω 0603 resistor. The original engineering values remain visible below.
+Expand either table to inspect each component. Project attributes and the actual purchase variant are shown side by side. HAT R33 uses 0Ω; TH1 can use the original Murata PRG18BB101MB1RB (100Ω PTC, 0603). The original engineering values remain visible below.
 
 <details>
 <summary>HAT: full reference-designator BOM (84 components)</summary>
@@ -291,7 +293,7 @@ Expand either table to inspect each component. Project attributes and the actual
 | **R31**<br>10k / RX pull-up | RC0603FR-0710KL<br>C98220 | 0603<br>10kΩ / ±1% / ±100ppm/℃ / 100mW | 10K;0603 1%（100个）<br>10kΩ / ±1% / 0603；HAT 十二只、IMU 三只。 | [Product](https://item.taobao.com/item.htm?id=947267344247) · [Project model](https://item.szlcsc.com/99429.html) |
 | **R32**<br>10k / data pull-up | RC0603FR-0710KL<br>C98220 | 0603<br>10kΩ / ±1% / ±100ppm/℃ / 100mW | 10K;0603 1%（100个）<br>10kΩ / ±1% / 0603；HAT 十二只、IMU 三只。 | [Product](https://item.taobao.com/item.htm?id=947267344247) · [Project model](https://item.szlcsc.com/99429.html) |
 | **R33**<br>150R / bus series | 0603WAF1500T5E<br>C22808 | 0603<br>150Ω / ±1% / ±100ppm/℃ / 100mW | 0603WAF0000T5E<br>0Ω / 0603；HAT R33 按后续 0Ω / C21189 补丁计入。 | [Product](https://item.taobao.com/item.htm?id=947267344247) · [Project model](https://www.lcsc.com/product-detail/C22808.html) |
-| **TH1**<br>100R PTC | PRG18BB101MB1RB<br>C913703 | 0603<br>— | 22Ω 0603 ±1% 电阻<br>TH1 位置实际使用 22Ω / ±1% / 0603 电阻；工程原值保留在位号表。 | [Product](https://item.taobao.com/item.htm?id=947267344247) · [Project model](https://item.szlcsc.com/984022.html) |
+| **TH1**<br>100R PTC | PRG18BB101MB1RB<br>C913703 | 0603<br>100Ω / PTC / 村田 | 100R  PRG18BB101MB1RB<br>TH1可使用原村田PRG18BB101MB1RB（100Ω PTC，0603），按原订单100R款式采购；R33使用0Ω。 | [Product](https://item.taobao.com/item.htm?id=582129955778) · [Project model](https://item.szlcsc.com/984022.html) |
 | **U1**<br>PAM8406D | PAM8406DR<br>C86270 | SOIC-16<br>功放类型:AB类功放；D类功放；扬声器通道数:双声道；输出功率:5Wx2@2Ω；静态电流(Iq):10mA | PAM8406DR<br>实际使用：PAM8406DR，订单标注 SOP16。 | [Product](https://item.taobao.com/item.htm?id=808484505787) · [Project model](https://item.szlcsc.com/87446.html) |
 | **U2**<br>TLV320AIC3104IRHBR | TLV320AIC3104IRHBR<br>C181753 | HVQFN-32-EP(5x5)<br>类型:编解码器；接口类型:I2S；I2C；采样率:8kHz~96kHz | 商品无选项，按商品标题完整型号购买<br>TLV320AIC3104IRHBR，按商品完整型号购买。 | [Product](https://item.taobao.com/item.htm?id=908248360601) · [Project model](https://www.lcsc.com/product-detail/C181753.html) |
 | **U3**<br>XC6206P182 / 1V8 | XC6206P182MR<br>C347373 | SOT-23<br>输出极性:正极；工作电压:8V；输出电压:1.8V；输出电流:250mA；电源纹波抑制比(PSRR):40dB@(1kHz)；输出类型:固定 | XC6206P182MR 65K5 SOT-23 (20个)<br>XC6206P182MR / 1.8V / SOT-23，20个包装。 | [Product](https://item.taobao.com/item.htm?id=762173333947) · [Project model](https://item.szlcsc.com/324033.html) |

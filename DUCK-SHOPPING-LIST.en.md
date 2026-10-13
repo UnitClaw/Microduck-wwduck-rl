@@ -26,13 +26,15 @@
 | Item | Free PCB coupons | No PCB coupons |
 | --- | ---: | ---: |
 | 🦆 Duck body, including reference spare stock | ¥2215.81 | ¥2215.81 |
-| 🔧 HAT complete board | ¥15.54 | ¥19.54 |
+| 🔧 HAT complete board | ¥16.72 | ¥20.72 |
 | 🔧 IMU complete board | ¥12.33 | ¥16.33 |
-| **🦆 Whole duck total** | **¥2243.68** | **¥2251.68** |
+| **🦆 Whole duck total** | **¥2244.87** | **¥2252.87** |
+
+Totals use unrounded board costs and are then rounded to two decimal places.
 
 **Scope:** the listed hardware and reference spare stock only. **3D printers, printed parts, printing materials, build tools, soldering and cleaning consumables are excluded.** Bearings, wires, screws and connectors use the purchase quantities below, which include spare stock. TF/microSD cards and other items without recorded prices are outside this priced subtotal.
 
-The board lines above allocate component costs by actual use, including their historical shipping share. Without coupons, PCBs cost **¥20 for five boards per design (¥4 per board)**. Buying board components in whole packages for the first time brings the initial product budget to **¥2302.74 with free PCBs**, or **¥2342.74 without coupons**, including one five-board batch of each design. New-order shipping is separate.
+The board lines above allocate component costs by actual use, including their historical shipping share. Without coupons, PCBs cost **¥20 for five boards per design (¥4 per board)**. Buying board components in whole packages for the first time brings the initial product budget to **¥2301.98 with free PCBs**, or **¥2341.98 without coupons**, including one five-board batch of each design. New-order shipping is separate.
 
 ## Duck body
 
