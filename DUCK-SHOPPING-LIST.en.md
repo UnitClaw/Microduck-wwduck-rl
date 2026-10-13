@@ -25,20 +25,20 @@
 
 | Item | Free PCB coupons | No PCB coupons |
 | --- | ---: | ---: |
-| 🦆 Duck body, including reference spare stock | ¥2215.81 | ¥2215.81 |
+| 🦆 Duck body, including reference spare stock | ¥2205.43 | ¥2205.43 |
 | 🔧 HAT complete board | ¥16.72 | ¥20.72 |
 | 🔧 IMU complete board | ¥12.33 | ¥16.33 |
-| **🦆 Whole duck total** | **¥2244.87** | **¥2252.87** |
+| **🦆 Whole duck total** | **¥2234.49** | **¥2242.49** |
 
 Totals use unrounded board costs and are then rounded to two decimal places.
 
 **Scope:** the listed hardware and reference spare stock only. **3D printers, printed parts, printing materials, build tools, soldering and cleaning consumables are excluded.** Bearings, wires, screws and connectors use the purchase quantities below, which include spare stock. TF/microSD cards and other items without recorded prices are outside this priced subtotal.
 
-The board lines above allocate component costs by actual use, including their historical shipping share. Without coupons, PCBs cost **¥20 for five boards per design (¥4 per board)**. Buying board components in whole packages for the first time brings the initial product budget to **¥2301.98 with free PCBs**, or **¥2341.98 without coupons**, including one five-board batch of each design. New-order shipping is separate.
+The board lines above allocate component costs by actual use, including their historical shipping share. Without coupons, PCBs cost **¥20 for five boards per design (¥4 per board)**. Buying board components in whole packages for the first time brings the initial product budget to **¥2291.60 with free PCBs**, or **¥2331.60 without coupons**, including one five-board batch of each design. New-order shipping is separate.
 
 ## Duck body
 
-**🔌 Use EH 2.5mm connectors for the HAT/IMU interfaces; keep the AMP2.0 wiring for Feetech servos.** Seller variant labels are retained in Chinese for accurate purchasing.
+**🔌 Use EH 2.5mm connectors for the HAT/IMU interfaces; use ready-made 10cm / 20cm AMP2.0 cables for Feetech servos.** Seller variant labels are retained in Chinese for accurate purchasing.
 
 ### 🦆 Controller, servos and external modules
 
@@ -79,10 +79,6 @@ The board lines above allocate component costs by actual use, including their hi
 | **SH1.0 4P 转杜邦母线**<br>0.2m;1.0-4P转杜邦母（5条）；SH1.0 4P / 20cm / 杜邦母 | 包（5个） | 1 | ¥4.56 | ¥4.56 | 信容芯旗舰店<br>[Product](https://item.taobao.com/item.htm?id=895049863252) |
 | **AMP2.0 3P 舵机线 20cm**<br>200mm;1007/24#;3P;AMP2.0；200mm / 1007 / 24AWG / 3P / AMP2.0 | 条 | 30 | ¥0.90 | ¥27.00 | 永茂电子<br>[Product](https://item.taobao.com/item.htm?id=825340808235) |
 | **AMP2.0 3P 舵机线 10cm**<br>100mm;1007/24#;3P;AMP2.0；100mm / 1007 / 24AWG / 3P / AMP2.0 | 条 | 30 | ¥0.90 | ¥27.00 | 永茂电子<br>[Product](https://item.taobao.com/item.htm?id=825340808235) |
-| **AMP2.0 3P 胶壳**<br>3P胶壳(179228-3)；179228-3 / 3P / 2.0mm | 个 | 50 | ¥0.04 | ¥2.00 | 智基电子<br>[Product](https://item.taobao.com/item.htm?id=891600917698) |
-| **AMP2.0 镀锡端子**<br>镀锡端子100个；AMP/TE2.0 配套端子 / 100个 | 包（100个） | 1 | ¥2.68 | ¥2.68 | 智基电子<br>[Product](https://item.taobao.com/item.htm?id=891600917698) |
-| **AMP2.0 3P 直插板座**<br>A2007WV-3P；A2007WV-3P / 2.0mm / 直插 | 个 | 10 | ¥0.30 | ¥3.00 | 深圳市加特信科技<br>[Product](https://item.taobao.com/item.htm?id=598425041338) |
-| **AMP2.0 3P 弯插板座**<br>按商品完整型号购买：AMP2.0 3P 弯插板座；A2007WR-3P / 2.0mm / 弯插 | 个 | 10 | ¥0.27 | ¥2.70 | 深圳市加特信科技<br>[Product](https://item.taobao.com/item.htm?id=595594145847) |
 | **22AWG 三芯硅胶排线**<br>黑色;3芯;22AWG;1m；黑色 / 3芯 / 22AWG / 1m | 米 | 3 | ¥3.5933 | ¥10.78 | 萨牛旗舰店<br>[Product](https://item.taobao.com/item.htm?id=781764816472) |
 | **22AWG 单芯硅胶线**<br>22AWG(0.33平方)黑色 2米；黑色 / 22AWG / 0.33mm² / 2m | 个 | 1 | ¥3.42 | ¥3.42 | 渡竹旗舰店<br>[Product](https://item.taobao.com/item.htm?id=736162720327) |
 | **彩色热缩管套装**<br>袋装 164片 彩色 【2倍收缩】；164片 / 彩色 / 2倍收缩 | 个 | 1 | ¥0.99 | ¥0.99 | 圣佰路旗舰店<br>[Product](https://item.taobao.com/item.htm?id=945215173380) |
@@ -108,14 +104,10 @@ NP-F550 is the original 2200mAh kit with two batteries and a standard dual charg
 - **M2.6×8 十字盘头平尾自攻螺丝**：每种买1包（200只），包含备料；按打印模型及对应安装位置选择长度；每包数量是备料数量。
 - **EH 2P 母壳**：每只母壳配2个EH压接端子；按EH2.5款式购买，与板上的EH接口配套。
 - **EH 3P 母壳**：每只母壳还需3个压接端子。
-- **EH 压接端子**：与 EH 母壳成套；不用 AMP2.0 端子替代。
+- **EH 压接端子**：与EH母壳成套使用，按EH2.5MM端子款式购买。
 - **SH1.0 4P 转杜邦母线**：用于外部接口转接；每根线的脚序按 HAT J5 与模块核对，不按线色猜。
 - **AMP2.0 3P 舵机线 20cm**：按订单参考采购数量计入，包含备料；用于飞特舵机线束；10cm和20cm按实际走线位置选择。
 - **AMP2.0 3P 舵机线 10cm**：按订单参考采购数量计入，包含备料；与20cm线是不同长度选项，数量按实际线束方案准备。
-- **AMP2.0 3P 胶壳**：按订单参考采购数量计入，包含备料；每个3P胶壳配3个AMP端子；原订单数量50是购入个数。
-- **AMP2.0 镀锡端子**：与179228-3胶壳成套使用。
-- **AMP2.0 3P 直插板座**：按订单参考采购数量计入，包含备料；直插版本，按A2007WV-3P完整型号选购。
-- **AMP2.0 3P 弯插板座**：按订单参考采购数量计入，包含备料；弯插版本，按A2007WR-3P完整型号选购。
 - **22AWG 三芯硅胶排线**：原订单2米×3.63元＋1米×3.52元，合计3米10.78元；单价按两次订单均价。
 - **22AWG 单芯硅胶线**：用于自制接线，按22AWG黑色2米款式购买。
 - **彩色热缩管套装**：用于接线处绝缘及整理。
