@@ -14,7 +14,7 @@
 </tr>
 </table>
 
-<sub>These clips show the real robot. The online console demos use simulated data: they cannot connect to your robot or run actual training. The demos currently show earlier versions.</sub>
+<sub>These clips show the real robot. The online demos now match the Robot Console R17 V164 and Training Studio R1.5.27 interfaces. They use simulated data and cannot connect to your robot or run actual training.</sub>
 
 # 🦆 Microduck · Bring a little desktop duck to life
 

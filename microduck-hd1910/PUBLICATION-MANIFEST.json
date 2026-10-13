@@ -186,5 +186,17 @@
       "zh-CN": "../release-assets/README.md",
       "en": "../release-assets/README.en.md"
     }
+  },
+  "online_demos": {
+    "updated": "2026-10-13",
+    "source_commit": "0a78b88e64fc312e1b06ec99995db5fee12f8eb5",
+    "robot_console_version": "1.0.164",
+    "robot_firmware_display": "1fa8438-feetech-ft6-control.40",
+    "training_console_version": "1.5.27",
+    "robot_url": "https://kissqy.github.io/Microduck-kissqy/",
+    "training_url": "https://kissqy.github.io/Microduck-kissqy/training/",
+    "data": "Simulated telemetry, training curves and job history; published task and hardware reference snapshots",
+    "isolation": "Static same-origin assets only; no robot, SSH, CUDA, training, firmware writes or camera connections; recipe drafts exist only in the current tab",
+    "source_frontends_runtime_archives_and_firmware_unchanged": true
   }
 }
