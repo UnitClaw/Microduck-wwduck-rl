@@ -24,7 +24,7 @@
 
 **Versions: Robot Console R17 V164 · Firmware control.40 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
-[📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛒 Parts & tools shopping list](hardware/README.en.md#shopping-list) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
+[📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
 
 [🎮 Robot Console online demo](https://kissqy.github.io/Microduck-kissqy/) · [🧠 Training Studio online demo](https://kissqy.github.io/Microduck-kissqy/training/)
 
@@ -86,7 +86,7 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 
 Both the custom HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.
 
-[HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md)
+[HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🛒 Parts & tools shopping list](hardware/README.en.md#shopping-list)
 
 ## ❤️ Sharing the project and crediting its creators
 
