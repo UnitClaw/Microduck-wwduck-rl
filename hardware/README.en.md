@@ -30,7 +30,7 @@ Read the parts and tools tables directly below; no spreadsheet download is requi
 
 Minimum pack counts below apply to each row for one set. Rows with the same product and variant can be combined before rounding up to whole packs.
 
-[Build cost](#build-cost) · [Duck components](#duck-components) · [Build tools and consumables](#build-tools-and-consumables) · [Full reference-designator BOMs](#full-reference-designator-boms) · [Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[Duck hardware list and total](DUCK-SHOPPING-LIST.en.md) · [Build cost](#build-cost) · [Duck components](#duck-components) · [Build tools and consumables](#build-tools-and-consumables) · [Full reference-designator BOMs](#full-reference-designator-boms) · [Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
 
 ### Build cost
 
@@ -253,10 +253,6 @@ Package sizes and historical purchase quantities include spare stock. Select the
 | M2×8 十字盘头平尾自攻螺丝 | **M2\*8[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×8 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.59 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
 | M2×12 十字盘头平尾自攻螺丝 | **M2\*12[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2×12 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.88 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
 | M2.6×8 十字盘头平尾自攻螺丝 | **M2.6\*8[200只]镀镍**<br>铁镀镍 / 十字圆头 / 平尾自攻 / M2.6×8 | 按模型对应孔位选用<br>按打印模型及对应安装位置选择长度；每包数量是备料数量。<br>Pack size: 200 | ¥3.59 | 固万基官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=534923831046) |
-| M2×4 薄头内六角平尾自攻螺丝 | **M2\*4(200个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×4 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 200 | ¥4.27 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
-| M2×6 薄头内六角平尾自攻螺丝 | **M2\*6(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×6 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.03 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
-| M2×8 薄头内六角平尾自攻螺丝 | **M2\*8(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×8 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.20 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
-| M2×12 薄头内六角平尾自攻螺丝 | **M2\*12(100个)**<br>304不锈钢 / 薄杯头内六角 / 平尾自攻 / M2×12 | 按模型对应孔位选用<br>与十字盘头是不同头型，按实际安装位置选择；每包数量是备料数量。<br>Pack size: 100 | ¥3.52 | 金超官方旗舰店<br>[Product](https://item.taobao.com/item.htm?id=837006412005) |
 
 #### Bare PCBs and fabrication
 
