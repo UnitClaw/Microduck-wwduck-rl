@@ -8,6 +8,7 @@ English editions of the homepage, user guides, hardware records, and technical n
 
 | Guide | 中文 | English |
 | --- | --- | --- |
+| Compiled Feetech firmware control.40 — download and install | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
 | 🎬 See the duck in action — 5 real-robot videos | [中文](../README.md) | [English](../README.en.md) |
 | Current public Microduck release | [中文](../START-HERE.txt) | [English](../START-HERE.en.md) |
 | 🦆 Microduck integrated system image R1 | [中文](releases/public-image-r1.md) | [English](releases/public-image-r1.en.md) |

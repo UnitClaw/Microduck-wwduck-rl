@@ -20,37 +20,33 @@
 
 ### Flash the image. Connect to Wi-Fi. Open the console. Get your duck moving.
 
-**An integrated ZERO 3 W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
+**An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
 
 **Versions: Robot Console R17 V164 · Firmware control.40 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
-[⬇️ **Download Public Image R1**](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) · [📦 **Release page**](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1)
-
-[🎮 **Download Robot Console V164**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [🧠 **Download Training Studio R1.5.27**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) · [🛠️ **Browse control.40 source**](microduck-hd1910/firmware/README.en.md)
+[📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md)
 
 [🎮 Robot Console online demo](https://kissqy.github.io/Microduck-kissqy/) · [🧠 Training Studio online demo](https://kissqy.github.io/Microduck-kissqy/training/)
 
 </div>
 
-> ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, first-boot Wi-Fi setup, SSH, robot communication, and R17 console recognition. **[Download the .img.xz image](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** — no need to compile the robot firmware yourself.
+> ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, Wi-Fi setup, SSH, robot communication, and R17 recognition. **No need to compile the robot firmware yourself.**
 >
-> 📦 **Robot Console R17 V164 and Training Studio R1.5.27 are ready to download.** [Robot Console](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [Training Studio](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip). The corresponding **control.40 firmware source and both console sources are published here**; see the download table below.
+> 📦 **Robot Console R17 V164 and Training Studio R1.5.27 are ready to download.** Compiled control.40 firmware and both console sources are also published. All downloads are grouped in the table below.
 
 ---
-
-[📚 All documentation](docs/README.en.md)
 
 ## ✨ Skip the software setup from scratch
 
 This little duck can **walk, sit, pick things up, kick a ball, and roll forward**. Add rollers to explore **swizzling, crouching, spinning, and standing up after a fall**. Use a physical gamepad to control it; an independent Training Studio is available when you want to train your own movements.
 
-**Public Image R1 is released and has been tested by reflashing a real board.** It combines the official system with this project's preinstalled robot services and movement models. Flash it onto a Radxa ZERO 3 W, connect to Wi-Fi, and open the console to use the prepared software environment without compiling firmware from source.
+**Public Image R1 is released and has been tested by reflashing a real board.** It combines the official system with this project's preinstalled robot services and movement models. Flash it onto a Radxa ZERO 3W, connect to Wi-Fi, and open the console to use the prepared software environment without compiling firmware from source.
 
 ## 🚀 Start in three steps
 
-1. **Flash the image** — [Download the Microduck ZERO 3 W .img.xz image](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz). In [Armbian Imager](https://imager.armbian.com/), choose a custom image and your microSD card, then flash it. **Manual decompression is unnecessary:** the imager decompresses it during writing.
+1. **Flash the image** — Use the `.img.xz` from the Downloads table. In [Armbian Imager](https://imager.armbian.com/), select a custom image and your microSD card, then flash it. **Manual decompression is unnecessary:** the imager decompresses it while writing.
 2. **Connect to Wi-Fi** — On first boot, join the `Microduck-kissqy` hotspot with password `12345678`. Follow the setup page to enter your home Wi-Fi and set a new system login password. If the page does not open automatically, visit `http://10.42.0.1:8088`.
-3. **Open the console** — [Download Robot Console R17 V164](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip), extract the complete ZIP, and run `start.cmd`. Connect to the duck, check its calibration, and complete HOME before enabling movement. For training, [download Training Studio R1.5.27](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) and run `start-training.cmd`.
+3. **Open the console** — Extract the complete Robot Console ZIP and run `start.cmd`. Connect to the duck, check its calibration, and complete HOME before enabling movement. For training, extract Training Studio and run `start-training.cmd`.
 
 > 🛠️ **Preinstalled software still requires calibration for your assembly.** After assembly or servo replacement, verify every joint's zero position, direction, limits, and the IMU before enabling movement. Do not copy the reference duck's calibration blindly.
 
@@ -59,25 +55,26 @@ This little duck can **walk, sit, pick things up, kick a ball, and roll forward*
   <p><sub>First-boot Wi-Fi setup preview. The actual screen is the one shipped with Public Image R1.</sub></p>
 </div>
 
-## 📥 Downloads and versions
+## Downloads and versions
 
-| Component | Status | Link |
+| Package | Purpose | Download |
 | --- | --- | --- |
-| **Microduck ZERO 3 W Public Image R1** · Official 0.15.1 + V164 / control.40 | ✅ Released; real-board reflash tested | **[⬇️ Download .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** |
-| **Robot Console R17 V164** | ✅ Available; includes the control.40 firmware upgrade payload | **[⬇️ Download ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip)** |
-| **Training Studio R1.5.27** | ✅ Available; independent training console | **[⬇️ Download ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)** |
-| **control.40 firmware source** | ✅ Firmware paired with V164 | [Source](microduck-hd1910/firmware/README.en.md) · [Build guide](microduck-hd1910/docs/BUILD.en.md) |
-| **Robot Console V164 / Training Studio R1.5.27 source** | ✅ Matches the ZIPs above | [Robot Console guide](microduck-hd1910/firmware/console/README.en.md) · [Training Studio guide](microduck-hd1910/training-console/README.en.md) |
-| **Complete repository source** | ✅ Downloadable or cloneable with Git | [Repository ZIP](https://github.com/kissqy/Microduck-kissqy/archive/refs/heads/main.zip) |
-| **Armbian Imager** | ✅ Official flashing tool | [Download](https://imager.armbian.com/) |
+| **System Image R1** · Official 0.15.1 / control.40 | Fresh ZERO 3W installation; robot services and movement models preinstalled | [⬇️ .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
+| **Robot Console R17 V164** | Connect to and operate the duck from your computer; includes the matching firmware payload | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) |
+| **Training Studio R1.5.27** | Train, evaluate, and export your own models | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
+| **Compiled Feetech HD1910 firmware control.40** | Upgrade ZERO-side services on an existing system; ARM64 installation package | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 
-**Notes:** The system image is hosted in Releases; the two console ZIPs are in `release-assets/`. V164 reuses the **control.40** firmware compiled for V163. V163 in the original source archive name identifies that build; it does not mean the old control.29 firmware. The online demos still show earlier versions. Calibrate joints and the IMU for your own assembly before trying movements.
+**For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware is the same control.40 supplied in the image and V164 console; no compilation is required.
+
+[Robot Console guide](microduck-hd1910/firmware/console/README.en.md) · [Training Studio guide](microduck-hd1910/training-console/README.en.md) · [Standalone firmware installation and checksums](release-assets/README.en.md) · [Image release guide](docs/releases/public-image-r1.en.md)
+
+Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [build guide](microduck-hd1910/docs/BUILD.en.md). V164 reuses control.40 compiled for V163; V163 in the original source archive name identifies that build.
 
 ## 🎮 Two consoles, two jobs
 
 | 🐣 Robot Console · R17 V164 | 🧠 Training Studio · R1.5.27 |
 | --- | --- |
-| Live 3 D pose, camera, joint / IMU data, servo calibration | Training tasks, recipes, queue, progress and reward curves |
+| Live 3D pose, camera, joint / IMU data, servo calibration | Training tasks, recipes, queue, progress and reward curves |
 | Physical gamepad control, firmware maintenance, model status | Visual simulation, policy evaluation, ONNX export |
 | No need to compile the ZERO services yourself | Requires a computer with a training environment; the interface itself does not require a ZERO |
 

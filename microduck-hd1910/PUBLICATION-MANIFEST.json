@@ -161,13 +161,30 @@
   },
   "repository_documentation_translation": {
     "date": "2026-10-12",
-    "english_guides": 58,
+    "english_guides": 59,
     "language_switch": "Paired Markdown links at the top of each guide",
     "homepage": "../README.en.md",
     "documentation_index": "../docs/README.en.md",
     "scope": "Documentation only; English editions preserve version-specific history and original technical identifiers. Existing upstream English documentation is retained.",
     "application_interfaces": "Existing Chinese interfaces unchanged",
     "firmware_binaries_models_and_runtime_archives_unchanged": true,
-    "revalidated_hardware_in_translation": false
+    "revalidated_hardware_in_translation": false,
+    "updated": "2026-10-13"
+  },
+  "standalone_compiled_firmware": {
+    "published": "2026-10-13",
+    "path": "firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz",
+    "name": "Microduck-Robotd-FT6-R17.tar.gz",
+    "bytes": 34554759,
+    "sha256": "cba2a3d1fa486713c72f1155fed42d102c2fe3aea9bb3aaf0aad337e046b9afd",
+    "build": "1fa8438-feetech-ft6-control.40",
+    "architecture": "AArch64",
+    "source": "firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz",
+    "byte_identical_to_V164_bundled_payload": true,
+    "recompiled": false,
+    "install_guides": {
+      "zh-CN": "../release-assets/README.md",
+      "en": "../release-assets/README.en.md"
+    }
   }
 }

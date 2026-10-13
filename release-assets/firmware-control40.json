@@ -1,0 +1,80 @@
+{
+  "schema": "microduck-compiled-firmware/v1",
+  "published": "2026-10-13",
+  "name": "Microduck-Robotd-FT6-R17.tar.gz",
+  "path": "microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz",
+  "bytes": 34554759,
+  "sha256": "cba2a3d1fa486713c72f1155fed42d102c2fe3aea9bb3aaf0aad337e046b9afd",
+  "build": "1fa8438-feetech-ft6-control.40",
+  "official_version": "0.15.1",
+  "api_version": 40,
+  "architecture": "AArch64",
+  "console_version": "1.0.164",
+  "provenance": {
+    "source_commit": "3d2b210dae8cd78b20f090fe7bed8c6a49bb7108",
+    "existing_compiled_payload": "microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz",
+    "exact_original_console_payload": true,
+    "recompiled_for_this_publication": false
+  },
+  "verification": {
+    "date": "2026-10-13",
+    "archive_checksum_entries": 160,
+    "compiled_binaries": [
+      {
+        "path": "robotd",
+        "bytes": 6793032,
+        "sha256": "464dde28e0be939237fdd1b7e9a4087d751b5c495b896cf25b6c8e44ba3c0fe9",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "robotctl",
+        "bytes": 4362264,
+        "sha256": "a5034efaf6d26aaecc4a1b477c947abb7cf59d157288b9ad661706f00a700da7",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "padd",
+        "bytes": 3565320,
+        "sha256": "356ed712b97c5c073cc9c691ede802a72704c7ece42d69c626f3c69fab0af241",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "sounds",
+        "bytes": 1152920,
+        "sha256": "00360318eb10509e65cbb0f1be7ef8725b00b0edbb2e0b3d779149ae61284103",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "gamepad-r7/gamesir-xboxd",
+        "bytes": 47984,
+        "sha256": "e7c428e5690adf1483b5349fb100e076b5ca37c74068a6dd315015ce47d0af73",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "onnxruntime/libonnxruntime.so.1.28.0",
+        "bytes": 20591712,
+        "sha256": "f1ec1a08eb99bd6e5401340f0a2b101381bf4694415480291dc13bcaa30f9ec7",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "onnxruntime/libonnxruntime_providers_shared.so",
+        "bytes": 198792,
+        "sha256": "3b6be288fbfb7dff8770d08a23defdde18e8f7e0f5a2b344a0e5e238c999ea88",
+        "architecture": "AArch64"
+      },
+      {
+        "path": "mediad",
+        "bytes": 10916512,
+        "sha256": "0417c8c2dc5a63dd2e1c2a65d652f31609c232abab95d50e4acbd1faab0f742b",
+        "architecture": "AArch64"
+      }
+    ],
+    "console_zip_import_verified": true,
+    "mismatched_payload_rejected": true,
+    "physical_robot_operated": false
+  },
+  "install_guide": {
+    "zh-CN": "README.md",
+    "en": "README.en.md"
+  }
+}

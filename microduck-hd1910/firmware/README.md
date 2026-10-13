@@ -1,5 +1,7 @@
 **原文 / Original** | [English](README.en.md)
 
+> **已编译飞特固件：** control.40 为可直接安装的 AArch64 程序包，见[下载与安装说明](../../release-assets/README.md)，普通使用无需编译源码。
+
 > **当前公开源码：Microduck 0.15.1 / HD1910 control.40，配套 R17 V164 中控。** V164 沿用 V163 编译的固件。请先看 [当前固件与中控说明](README-R17.zh-CN.md)、[源码编译](../docs/BUILD.md) 和 [发布基线](../docs/BASELINE.md)。下面保留上游项目介绍。
 
 <p align="center">

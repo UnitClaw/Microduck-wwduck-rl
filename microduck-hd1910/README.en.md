@@ -2,9 +2,11 @@
 
 # Microduck HD1910
 
-A Feetech HD1910 adaptation based on official Microduck **0.15.1**, including robot firmware, the R17 Robot Console, and an independent Training Studio. Reference hardware: Radxa ZERO 3 W, official chassis, and 15 HD1910 servos. This is a personal community project with no official affiliation to Pollen Robotics.
+A Feetech HD1910 adaptation based on official Microduck **0.15.1**, including robot firmware, the R17 Robot Console, and an independent Training Studio. Reference hardware: Radxa ZERO 3W, official chassis, and 15 HD1910 servos. This is a personal community project with no official affiliation to Pollen Robotics.
 
 **Source is published; the author's original work is licensed for personal noncommercial use only. Third-party content retains its original licenses. See [LICENSE](LICENSE).**
+
+**Compiled firmware is available.** control.40 is already supplied in Public Image R1 and Robot Console V164; see the [standalone package and installation guide](../release-assets/README.en.md).
 
 ## Current versions and source
 

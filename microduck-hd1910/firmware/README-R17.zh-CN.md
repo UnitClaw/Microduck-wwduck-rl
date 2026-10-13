@@ -6,6 +6,7 @@
 
 V164 沿用 V163 已编译的 control.40 固件。原源码归档名为 `Microduck-Source-R17-V163-control40-compiled.tar.gz`；当前顶层 [BUILD.json](BUILD.json) 来自真实安装载荷，与 V164 随包 BUILD 逐字节一致。
 
+- [已编译 control.40 下载与安装](../../release-assets/README.md)
 - [机器人中控启动与使用](console/README.zh-CN.md)
 - [固件配置、模型与设备安装说明](packaging/README.zh-CN.md)
 - [新机器从源码编译](../docs/BUILD.md)

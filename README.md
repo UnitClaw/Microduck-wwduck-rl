@@ -24,21 +24,17 @@
 
 **软件版本：机器人中控 R17 V164 · 固件 control.40 · 训练中控 R1.5.27 · 首次配网 R5**
 
-[⬇️ **下载已发布的系统镜像 R1**](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) · [📦 **查看正式发布页**](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1)
-
-[🎮 **下载机器人中控 V164**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [🧠 **下载训练中控 R1.5.27**](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) · [🛠️ **查看固件 control.40 源码**](microduck-hd1910/firmware/)
+[📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md)
 
 [🎮 机器人中控在线演示](https://kissqy.github.io/Microduck-kissqy/) · [🧠 训练中控在线演示](https://kissqy.github.io/Microduck-kissqy/training/)
 
 </div>
 
-> ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试。**[点击下载系统镜像 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)**，无需自行编译机器人固件。
+> ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试，**无需自行编译机器人固件。**
 >
-> 📦 **机器人中控 R17 V164 和训练中控 R1.5.27 已上传，可直接下载。** [下载机器人中控](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) · [下载训练中控](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)。配套的 **control.40 固件源码及两个中控源码已同步到仓库**，入口见下方下载表。
+> 📦 **机器人中控 R17 V164 和训练中控 R1.5.27 已上传，可直接下载。** 配套的已编译 control.40 固件及两个中控源码也已公开，下载统一见下方表格。
 
 ---
-
-[📚 全部说明文档](docs/README.md)
 
 ## ✨ 不用从零配置一堆软件
 
@@ -48,9 +44,9 @@
 
 ## 🚀 三步开始
 
-1. **刷镜像** — [直接下载 Microduck Zero 3W 系统镜像 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)，用 [Armbian Imager](https://imager.armbian.com/) 选择「自定义镜像」，选好 TF 卡后直接刷写。**无需手动解压**，刷机工具会自动解压写入。
+1. **刷镜像** — 将下载区的系统镜像 `.img.xz` 用 [Armbian Imager](https://imager.armbian.com/) 选择「自定义镜像」，选好 TF 卡后刷写。**无需手动解压**，刷机工具会自动解压写入。
 2. **连网络** — Zero 首次启动后连接 `Microduck-kissqy` 热点（密码 `12345678`），按照提示设置家庭 Wi-Fi 和新的系统登录密码；若手机没有自动弹出网页，就访问 `http://10.42.0.1:8088`。
-3. **开中控** — [下载机器人中控 R17 V164](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip)，解压并运行 `start.cmd` 连接鸭鸭；核对标定并完成 HOME 后再启用运动。需要自行训练时，另行[下载训练中控 R1.5.27](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)，运行 `start-training.cmd`。
+3. **开中控** — 完整解压机器人中控 ZIP，运行 `start.cmd` 连接鸭鸭；核对标定并完成 HOME 后再启用运动。需要自行训练时，解压训练中控并运行 `start-training.cmd`。
 
 > 🛠️ **软件预装不等于机械免标定。** 第一次装配或更换舵机，务必核对全部关节的零位、方向、限位和 IMU，再启用运动；不要直接把样机标定用在另一只鸭上。
 
@@ -59,19 +55,20 @@
   <p><sub>首次热点配网页面展示；实际以 Public Image R1 开机界面为准。</sub></p>
 </div>
 
-## 📥 下载与版本
+## 下载与版本
 
-| 文件 | 状态 | 入口 |
+| 文件 | 用途 | 下载 |
 | --- | --- | --- |
-| **Microduck Zero 3W 公开系统镜像 R1** · 官方 0.15.1 + V164 / control.40 | ✅ 已公开，实机重刷通过 | **[⬇️ 直接下载 .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)** |
-| **机器人中控 R17 V164** | ✅ 已上传，内含 control.40 固件升级包 | **[⬇️ 直接下载 ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip)** |
-| **训练中控 R1.5.27** | ✅ 已上传，独立训练中控 | **[⬇️ 直接下载 ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)** |
-| **固件 control.40 源码** | ✅ 对应 V164 配套固件 | [浏览固件源码](microduck-hd1910/firmware/) · [编译说明](microduck-hd1910/docs/BUILD.md) |
-| **机器人中控 V164 / 训练中控 R1.5.27 源码** | ✅ 与上方 ZIP 同步 | [机器人中控](microduck-hd1910/firmware/console/) · [训练中控](microduck-hd1910/training-console/) |
-| **全部仓库源码** | ✅ 可下载或 Git 克隆 | [下载仓库 ZIP](https://github.com/kissqy/Microduck-kissqy/archive/refs/heads/main.zip) |
-| **Armbian Imager** | ✅ 官方刷机工具 | [官方下载](https://imager.armbian.com/) |
+| **系统镜像 R1** · 官方 0.15.1 / control.40 | 新装 ZERO 3W，预装机器人服务和运动模型 | [⬇️ .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
+| **机器人中控 R17 V164** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) |
+| **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
+| **飞特 HD1910 已编译固件 control.40** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 
-**提示：** 系统镜像在 Releases 下载；两个中控 ZIP 在仓库 `release-assets/` 下载。V164 中控沿用 V163 编译的 **control.40** 固件，源码包原名中的 V163 是固件编译来源，不是旧版 control.29。在线演示仍为此前版本。不同硬件装配请先完成关节及 IMU 标定，再尝试运动。
+**普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；独立固件与镜像、V164 中控内的是同一版 control.40，下载它不需要再编译。
+
+[机器人中控说明](microduck-hd1910/firmware/console/README.md) · [训练中控说明](microduck-hd1910/training-console/README.md) · [独立固件安装与校验](release-assets/README.md) · [镜像发布说明](docs/releases/public-image-r1.md)
+
+源码入口：[固件](microduck-hd1910/firmware/) · [机器人中控](microduck-hd1910/firmware/console/) · [训练中控](microduck-hd1910/training-console/) · [编译说明](microduck-hd1910/docs/BUILD.md)。V164 沿用 V163 编译的 control.40，源码原包名中的 V163 是编译来源。
 
 ## 🎮 两个中控，各做各的事
 

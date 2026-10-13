@@ -8,6 +8,7 @@
 
 | 说明 | 中文 | English |
 | --- | --- | --- |
+| 飞特已编译固件 control.40 — 下载与安装 | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
 | 🎬 看看鸭鸭的真实表现（5 段视频） | [中文](../README.md) | [English](../README.en.md) |
 | START-HERE | [中文](../START-HERE.txt) | [English](../START-HERE.en.md) |
 | 🦆 Microduck 一键系统镜像 R1 | [中文](releases/public-image-r1.md) | [English](releases/public-image-r1.en.md) |

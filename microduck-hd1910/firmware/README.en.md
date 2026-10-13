@@ -1,5 +1,7 @@
 [原文 / Original](README.md) | **English**
 
+> **Compiled HD1910 firmware:** control.40 is an AArch64 package ready to install. See [download and installation](../../release-assets/README.en.md); compiling source is optional.
+
 > **Current published source: Microduck 0.15.1 / HD1910 control.40, paired with R17 V164.** V164 reuses firmware compiled for V163. Start with [current firmware / console notes](README-R17.en.md), [source compilation](../docs/BUILD.en.md), and [release baseline](../docs/BASELINE.en.md). The upstream introduction is retained below.
 
 <p align="center">

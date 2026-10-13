@@ -56,6 +56,7 @@ The released integrated image already includes robot services. To install or upg
 
 ## Related guides
 
+- [Standalone compiled firmware and installation](../../../release-assets/README.en.md)
 - [Detailed user guide](USER-GUIDE.en.md)
 - [Robot firmware source and version guide](../README-R17.en.md)
 - [Firmware build guide](../../docs/BUILD.en.md)
