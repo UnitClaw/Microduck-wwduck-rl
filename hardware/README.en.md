@@ -15,6 +15,15 @@ The timelines follow the build history organized on October 12, 2026. The publis
 
 **Current baseline, confirmed October 12, 2026:** fabrication, full-robot integration, and extended real-robot validation are complete for both boards. Test records from the original IMU A5 and later Feetech adaptation stages are retained.
 
+> [!NOTE]
+> **🌙 A little aside · An evening for building a board**
+>
+> Pick an evening when your wife and kids are asleep and you have no work tomorrow. Dinner is finished, the house is clean, and you have had a shower.
+>
+> Unpack the PCB that arrived today and your pile of components. Pick up your tweezers and put on a song you love. 🎵
+>
+> One by one, the components settle into place as time quietly slips by. Before you know it, a perfect circuit board is finished. ✨
+
 ## Shopping list
 
 > [!IMPORTANT]
