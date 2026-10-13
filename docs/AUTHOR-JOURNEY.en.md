@@ -340,43 +340,7 @@ This group connects model training, the training console, the robot service, and
 
 Sources: messages associated with “Increasing Parallelism to Speed Up Training” (《加大并行加快训练》) on October 2, 2026, and the discussion of firmware upgrades for joint training.
 
-### 7. How do the training console, WSL, and robot service each work?
-
-On **October 6, 2026**, you also asked how the current training console communicated with WSL. This is a summary of the historical question. It shows you beginning to ask how an action in the interface actually reaches the environment where training runs.
-
-Later, in “Auditing Robot Service Startup” (《审计机器人服务启动》), you could already state a clear division of software responsibilities:
-
-> **“Put the Linux system part in one module; don’t mix everything together. Then have one for the robot service, one for the gamepad, and one for model loading. What else?”**
-
-This illustrates how your understanding had developed: you began asking for clear responsibilities for system information, robot control, gamepad input, and model loading, with the parts working in a defined order.
-
-Sources: the discussion of the training console and WSL on October 6, 2026; the conversation “Auditing Robot Service Startup” (《审计机器人服务启动》).
-
-### 8. How do you integrate existing official features, and how can other people install and use them?
-
-When discussing the official expressive actions, you asked:
-
-> **“Check whether we have them. If we do, how do we call them? If we don’t, how do we add them? Let’s only discuss the plan.”**
-
-You followed up:
-
-> **“Does the official project have complete code we can use directly? If not, what needs to be added? You’d better check that carefully first.”**
-
-You then described the intended controls very concretely:
-
-> **“Leave playing dead for now. The others that don’t need us to modify them can be added directly. Just assign an unused gamepad button to cycle through the expressions.”**
-
-This records the process of understanding how to move from “the official project has this feature” to “our own duck can use it”: first check the existing code, then establish how to call it, what needs to be added, and how to operate it with the gamepad.
-
-When organizing the GitHub release materials, you also said:
-
-> **“It looks like the Feetech-adapted firmware only has source code, with no compiled firmware—is that right? If there isn’t a build, compile one and push it up.”**
-
-By this point, you were checking whether the deliverables were complete: in addition to the source code, users need compiled builds they can install directly. Your attention was gradually extending to integrating the software, completing the documentation, and enabling other people to actually use it.
-
-Sources: the conversations “Troubleshooting and Fixing Startup Failures” (《排查修复启动故障》) and “Git Push Script” (《Git推送脚本》).
-
-The software records trace this progression: **obtain the code → run the official programs → understand training inputs and physics simulation → start training → import models → check service and firmware compatibility → clarify responsibilities and how features are called → integrate and release.** Together with electronics, soldering, and mechanical assembly, this forms the author’s learning journey through the Microduck project.
+The software records trace this progression: **obtain the code → run the official programs → understand training inputs and physics simulation → start training → import models → check service and firmware compatibility.** Together with electronics, soldering, and mechanical assembly, this forms the author’s learning journey through the Microduck project.
 
 <!-- END SOFTWARE SUPPLEMENT -->
 
