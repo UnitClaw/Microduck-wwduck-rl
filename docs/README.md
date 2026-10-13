@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | 飞特已编译固件 control.40 — 下载与安装 | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
 | 🎬 看看鸭鸭的真实表现（5 段视频） | [中文](../README.md) | [English](../README.en.md) |
+| 🌱 作者如何从新手进阶 — 学习时间线与完整提问回顾 | [中文](AUTHOR-JOURNEY.md) | [English](AUTHOR-JOURNEY.en.md) |
 | START-HERE | [中文](../START-HERE.txt) | [English](../START-HERE.en.md) |
 | 🦆 Microduck 一键系统镜像 R1 | [中文](releases/public-image-r1.md) | [English](releases/public-image-r1.en.md) |
 | Microduck HD1910 | [中文](../microduck-hd1910/README.md) | [English](../microduck-hd1910/README.en.md) |
