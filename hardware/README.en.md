@@ -17,7 +17,14 @@ The timelines follow the build history organized on October 12, 2026. The publis
 
 ## Shopping list
 
-Read the parts and tools tables directly below; no spreadsheet download is required. Compiled from the author's actual purchases, the listed items have been confirmed usable through real-robot testing.
+> [!IMPORTANT]
+> **Purchased by the author, selected after price comparisons, and verified on the real robot**
+>
+> Every item in this list was selected by the author after comparing prices at the time of purchase, favoring **free shipping and competitive prices** wherever possible while meeting the project's needs and keeping build costs down.
+>
+> The listed items have been verified through a period of actual use. **HAT and IMU communication, functionality, and operating stability meet the project's requirements.** Use the product links and select the exact models and variants listed in the tables.
+
+Read the parts and tools tables directly below; no spreadsheet download is required.
 
 **Quantities:** one HAT plus one IMU, with **84 + 25 = 109 board-mounted components** across 46 BOM groups. Accessories and tools are listed separately. Select the **exact purchase variant** in each row; project model links provide the engineering reference. Taobao variant labels, specifications, and purchase notes are retained in Chinese to match the seller pages.
 
