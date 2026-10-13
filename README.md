@@ -24,7 +24,7 @@
 
 **软件版本：机器人中控 R17 V164 · 固件 control.40 · 训练中控 R1.5.27 · 首次配网 R5**
 
-[📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
+[📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛒 采购表与工具清单](hardware/README.md#采购清单) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
 
 [🎮 机器人中控在线演示](https://kissqy.github.io/Microduck-kissqy/) · [🧠 训练中控在线演示](https://kissqy.github.io/Microduck-kissqy/training/)
 

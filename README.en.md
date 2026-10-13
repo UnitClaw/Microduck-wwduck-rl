@@ -24,7 +24,7 @@
 
 **Versions: Robot Console R17 V164 · Firmware control.40 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
-[📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
+[📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛒 Parts & tools shopping list](hardware/README.en.md#shopping-list) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
 
 [🎮 Robot Console online demo](https://kissqy.github.io/Microduck-kissqy/) · [🧠 Training Studio online demo](https://kissqy.github.io/Microduck-kissqy/training/)
 
