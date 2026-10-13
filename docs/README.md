@@ -24,7 +24,7 @@
 | 说明 | 中文 | English |
 | --- | --- | --- |
 | HAT 制作时间线 | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
-| IMU 制作时间线 | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
+| IMU 制作全过程视频与时间线 | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | HAT 与 IMU 自制硬件 | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
 | Microduck 原生飞特 FT1：通信与 IMU 测试版 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.en.md) |
 | FT2 Sync20 增量 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.en.md) |

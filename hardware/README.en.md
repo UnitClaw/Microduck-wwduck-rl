@@ -7,7 +7,7 @@
 | Hardware | Build record | EasyEDA Pro project |
 | --- | --- | --- |
 | HAT board | [Build timeline and the choice of a two-layer PCB](HAT-TIMELINE.en.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |
-| Independent torso IMU | [Build timeline, frozen A5 baseline, and Feetech adaptation](IMU-TIMELINE.en.md) | [imu_to_dxl_RevA_V1](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) |
+| Independent torso IMU | [🎬 Complete build video](https://www.bilibili.com/video/BV1qapz6PERs/) · [Build timeline, frozen A5 baseline, and Feetech adaptation](IMU-TIMELINE.en.md) | [imu_to_dxl_RevA_V1](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) |
 
 The HAT started with a study of the official components and their surrounding circuits. Unneeded functions were removed, and the board was made using a two-layer PCB and home reflow. The IMU first established working independent hardware and the original protocol, then reused that hardware on the Feetech bus with 15 servos.
 

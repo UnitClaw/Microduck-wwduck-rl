@@ -7,7 +7,7 @@
 | 硬件 | 制作记录 | EasyEDA Pro 工程 |
 | --- | --- | --- |
 | HAT 主板 | [制作时间线及两层板的选择](HAT-TIMELINE.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |
-| 独立躯干 IMU | [制作时间线、A5 冻结及飞特适配过程](IMU-TIMELINE.md) | [imu_to_dxl_RevA_V1](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) |
+| 独立躯干 IMU | [🎬 手工制作全过程视频](https://www.bilibili.com/video/BV1qapz6PERs/) · [制作时间线、A5 冻结及飞特适配过程](IMU-TIMELINE.md) | [imu_to_dxl_RevA_V1](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) |
 
 HAT 的思路是先分析官方器件及外围，按实际需要精简，再用两层板和家庭回流完成实物。IMU 先跑通独立硬件及原版协议，再复用硬件接入飞特和 15 个舵机。
 

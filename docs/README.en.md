@@ -24,7 +24,7 @@ English editions of the homepage, user guides, hardware records, and technical n
 | Guide | 中文 | English |
 | --- | --- | --- |
 | HAT build timeline | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
-| IMU build timeline | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
+| IMU full build video and timeline | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | DIY HAT and IMU hardware | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
 | Microduck native Feetech FT1 — communication and IMU test build | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.en.md) |
 | FT2 Sync 20 increment | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.en.md) |

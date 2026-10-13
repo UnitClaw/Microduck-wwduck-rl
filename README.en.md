@@ -84,6 +84,8 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 
 ## 🔧 DIY HAT and IMU
 
+🎬 **[Watch the complete IMU build · Bilibili](https://www.bilibili.com/video/BV1qapz6PERs/)**
+
 Both the custom HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.
 
 [HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🔧 PCB shopping list (HAT / IMU)](hardware/README.en.md#shopping-list)
