@@ -64,3 +64,9 @@ __pycache__/
 /packaging/R157-Fix4.md
 /packaging/R157-Fix6.md
 /packaging/R157.md
+
+# Consolidated reference snapshots and unused duplicate model alias.
+/packaging/models/ee0376c927044cdece056ba1d3e6eac77/
+/verification/official-reference-from146/*
+/packaging/models/a481d9f211f31d9476ab1a319fe362a2/policy.onnx
+/packaging/models/a481d9f211f31d9476ab1a319fe362a2/export-data.zip

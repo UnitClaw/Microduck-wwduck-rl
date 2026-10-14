@@ -192,6 +192,20 @@
       "bytes": 3582,
       "sha256": "686a7b5c135a584ad6a7d4c753710d8f1c6d5281515e45094fb688c969203646",
       "mode": 420
+    },
+    {
+      "path": "packaging/models/a481d9f211f31d9476ab1a319fe362a2/policy.onnx",
+      "source_path": "policies/stand/policy.onnx",
+      "bytes": 795462,
+      "sha256": "a481d9f211f31d9476ab1a319fe362a21ef0879d9fa59442a122845af598268c",
+      "mode": 420
+    },
+    {
+      "path": "packaging/models/a481d9f211f31d9476ab1a319fe362a2/export-data.zip",
+      "source_path": "policies/stand/export-data.zip",
+      "bytes": 71058,
+      "sha256": "1ac209f417584aede825870e9ea793fa5c66321e80dab854498c9b012d282a1f",
+      "mode": 420
     }
   ],
   "purpose": "Restore verified runtime resources for building/testing, without storing a second binary copy in source."

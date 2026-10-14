@@ -194,10 +194,10 @@
     "byte_identical_to_V167_bundled_payload": true
   },
   "online_demos": {
-    "updated": "2026-10-13",
-    "source_commit": "0a78b88e64fc312e1b06ec99995db5fee12f8eb5",
-    "robot_console_version": "1.0.164",
-    "robot_firmware_display": "1fa8438-feetech-ft6-control.40",
+    "updated": "2026-10-14",
+    "source_commit": "a07cfd0644227be8c55c76e1dc73f623f4a38027",
+    "robot_console_version": "1.0.167",
+    "robot_firmware_display": "1fa8438-feetech-ft6-control.43",
     "training_console_version": "1.5.27",
     "robot_url": "https://kissqy.github.io/Microduck-kissqy/",
     "training_url": "https://kissqy.github.io/Microduck-kissqy/training/",
@@ -211,7 +211,7 @@
   },
   "repository_layout": {
     "base_commit": "7a52d297a9adfe6d2315481953dc64060252d142",
-    "generated_runtime_files": 30,
+    "generated_runtime_files": 32,
     "duplicate_bytes_removed": 61487165,
     "baseline": "release-assets/build-baselines/Microduck-Console-R17-V164.zip"
   },
@@ -219,5 +219,36 @@
     "published": true,
     "initial_commit": "8f6060711f38ce9bf2aa67cb21054d32c0abddf2",
     "changes": "修复鸭身抖动的问题"
+  },
+  "repository_cleanup": {
+    "date": "2026-10-14",
+    "base_commit": "a07cfd0644227be8c55c76e1dc73f623f4a38027",
+    "removed_reference_files": 34,
+    "removed_model_alias_files": 12,
+    "extra_generated_resources": 2,
+    "removed_duplicate_bytes": 5292726,
+    "retained": [
+      "Static online-demo resource copies needed by GitHub Pages",
+      "Original compiled console and firmware archives",
+      "Pinned V164 build baseline",
+      "Original archive evidence and training configuration data"
+    ],
+    "robot_runtime_source_changed": false,
+    "compiled_archives_changed": false,
+    "fixed_snapshot_relative_links": 9,
+    "online_demo_console_version": "1.0.167",
+    "online_demo_build_display": "1fa8438-feetech-ft6-control.43",
+    "removed_unused_legacy_test": "packaging/test_rough_stand_import.py",
+    "removed_unused_build_and_docs": [
+      "build-V160.sh",
+      "package-V160.py",
+      "build-V162.sh",
+      "package-V162.py",
+      "build-V163.sh",
+      "package-V163.py",
+      "verification/package147.py",
+      "V163-构建说明.md",
+      "V163-BUILD.en.md"
+    ]
   }
 }

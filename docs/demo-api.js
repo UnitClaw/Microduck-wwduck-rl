@@ -6,7 +6,7 @@ const ids=[20,21,22,23,24,10,11,12,13,14,30,31,32,33,34];
 const names=["左髋Yaw","左髋Roll","左髋Pitch","左膝","左踝","右髋Yaw","右髋Roll","右髋Pitch","右膝","右踝","颈Pitch","头Pitch","头Yaw","头Roll","嘴"];
 const homeDeg=[0,-5,-26.24,-0.28,25.95,0,5,26.24,0.28,-25.95,20,20,0,0,0];
 const config={
- version:"1.0.164",baseline:"1fa84386f07884e27866411bc1ba166977bced95",mode:"service",
+ version:"1.0.167",baseline:"1fa84386f07884e27866411bc1ba166977bced95",mode:"service",
  service_enabled:true,control_enabled:false,connection_ui:false,raw_telemetry:false,
  control_token:"",ssh_target:"",camera_host:"duck-demo.invalid",camera_port:8443,
  hz:50,ids,labels:names,home:homeDeg.map(x=>x*Math.PI/180)
@@ -33,7 +33,7 @@ function snapshot(){
   });
   const motorTemps=servos.map(x=>x.temperature_c);
   const roll=1.4*Math.sin(seconds*.33),pitch=1.2*Math.sin(seconds*.27);
-  const bus={mode:"motion",phase:"control",build:"1fa8438-feetech-ft6-control.40",
+  const bus={mode:"motion",phase:"control",build:"1fa8438-feetech-ft6-control.43",
     management_capabilities:{supported:true,management:true,motion:true,webpad:false,live_pad_settings:false,coast:true},
     torque_state:"on",policy_enabled:false,homed:true,scale_use:"walking",
     action_scale:1,head_lowpass:.5,legs_lowpass:.7,voltage_adapt:true,
@@ -58,7 +58,7 @@ function snapshot(){
     camera:{fps:30,targetFps:30,width:1280,height:720,format:"NV12",dropped:0,consumers:0},
     camera_age_ms:20
   };
-  return {schema:"microduck-console/v1",mode:"service",version:"1.0.164",baseline:config.baseline,at:now,uptime:seconds,
+  return {schema:"microduck-console/v1",mode:"service",version:"1.0.167",baseline:config.baseline,at:now,uptime:seconds,
     read_only:true,service_sample_fresh:true,pose_calibrated:true,service_compatible:true,
     service_operation:false,connection_paused:false,extended:false,
     channels:{state:channel(),health:channel(),system:channel(),tof:channel(),
@@ -92,16 +92,16 @@ D.transport((url,method)=>{
     if(path==='/api/snapshot'){
       const frame=snapshot();recordings.push(frame);if(recordings.length>600)recordings.shift();return D.json(frame);
     }
-    if(path==='/api/system-log')return D.json({entries:[{seq:1,at:start/1000,message:'[DEMO] R17 V164 / control.40 · 所有机器人读数为模拟数据，不连接实机'}],cursor:1});
+    if(path==='/api/system-log')return D.json({entries:[{seq:1,at:start/1000,message:'[DEMO] R17 V167 / control.43 · 所有机器人读数为模拟数据，不连接实机'}],cursor:1});
   }
   // These POST routes only read fixture metadata. All command routes are blocked.
   if(method==='POST'&&path==='/api/service/models')return D.json(catalog);
   if(method==='POST'&&path==='/api/service/connection')return D.json({management_revision:'R17',process_matches:true,running:true,actual_port:'/dev/ttyS2 · DEMO',pid:1042,actual_mode:'motion',motion_ready:true});
-  if(method==='POST'&&path==='/api/service/firmware')return D.json({verified:false,error:'在线演示不读取或安装固件；正式版内含 control.40。'});
+  if(method==='POST'&&path==='/api/service/firmware')return D.json({verified:false,error:'在线演示不读取或安装固件；正式版内含 control.43。'});
 });
 document.addEventListener('DOMContentLoaded',()=>{
   document.body.classList.add('pages-demo');
-  D.banner('main .page-heading','ONLINE DEMO · R17 V164 / control.40 · 新版界面与官方 3D 模型；设备读数为模拟值，不能连接或控制实机。','./training/','打开训练中控演示 →');
+  D.banner('main .page-heading','ONLINE DEMO · R17 V167 / control.43 · 新版界面与官方 3D 模型；设备读数为模拟值，不能连接或控制实机。','./training/','打开训练中控演示 →');
   D.lock('#ssh-connect,#ssh-disconnect,#ssh-target,#service-sudo-password,#service-sudo-forget,#camera-connect,#camera-disconnect,#camera-save,#service-mode-calibrate,#service-mode-motion,#service-minus,#service-plus,#service-move,#service-capture,#service-center,#service-verify-imu,#service-init,#service-quick-stop,#service-reboot,#service-shutdown,#service-resume,#management-reconnect,#management-scale-apply,#firmware-choose,#firmware-file,#firmware-flash,#inspection-start,#inspection-stop,#gamepad-repair-start');
   document.getElementById('camera-message').textContent='在线演示不连接摄像头';
   document.addEventListener('click',event=>{
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(link.pathname==='/api/servos.csv'){
       const rows=snapshot().servos.map(r=>[r.id,r.name,r.angle_deg,r.voltage_v,r.temperature_c]);
       D.download('id,name,angle_deg,voltage_v,temperature_c\n'+rows.map(r=>r.join(',')).join('\n'),'microduck-demo-servos.csv','text/csv');
-    }else if(link.pathname==='/api/system-log/download')D.download('[DEMO] R17 V164 / control.40 — simulated robot data only.','microduck-demo-log.txt','text/plain');
+    }else if(link.pathname==='/api/system-log/download')D.download('[DEMO] R17 V167 / control.43 — simulated robot data only.','microduck-demo-log.txt','text/plain');
     else if(link.pathname==='/api/recording')downloadRecording();
   },true);
   // The current console creates the export link dynamically, so capture its button too.

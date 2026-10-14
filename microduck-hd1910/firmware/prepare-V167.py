@@ -62,8 +62,14 @@ def main():
             relative = PurePosixPath(row['path'])
             if relative.is_absolute() or '..' in relative.parts or not row['path'].startswith('packaging/'):
                 raise ValueError('Invalid resource path: ' + row['path'])
-            member = members['Microduck-Robotd-FT6-R17/' + row['path'][len('packaging/'):]]
-            data = archive.extractfile(member).read()
+            if row.get('source_path'):
+                source = PurePosixPath(row['source_path'])
+                if source.is_absolute() or '..' in source.parts or not row['source_path'].startswith('policies/'):
+                    raise ValueError('Invalid canonical source path: ' + row['source_path'])
+                data = (ROOT / row['source_path']).read_bytes()
+            else:
+                member = members['Microduck-Robotd-FT6-R17/' + row['path'][len('packaging/'):]]
+                data = archive.extractfile(member).read()
             if len(data) != row['bytes'] or hashlib.sha256(data).hexdigest() != row['sha256']:
                 raise ValueError('Firmware resource mismatch: ' + row['path'])
             verified.append((ROOT / row['path'], data, row['mode']))

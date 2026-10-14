@@ -58,7 +58,7 @@ The gamepad program requires libudev. Host `libudev-dev` supports host-side buil
 
 Current build identity and binary hashes are in [`firmware/BUILD.json`](../firmware/BUILD.json). Release reproduction and prior test records are in [BUILDING-V167.en.md](../firmware/BUILDING-V167.en.md) and [`verification/v167/`](../firmware/verification/v167/): 237 Rust tests, 18 Python tests and ten ARM64/QEMU models.
 
-`firmware/build-V163.sh` and `package-V163.py` reproduce the original process and require the V162 base ZIP, QEMU, and compatible runtime libraries. Three historical base ZIPs are not duplicated in this repository. Use `tools/build-firmware.sh` here for ordinary source compilation.
+Unused V160/V162/V163 build and packaging scripts were removed. Reproduce the current release with `firmware/build-V167.sh` and `package-V167.py`; see [the V167 guide](../firmware/BUILDING-V167.en.md). Ordinary source compilation still uses `tools/build-firmware.sh`.
 
 Source synchronization did not download the build environment again or rebuild firmware. The added entry point was checked for shell syntax, help output, and pinned records; this is not a claim of a new successful build or byte-for-byte identity with original binaries. A build records output ELF architecture, maximum GLIBC symbol version, and SHA256.
 
