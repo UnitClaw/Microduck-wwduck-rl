@@ -261,5 +261,21 @@
     "guide": "../hardware/IMU-FIRMWARE.md",
     "guide_en": "../hardware/IMU-FIRMWARE.en.md",
     "j2_pinout_source": "../hardware/ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2: PCB J2 PAD_NET"
+  },
+  "imu_source_cleanup": {
+    "date": "2026-10-14",
+    "active_version": "FT6_SYNC15_UART_IRQ_v1",
+    "retired_files_removed": 13,
+    "default_make_target": "Feetech FT6",
+    "binary_modified": false,
+    "verification": {
+      "ft6_active_source_preprocessor_sha256": "14f79382cb5ef0159061b69fc26972723d5a3f78ca894385acd6a9e5422af593",
+      "preprocessor_comparison": "identical before/after with unchanged STM32 register header stub; no target rebuild",
+      "host_test_suites": [
+        "test_feetech",
+        "test_led_status",
+        "test_fast_sync"
+      ]
+    }
   }
 }

@@ -4,18 +4,11 @@
 
 #include "stm32g031xx.h"
 
-#ifdef FEETECH_NATIVE
 #include "ft_fast_sync.h"
 #include "ft_imu.h"
 #include "ft_led_status.h"
 #define BUS_MAX_PACKET FT_MAX_PACKET
 #define IMU_BLOCK_SIZE FT_IMU_BLOCK_LENGTH
-#else
-#include "dxl_protocol.h"
-#include "id200_app.h"
-#define BUS_MAX_PACKET DXL2_MAX_PACKET
-#define IMU_BLOCK_SIZE ID200_DATA_LENGTH
-#endif
 #include "lsm6dsv16x_reg.h"
 
 #define SYSCLK_HZ              16000000u
@@ -24,13 +17,9 @@
 #define IMU_POLL_PERIOD_MS     5u
 #define IMU_WHO_AM_I_EXPECTED  LSM6DSV16X_ID
 #define FIFO_DRAIN_LIMIT       2u
-#ifdef FEETECH_NATIVE
 /* A 15-servo native position SyncWrite is 128 bytes. Keep it off the IMU TX
    path but receive it without overflowing the old 63-byte ring. */
 #define UART_RX_RING_SIZE      256u
-#else
-#define UART_RX_RING_SIZE      64u
-#endif
 
 static volatile uint32_t millisecond_tick;
 static volatile uint8_t uart_rx_ring[UART_RX_RING_SIZE];
@@ -38,7 +27,6 @@ static volatile uint8_t uart_rx_head;
 static volatile uint8_t uart_rx_tail;
 static volatile bool uart_rx_overflow;
 
-#ifdef FEETECH_NATIVE
 static ft_fast_sync_detector_t fast_sync_detector;
 static ft_imu_state_t app;
 static ft_fast_sync_response_t fast_sync_responses[2];
@@ -50,15 +38,6 @@ static volatile bool fast_activity_pending;
 static void uart_send_fast_sync_response(const uint8_t *packet, size_t length);
 
 typedef ft_stream_t rx_stream_t;
-#else
-typedef struct {
-    uint8_t bytes[DXL2_MAX_PACKET];
-    size_t count;
-    size_t expected;
-    uint8_t header_state;
-    uint32_t last_byte_tick;
-} rx_stream_t;
-#endif
 
 void SysTick_Handler(void)
 {
@@ -73,14 +52,11 @@ void USART2_IRQHandler(void)
         USART2->ICR = USART_ICR_ORECF | USART_ICR_FECF |
                       USART_ICR_NECF | USART_ICR_PECF;
         uart_rx_overflow = true;
-#ifdef FEETECH_NATIVE
         ft_fast_sync_detector_reset(&fast_sync_detector);
-#endif
     }
 
     while ((USART2->ISR & USART_ISR_RXNE_RXFNE) != 0u) {
         const uint8_t byte = (uint8_t)USART2->RDR;
-#ifdef FEETECH_NATIVE
         if (fast_sync_enabled && ft_fast_sync_detector_push(
                 &fast_sync_detector, byte, millisecond_tick)) {
             /*
@@ -100,7 +76,6 @@ void USART2_IRQHandler(void)
             fast_activity_pending = true;
             continue;
         }
-#endif
         const uint8_t next =
             (uint8_t)((uart_rx_head + 1u) & (UART_RX_RING_SIZE - 1u));
         if (next == uart_rx_tail) {
@@ -367,7 +342,6 @@ static void tx_disable(void)
     GPIOA->BSRR = GPIO_BSRR_BS1;
 }
 
-#ifdef FEETECH_NATIVE
 static void uart_send_fast_sync_response(const uint8_t *packet, size_t length)
 {
     /* Already in USART2_IRQHandler, so USART2 cannot re-enter this section. */
@@ -409,16 +383,15 @@ static void fast_sync_response_publish(const ft_imu_state_t *state)
     __DMB();
     NVIC_EnableIRQ(USART2_IRQn);
 }
-#endif
 
 static void uart_send_packet(const uint8_t *packet, size_t length)
 {
     /*
      * U4 leaves the physical RX path connected while PA1 enables the bus TX
-     * driver.  FT2 merely masked RXNE interrupts during TX, so the USART FIFO
-     * filled with our own echo.  It then released the bus before draining that
-     * FIFO.  The first following Sync Read responder could already be sending,
-     * and its leading bytes were occasionally drained with the echo.
+     * driver.  Masking RXNE interrupts alone during TX allows the USART FIFO
+     * to fill with our own echo. Draining it after releasing the bus could
+     * discard leading bytes from the next Sync Read responder along with
+     * that echo.
      *
      * Disable the USART receiver itself while transmitting, then arm it and
      * its IRQ while the TX driver still holds the idle level.  Releasing PA1 is
@@ -465,59 +438,7 @@ static void stream_reset(rx_stream_t *stream)
 
 static bool stream_push(rx_stream_t *stream, uint8_t byte)
 {
-#ifdef FEETECH_NATIVE
     return ft_stream_push(stream, byte, millisecond_tick);
-#else
-    stream->last_byte_tick = millisecond_tick;
-
-    if (stream->count == 0u) {
-        switch (stream->header_state) {
-        case 0u:
-            stream->header_state = (byte == 0xFFu) ? 1u : 0u;
-            break;
-        case 1u:
-            stream->header_state = (byte == 0xFFu) ? 2u : 0u;
-            break;
-        case 2u:
-            if (byte == 0xFDu) {
-                stream->header_state = 3u;
-            } else {
-                stream->header_state = (byte == 0xFFu) ? 2u : 0u;
-            }
-            break;
-        default:
-            if (byte == 0x00u) {
-                stream->bytes[0] = 0xFFu;
-                stream->bytes[1] = 0xFFu;
-                stream->bytes[2] = 0xFDu;
-                stream->bytes[3] = 0x00u;
-                stream->count = 4u;
-                stream->header_state = 0u;
-            } else {
-                stream->header_state = (byte == 0xFFu) ? 1u : 0u;
-            }
-            break;
-        }
-        return false;
-    }
-
-    if (stream->count >= sizeof(stream->bytes)) {
-        stream_reset(stream);
-        return false;
-    }
-    stream->bytes[stream->count++] = byte;
-
-    if (stream->count == 7u) {
-        const size_t length_field = (size_t)stream->bytes[5] |
-                                    ((size_t)stream->bytes[6] << 8);
-        stream->expected = 7u + length_field;
-        if (length_field < 3u || stream->expected > sizeof(stream->bytes)) {
-            stream_reset(stream);
-            return false;
-        }
-    }
-    return stream->expected != 0u && stream->count == stream->expected;
-#endif
 }
 
 static void imu_fault_forever(void)
@@ -531,31 +452,21 @@ int main(void)
 {
     uint8_t response[BUS_MAX_PACKET];
     uint8_t live_block[IMU_BLOCK_SIZE] = {0};
-#ifndef FEETECH_NATIVE
-    id200_state_t app;
-#endif
     rx_stream_t stream = {0};
     stmdev_ctx_t imu;
     uint32_t last_imu_poll = 0u;
-#ifdef FEETECH_NATIVE
     ft_led_status_t led_status;
-#endif
 
     clock_init();
     gpio_uart_spi_init();
     SysTick_Config(SYSCLK_HZ / 1000u);
-#ifdef FEETECH_NATIVE
     ft_imu_init(&app);
-#else
-    id200_init(&app);
-#endif
 
     startup_signature();
     if (!imu_init(&imu)) {
         imu_fault_forever();
     }
     led_off();
-#ifdef FEETECH_NATIVE
     ft_led_status_init(&led_status, millisecond_tick);
     fast_sync_response_publish(&app);
     NVIC_DisableIRQ(USART2_IRQn);
@@ -566,10 +477,8 @@ int main(void)
     fast_activity_pending = false;
     fast_sync_enabled = true;
     NVIC_EnableIRQ(USART2_IRQn);
-#endif
 
     for (;;) {
-#ifdef FEETECH_NATIVE
         if (fast_sync_consumed) {
             fast_sync_consumed = false;
             stream_reset(&stream);
@@ -578,7 +487,6 @@ int main(void)
             fast_activity_pending = false;
             ft_led_status_note_response(&led_status, millisecond_tick);
         }
-#endif
         if (uart_rx_overflow) {
             uart_rx_overflow = false;
             uart_rx_tail = uart_rx_head;
@@ -587,32 +495,22 @@ int main(void)
 
         uint8_t byte;
         while (uart_rx_pop(&byte)) {
-#ifdef FEETECH_NATIVE
             if (fast_sync_consumed) {
                 fast_sync_consumed = false;
                 stream_reset(&stream);
                 continue;
             }
-#endif
             if (stream_push(&stream, byte)) {
                 const size_t request_length = stream.count;
                 stream_reset(&stream);
                 size_t response_length;
-#ifdef FEETECH_NATIVE
                 response_length = ft_imu_handle(
                     &app, stream.bytes, request_length,
                     response, sizeof(response), millisecond_tick);
-#else
-                response_length = id200_handle_packet(
-                    &app, stream.bytes, request_length,
-                    response, sizeof(response));
-#endif
                 if (response_length != 0u) {
                     uart_send_packet(response, response_length);
-#ifdef FEETECH_NATIVE
                     ft_led_status_note_response(
                         &led_status, millisecond_tick);
-#endif
                 }
             }
         }
@@ -629,24 +527,16 @@ int main(void)
             last_imu_poll = millisecond_tick;
             const bool new_quaternion = imu_refresh(&imu, live_block);
             if (new_quaternion) {
-#ifdef FEETECH_NATIVE
                 ft_led_status_note_quaternion(&led_status, millisecond_tick);
-#endif
             }
-#ifdef FEETECH_NATIVE
             ft_imu_set(&app, live_block, new_quaternion, millisecond_tick);
             fast_sync_response_publish(&app);
-#else
-            id200_set_imu_block(&app, live_block);
-#endif
         }
 
-#ifdef FEETECH_NATIVE
         if (ft_led_status_output(&led_status, millisecond_tick) == FT_LED_OFF) {
             led_off();
         } else {
             led_on();
         }
-#endif
     }
 }

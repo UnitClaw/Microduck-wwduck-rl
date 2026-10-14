@@ -12,29 +12,27 @@ The counter increments only on actual new quaternions; 255→0 is normal wraparo
 
 The host checks status, three consecutive identical counters, quaternion validity, and a 50 ms budget combining the 30 ms bound with full-cycle elapsed time. Official installation transforms and readiness checks remain.
 
-Addresses 124–143 retain FT5's complete 20-byte diagnostic format: 12 core bytes, u 32 sequence, u 16 age, ready, schema=1. Normal control does not poll this region.
+Addresses 124–143 provide the complete 20-byte diagnostic format: 12 core bytes, u 32 sequence, u 16 age, ready, schema=1. Normal control does not poll this region.
 
 This aligns with the community's 15-byte fast layout. Diagnostics, firmware identity, and low-level implementation remain project-defined. ID200 must be first in Sync Read; other ordering logic not physically tested on this HAT is not imported.
 
-FT5 USART interrupt reception, ISR fast replies, double-buffer publication, waiting for TC before bus release, restoring RX before releasing the driver, original GPIO / SPI / IMU initialization, 120 Hz SFLP, and LED behavior remain.
+Current firmware uses USART interrupt reception, ISR fast replies, double-buffer publication, waiting for TC before bus release, restoring RX before releasing the driver, original GPIO / SPI / IMU initialization, 120 Hz SFLP, and the documented LED behavior.
 
 Only the existing Feetech backend and service entry are changed; official joint order, calibration files, and policies are preserved. Config keys and paths continue using `feetech-ft5` / `feetech-ft5-r5` for compatibility; those paths do not identify old running firmware. Startup remains torque-off and does not automatically run an XL330 policy.
 
 ## Build
 
-Use Arm GNU Toolchain 14.3.Rel 1:
+Use Arm GNU Toolchain 14.3.Rel1:
 
 ```bash
 make -f Makefile.feetech TOOLCHAIN=/path/to/toolchain/bin/arm-none-eabi-
 ```
 
-Bundled third_party contains CMSIS Core from pinned STM32 CubeG0 commit `446ebe396489ca75679caa80887d7257efe92e3d` and device submodule `f576c24e123edf3332988ecd49512c0f35f85186`.
-
-README_FT1, FT2, FT4, and A5 are historical records; current firmware is FT6.
+Before compilation, prepare STM32CubeG0 with CMSIS Core from pinned commit `446ebe396489ca75679caa80887d7257efe92e3d` and device submodule `f576c24e123edf3332988ecd49512c0f35f85186`.
 
 Community references:
 
 - <https://github.com/fanhao375/microduck-replica/blob/master/hardware/imu_to_dxl/总线协议.md>
 - <https://github.com/fanhao375/microduck-replica/blob/master/hardware/imu_to_dxl/firmware/Core/Src/control_table.c>
 
-The current implementation is based on this project's FT5; it does not directly flash community HEX files.
+The current implementation is this project's Feetech FT6; it does not directly flash community HEX files.

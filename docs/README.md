@@ -30,8 +30,6 @@
 | HAT 与 IMU 自制硬件 | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
 | IMU 固件 FT6 — 下载、接线、烧录与检查 | [中文](../hardware/IMU-FIRMWARE.md) | [English](../hardware/IMU-FIRMWARE.en.md) |
 | 当前 IMU FT6：协议与兼容 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md) |
-| 历史 FT1：通信与 IMU 测试版 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.en.md) |
-| 历史 FT2 Sync20 增量 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.en.md) |
 
 ## Robot Console / 机器人中控
 

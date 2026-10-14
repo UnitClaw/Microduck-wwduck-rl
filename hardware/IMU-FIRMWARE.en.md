@@ -12,7 +12,7 @@
 | ZERO robot service `.tar.gz` | Linux on Radxa ZERO 3W, installed through the console or SSH | control.43, paired with R17 V167 |
 | System image `.img.xz` | ZERO microSD card | Public Image R1, preinstalled control.40 |
 
-**Flashing the system image or upgrading ZERO services from the console does not program the external IMU.** The PCB project retains the hardware name `imu_to_dxl_RevA_V1`; for Feetech HD1910, select the **Feetech FT6** firmware below. The original Dynamixel A5 uses a different protocol.
+**Flashing the system image or upgrading ZERO services from the console does not program the external IMU.** The PCB project retains the hardware name `imu_to_dxl_RevA_V1`; for Feetech HD1910, select the **Feetech FT6** firmware below.
 
 ## Download current IMU firmware
 
@@ -83,7 +83,7 @@ Keep robot torque disabled, connect the IMU to the Feetech bus through the HAT, 
 | Communication | After warm-up, IMU is ready without persistent communication errors or stale data |
 | LED | Two flashes on startup; may be off when healthy and idle; very short activity pulses when fresh-data responses succeed; solid on for initialization failure or a prolonged absence of new orientation data |
 
-Current FT6 LED behavior is defined by [`main.c`](../microduck-hd1910/firmware/firmware/imu-source/src/main.c) and [`ft_led_status.c`](../microduck-hd1910/firmware/firmware/imu-source/src/ft_led_status.c). **A5's “solid on means success” rule does not apply to FT6.** Use actual sensor data, readiness, and communication status for the final check.
+Current FT6 LED behavior is defined by [`main.c`](../microduck-hd1910/firmware/firmware/imu-source/src/main.c) and [`ft_led_status.c`](../microduck-hd1910/firmware/firmware/imu-source/src/ft_led_status.c). Use actual sensor data, readiness, and communication status for the final check.
 
 | Symptom | First checks |
 | --- | --- |
@@ -92,12 +92,8 @@ Current FT6 LED behavior is defined by [`main.c`](../microduck-hd1910/firmware/f
 | Responses arrive but orientation is frozen / LED stays on | LSM6DSV16X soldering, power, SPI connections, and real sensor data; a response alone does not prove the sensor works |
 | Configuration says `feetech-ft5` | This is a retained compatibility path name; it alone does not identify old firmware. See the FT6 protocol guide below |
 
-`tools/imu_live_mac.py` and the original A5 guide use ROBOTIS Dynamixel protocol. **They are not communication acceptance tools for Feetech FT6.**
-
-## Source, build, and historical versions
+## Current source and build
 
 For a normal build, flash the `.bin` above without compiling. The developer entry is [`Makefile.feetech`](../microduck-hd1910/firmware/firmware/imu-source/Makefile.feetech). Toolchain and pinned dependencies are listed in [Build IMU firmware](../microduck-hd1910/docs/BUILD.en.md#imu-stm32); protocol details are in [FT6 protocol and compatibility](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md). The fast block is address 56, 15 bytes, with ID 200 first in Sync Read; address 124 retains a 20-byte diagnostic block.
-
-**A5, FT1, FT2, and FT4 documents retain development history. Start with this page and FT6 for the current Feetech setup.** A5 is the original Dynamixel baseline and cannot replace Feetech FT6. This project uses its own validated implementation rather than directly flashing a community HEX.
 
 [IMU build video and timeline](IMU-TIMELINE.en.md) · [Hardware and shopping](README.en.md) · [Project homepage](../README.en.md)

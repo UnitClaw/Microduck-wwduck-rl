@@ -12,7 +12,7 @@
 | ZERO 机器人服务 `.tar.gz` | Radxa ZERO 3W 的 Linux 系统，通过中控或 SSH 安装 | control.43，配套 R17 V167 |
 | 系统镜像 `.img.xz` | ZERO 的 TF 卡 | Public Image R1，预装 control.40 |
 
-**刷系统镜像或在中控升级 ZERO 服务，都不会替你烧录外置 IMU。** 当前 PCB 工程仍叫 `imu_to_dxl_RevA_V1`，这是沿用的硬件名称；接飞特 HD1910 时选择下面的 **Feetech FT6** 固件。原 Dynamixel A5 使用不同协议。
+**刷系统镜像或在中控升级 ZERO 服务，都不会替你烧录外置 IMU。** 当前 PCB 工程仍叫 `imu_to_dxl_RevA_V1`，这是沿用的硬件名称；接飞特 HD1910 时选择下面的 **Feetech FT6** 固件。
 
 ## 下载当前 IMU 固件
 
@@ -83,7 +83,7 @@ Windows 工具名为 `STM32_Programmer_CLI.exe`。参数见 ST 官方 [命令行
 | 通信状态 | 预热后 IMU 就绪，没有持续通信错误或数据过期 |
 | LED | 启动有两次闪烁；健康空闲可熄灭，成功响应新鲜数据时是很短的活动脉冲；初始化失败或长时间无新姿态时常亮 |
 
-FT6 的 LED 行为以当前 [`main.c`](../microduck-hd1910/firmware/firmware/imu-source/src/main.c) 和 [`ft_led_status.c`](../microduck-hd1910/firmware/firmware/imu-source/src/ft_led_status.c) 为准，**不要用 A5 的“常亮代表成功”来判断 FT6**。LED 只能辅助诊断，最终看真实数据、就绪状态和通信状态。
+FT6 的 LED 行为以当前 [`main.c`](../microduck-hd1910/firmware/firmware/imu-source/src/main.c) 和 [`ft_led_status.c`](../microduck-hd1910/firmware/firmware/imu-source/src/ft_led_status.c) 为准。LED 只能辅助诊断，最终看真实数据、就绪状态和通信状态。
 
 | 遇到的问题 | 先检查 |
 | --- | --- |
@@ -92,12 +92,8 @@ FT6 的 LED 行为以当前 [`main.c`](../microduck-hd1910/firmware/firmware/imu
 | 有回包但姿态不更新 / LED 常亮 | LSM6DSV16X 焊接、供电、SPI 连接和实际姿态数据；回包不等于传感器工作正常 |
 | 看到 `feetech-ft5` 配置名 | 这是保留的兼容路径名，不单凭它判断运行旧固件；当前固件说明见下方 FT6 协议页 |
 
-`tools/imu_live_mac.py` 与原 A5 文档使用 ROBOTIS Dynamixel 协议，**不能作为飞特 FT6 的通信验收工具**。
-
-## 源码、编译与历史版本
+## 当前源码与编译
 
 普通制作直接刷上面的 `.bin`，无需自己编译。开发入口为 [`Makefile.feetech`](../microduck-hd1910/firmware/firmware/imu-source/Makefile.feetech)；工具链和固定依赖见 [IMU 源码编译](../microduck-hd1910/docs/BUILD.md#imu-stm32)，协议细节见 [FT6 协议与兼容](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md)。快速读区为地址 56、15 字节，ID 200 在 Sync Read 列表首位；地址 124 的诊断区保留 20 字节。
-
-**A5、FT1、FT2、FT4 文档保留研发历史，当前飞特搭建以本页与 FT6 为入口。** A5 是原 Dynamixel 基线，不能代替飞特 FT6；本项目使用自己的已验证实现，没有直接烧录社区 HEX。
 
 [IMU 制作视频与时间线](IMU-TIMELINE.md) · [硬件与采购](README.md) · [项目首页](../README.md)

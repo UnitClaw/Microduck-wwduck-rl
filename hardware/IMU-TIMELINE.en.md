@@ -4,7 +4,7 @@
 
 🎬 **[Watch the complete IMU build (Bilibili)](https://www.bilibili.com/video/BV1qapz6PERs/)**
 
-**For the Feetech build, start with [current IMU FT6 download and flashing](IMU-FIRMWARE.en.md).** The timeline below includes the original Dynamixel A5 history.
+**For the Feetech build, start with [current IMU FT6 download and flashing](IMU-FIRMWARE.en.md).** The timeline below records hardware fabrication and Feetech adaptation.
 
 All dates below are in 2026. The process first established independent IMU hardware and real pose readings, then connected it to the bus. After the original Dynamixel version worked, the same hardware was adapted for Feetech.
 
@@ -21,7 +21,7 @@ All dates below are in 2026. The process first established independent IMU hardw
 | Sep 9 | Measured approximately **3.31 V** on the 3.3 V rail. Reworked soldering, flashed firmware, and used synthetic data to verify MCU and bus communication first. |
 | Sep 9 | Built a second board after abnormal sensor readings on the first, checking communication and actual sensor operation separately. |
 | Sep 9–10 | Enabled real pose readings and the sensor's **SFLP fusion**, replacing synthetic data with actual sensor output. |
-| Sep 10 | Changed UART reception to interrupts. A **50 Hz test with 3, 393 transactions and zero failures** passed; the original **A5** version was frozen. |
+| Sep 10 | Changed UART reception to interrupts. A **50 Hz test with 3, 393 transactions and zero failures** passed; real orientation readout and bus communication on the independent board were confirmed. |
 | Sep 12 | Planned Feetech adaptation while preserving the existing hardware, mainly changing the protocol and readout. |
 | Sep 20 | Implemented the Feetech protocol and corrected timing on the shared servo line. A **3, 000/3, 000** test passed. |
 | Sep 22–23 | Ran the IMU alongside 15 servos, recording **over 70, 000 communication rounds without new errors**, moving from board testing to full-robot validation. |
@@ -33,4 +33,4 @@ All dates below are in 2026. The process first established independent IMU hardw
 - [IMU firmware source and version guides](../microduck-hd1910/firmware/firmware/imu-source/)
 - [HAT build timeline](HAT-TIMELINE.en.md)
 
-**Record baseline:** A5 is the working original Dynamixel version; Feetech adaptation builds on its validated hardware. The current IMU has passed extended full-robot use, operates normally, and has no identified issues. Communication counts in the table are development-stage test records.
+**Record baseline:** Feetech adaptation builds on the validated DIY hardware. The current IMU has passed extended full-robot use, operates normally, and has no identified issues. Communication counts in the table are development-stage test records.
