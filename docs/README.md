@@ -25,6 +25,7 @@
 
 | 说明 | 中文 | English |
 | --- | --- | --- |
+| 鸭子全套打印件与摆盘 · 缝合怪版 | [中文](../hardware/3d-print-frankenduck/README.md) | [English](../hardware/3d-print-frankenduck/README.en.md) |
 | HAT 制作时间线 | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
 | IMU 制作全过程视频与时间线 | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | HAT 与 IMU 自制硬件 | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |

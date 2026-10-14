@@ -24,7 +24,7 @@
 
 **软件版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
 
-[🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
+[🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [🖨️ **打印全套 · 缝合怪版**](hardware/3d-print-frankenduck/) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
 
 [🎮 机器人中控在线演示](https://kissqy.github.io/Microduck-kissqy/) · [🧠 训练中控在线演示](https://kissqy.github.io/Microduck-kissqy/training/)
 
@@ -64,6 +64,7 @@
 | **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
 | **飞特 HD1910 已编译固件 control.43** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 | **IMU 固件 FT6（STM32）** | 自制躯干 IMU 板单独烧录；8.2 KiB，飞特 HD1910 方案 | [⬇️ .bin](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [烧录指南](hardware/IMU-FIRMWARE.md) |
+| **鸭子全套打印件 · 缝合怪版** | 含 36 个 STL、5 盘 3MF 项目；两种电池仓 | [⬇️ RAR](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar) · [使用说明](hardware/3d-print-frankenduck/) |
 
 **普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；V167 中控内含 control.43，独立固件与它一致。镜像 R1 仍预装 control.40，刷卡后在 V167 中控安装随包固件即可更新。**新制作的 IMU 板还需单独刷入 FT6 `.bin`；系统镜像和 ZERO 服务升级不会烧录 IMU。**
 
@@ -83,6 +84,12 @@
 
 **V167 版本准备了 10 份运动模型**（6 个常规 + 4 个滑轮）。不用手动编写舵机动作，模型由控制服务执行。滑轮动作、倒地起身的效果受装配、标定和模型训练影响，仍需实机谨慎验证。
 
+
+## 🖨️ 鸭子全套打印件 · 缝合怪版
+
+结合多位社区制作者的优化与作者实机使用中的改动，包含全套 STL 和参考摆盘。**脚部套件装滑轮不用拆舵机**；电池仓提供夹 HUB 板版与官方式加厚卡扣版，IMU 安装位配套本仓库 IMU。滑轮使用 **623ZZ（3×10×4 mm）**。
+
+[打印文件、摆盘预览与两种电池仓说明](hardware/3d-print-frankenduck/) · [623ZZ 采购](DUCK-SHOPPING-LIST.md#滑轮选配轴承)
 
 ## 🔧 HAT 与 IMU 自制记录
 

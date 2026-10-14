@@ -6,6 +6,8 @@
 
 **自制 IMU 板还需要烧录固件：** [当前 FT6 下载、J2 接线、烧录步骤与检查](IMU-FIRMWARE.md)。STM32 IMU 固件与 ZERO 的 control.43 服务分别安装。
 
+🖨️ 鸭子本体的 [全套打印件与摆盘 · 缝合怪版](3d-print-frankenduck/) 已单独发布，含两种电池仓和不用拆舵机即可装滑轮的脚部套件。
+
 | 硬件 | 制作记录 | EasyEDA Pro 工程 |
 | --- | --- | --- |
 | HAT 主板 | [制作时间线及两层板的选择](HAT-TIMELINE.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |

@@ -58,6 +58,16 @@ The board lines above allocate component costs by actual use, including their hi
 | **6700 开式薄壁轴承**<br>6700开式【轴承钢·精品级】10\*15\*3MM；6700开式 / 10×15×3mm / 轴承钢精品级 | 只 | 5 | ¥1.94 | ¥9.70 | 优可吉轴承销售店<br>[Product](https://item.taobao.com/item.htm?id=625390659071) |
 | **ET2216 薄壁轴承**<br>ET2216【精品级】16\*22\*4MM[轴承钢]；ET2216 / 16×22×4mm / 轴承钢精品级 | 只 | 12 | ¥2.91 | ¥34.92 | 优可吉轴承销售店<br>[Product](https://item.taobao.com/item.htm?id=733598659967) |
 
+### Optional roller bearings
+
+**The FrankenDuck rollers use 623ZZ bearings (3 mm bore × 10 mm outer diameter × 4 mm width).** This optional roller item is priced separately and excluded from the base duck totals above.
+
+| Product / exact variant | Reference purchase quantity | Order unit price | Goods subtotal | Seller / product |
+| --- | ---: | ---: | ---: | --- |
+| **623ZZ miniature bearing**<br>Exact order variant: **623 内3外10厚4**; for FrankenDuck rollers | 8 pcs | ¥1.50 | ¥12.00 | EVT进口轴承<br>[Product](https://item.taobao.com/item.htm?id=618009195719) |
+
+From the author's **October 14, 2026** order. This is a reference purchase quantity; assembly quantities depend on the roller setup. Shipping was ¥0.50 and the paid total was ¥12.50. [Matching printing set and plate project](hardware/3d-print-frankenduck/README.en.md).
+
 ### 🔩 Screws
 
 | Item / exact variant | Unit | Reference quantity | Historical unit price | Subtotal | Shop / link |

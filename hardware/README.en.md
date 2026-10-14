@@ -6,6 +6,8 @@
 
 **A newly built IMU also needs firmware:** [current FT6 download, J2 wiring, flashing, and checks](IMU-FIRMWARE.en.md). STM32 IMU firmware and ZERO control.43 services are installed separately.
 
+🖨️ The [complete FrankenDuck printing set and plate project](3d-print-frankenduck/README.en.md) is available separately, with two battery holders and a foot kit that accepts rollers without removing servos.
+
 | Hardware | Build record | EasyEDA Pro project |
 | --- | --- | --- |
 | HAT board | [Build timeline and the choice of a two-layer PCB](HAT-TIMELINE.en.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |

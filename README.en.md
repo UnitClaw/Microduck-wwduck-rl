@@ -24,7 +24,7 @@
 
 **Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
-[🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
+[🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [🖨️ **Complete printing set · FrankenDuck**](hardware/3d-print-frankenduck/README.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
 
 [🎮 Robot Console online demo](https://kissqy.github.io/Microduck-kissqy/) · [🧠 Training Studio online demo](https://kissqy.github.io/Microduck-kissqy/training/)
 
@@ -64,6 +64,7 @@ This little duck can **walk, sit, pick things up, kick a ball, and roll forward*
 | **Training Studio R1.5.27** | Train, evaluate, and export your own models | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
 | **Compiled Feetech HD1910 firmware control.43** | Upgrade ZERO-side services on an existing system; ARM64 installation package | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 | **IMU firmware FT6 (STM32)** | Flash a newly built torso IMU separately; 8.2 KiB, Feetech HD1910 setup | [⬇️ .bin](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [Flashing guide](hardware/IMU-FIRMWARE.en.md) |
+| **Complete printing set · FrankenDuck** | 36 STL files, 5-plate 3MF project, two battery-holder variants | [⬇️ RAR](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar) · [Guide](hardware/3d-print-frankenduck/README.en.md) |
 
 **For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware matches V167 bundled control.43. Image R1 still includes control.40; install bundled firmware from V167 to upgrade after flashing. No compilation is required. **A newly built IMU also needs the separate FT6 `.bin`; system images and ZERO service upgrades do not program it.**
 
@@ -84,6 +85,12 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 **V167 includes 10 movement models: 6 regular models and 4 roller models.** The control service executes the models; you do not have to hand-script servo movements. Roller movements and recovery depend on assembly, calibration, and training and still need careful real-robot evaluation.
 
 **English instructions:** [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [Image setup](docs/releases/public-image-r1.en.md) · [Source / build guides](microduck-hd1910/README.en.md). The application interfaces in the current downloads remain Chinese; the English guides include the original button labels where needed.
+
+## 🖨️ Complete printing set · FrankenDuck
+
+This set combines community improvements with the author's real-robot modifications, including STL files and a reference plate project. **Install rollers without removing the servos.** Choose a HUB-clamping battery holder or the official-style holder with thicker latches; both IMU mounts fit this repository's IMU. Rollers use **623ZZ (3×10×4 mm)** bearings.
+
+[Printing files, plate previews, and battery holders](hardware/3d-print-frankenduck/README.en.md) · [623ZZ purchasing](DUCK-SHOPPING-LIST.en.md#optional-roller-bearings)
 
 ## 🔧 DIY HAT and IMU
 

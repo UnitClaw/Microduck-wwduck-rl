@@ -25,6 +25,7 @@ English editions of the homepage, user guides, hardware records, and technical n
 
 | Guide | 中文 | English |
 | --- | --- | --- |
+| Complete printing set and plates · FrankenDuck | [中文](../hardware/3d-print-frankenduck/README.md) | [English](../hardware/3d-print-frankenduck/README.en.md) |
 | HAT build timeline | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
 | IMU full build video and timeline | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | DIY HAT and IMU hardware | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
