@@ -22,7 +22,7 @@
 
 **基于官方 Microduck 0.15.1 · 飞特 HD1910 适配 · 两套中文中控**
 
-**软件版本：机器人中控 R17 V164 · 固件 control.40 · 训练中控 R1.5.27 · 首次配网 R5**
+**软件版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
 
 [🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
 
@@ -32,7 +32,7 @@
 
 > ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试，**无需自行编译机器人固件。**
 >
-> 📦 **机器人中控 R17 V164 和训练中控 R1.5.27 已上传，可直接下载。** 配套的已编译 control.40 固件及两个中控源码也已公开，下载统一见下方表格。
+> 📦 **机器人中控 R17 V167 和训练中控 R1.5.27 已上传，可直接下载。** 配套的已编译 control.43 固件及两个中控源码也已公开，下载统一见下方表格。
 
 ---
 
@@ -60,25 +60,27 @@
 | 文件 | 用途 | 下载 |
 | --- | --- | --- |
 | **系统镜像 R1** · 官方 0.15.1 / control.40 | 新装 ZERO 3W，预装机器人服务和运动模型 | [⬇️ .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
-| **机器人中控 R17 V164** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) |
+| **机器人中控 R17 V167** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
 | **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
-| **飞特 HD1910 已编译固件 control.40** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
+| **飞特 HD1910 已编译固件 control.43** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 
-**普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；独立固件与镜像、V164 中控内的是同一版 control.40，下载它不需要再编译。
+**普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；V167 中控内含 control.43，独立固件与它一致。镜像 R1 仍预装 control.40，刷卡后在 V167 中控安装随包固件即可更新。
 
 [机器人中控说明](microduck-hd1910/firmware/console/README.md) · [训练中控说明](microduck-hd1910/training-console/README.md) · [独立固件安装与校验](release-assets/README.md) · [镜像发布说明](docs/releases/public-image-r1.md)
 
-源码入口：[固件](microduck-hd1910/firmware/) · [机器人中控](microduck-hd1910/firmware/console/) · [训练中控](microduck-hd1910/training-console/) · [编译说明](microduck-hd1910/docs/BUILD.md)。V164 沿用 V163 编译的 control.40，源码原包名中的 V163 是编译来源。
+源码入口：[固件](microduck-hd1910/firmware/) · [机器人中控](microduck-hd1910/firmware/console/) · [训练中控](microduck-hd1910/training-console/) · [编译说明](microduck-hd1910/docs/BUILD.md)。当前源码与 V167 / control.43 对齐；源码目录已去除重复编译产物。
+
+**V167 更新：修复鸭身抖动的问题。**
 
 ## 🎮 两个中控，各做各的事
 
-| 🐣 机器人中控 · R17 V164 | 🧠 训练中控 · R1.5.27 |
+| 🐣 机器人中控 · R17 V167 | 🧠 训练中控 · R1.5.27 |
 | --- | --- |
 | 实时 3D 姿态、摄像头、关节/IMU 数据、舵机标定 | 独立训练任务、配方选择、训练队列、进度与奖励曲线 |
 | 实体手柄直接操控、固件维护、模型状态 | 可视化仿真、模型评估、ONNX 导出 |
 | 不用自己编译 Zero 服务 | 需要具备训练环境的电脑；不要求 Zero 才能运行界面 |
 
-**V164 版本准备了 10 份运动模型**（6 个常规 + 4 个滑轮）。不用手动编写舵机动作，模型由控制服务执行。滑轮动作、倒地起身的效果受装配、标定和模型训练影响，仍需实机谨慎验证。
+**V167 版本准备了 10 份运动模型**（6 个常规 + 4 个滑轮）。不用手动编写舵机动作，模型由控制服务执行。滑轮动作、倒地起身的效果受装配、标定和模型训练影响，仍需实机谨慎验证。
 
 
 ## 🔧 HAT 与 IMU 自制记录

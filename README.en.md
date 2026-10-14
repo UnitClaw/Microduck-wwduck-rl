@@ -22,7 +22,7 @@
 
 **An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
 
-**Versions: Robot Console R17 V164 · Firmware control.40 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
+**Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
 [🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
 
@@ -32,7 +32,7 @@
 
 > ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, Wi-Fi setup, SSH, robot communication, and R17 recognition. **No need to compile the robot firmware yourself.**
 >
-> 📦 **Robot Console R17 V164 and Training Studio R1.5.27 are ready to download.** Compiled control.40 firmware and both console sources are also published. All downloads are grouped in the table below.
+> 📦 **Robot Console R17 V167 and Training Studio R1.5.27 are ready to download.** Compiled control.43 firmware and both console sources are also published. All downloads are grouped in the table below.
 
 ---
 
@@ -60,25 +60,27 @@ This little duck can **walk, sit, pick things up, kick a ball, and roll forward*
 | Package | Purpose | Download |
 | --- | --- | --- |
 | **System Image R1** · Official 0.15.1 / control.40 | Fresh ZERO 3W installation; robot services and movement models preinstalled | [⬇️ .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
-| **Robot Console R17 V164** | Connect to and operate the duck from your computer; includes the matching firmware payload | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V164.zip) |
+| **Robot Console R17 V167** | Connect to and operate the duck from your computer; includes the matching firmware payload | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
 | **Training Studio R1.5.27** | Train, evaluate, and export your own models | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
-| **Compiled Feetech HD1910 firmware control.40** | Upgrade ZERO-side services on an existing system; ARM64 installation package | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
+| **Compiled Feetech HD1910 firmware control.43** | Upgrade ZERO-side services on an existing system; ARM64 installation package | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
 
-**For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware is the same control.40 supplied in the image and V164 console; no compilation is required.
+**For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware matches V167 bundled control.43. Image R1 still includes control.40; install bundled firmware from V167 to upgrade after flashing. No compilation is required.
 
 [Robot Console guide](microduck-hd1910/firmware/console/README.en.md) · [Training Studio guide](microduck-hd1910/training-console/README.en.md) · [Standalone firmware installation and checksums](release-assets/README.en.md) · [Image release guide](docs/releases/public-image-r1.en.md)
 
-Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [build guide](microduck-hd1910/docs/BUILD.en.md). V164 reuses control.40 compiled for V163; V163 in the original source archive name identifies that build.
+Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [build guide](microduck-hd1910/docs/BUILD.en.md). Current source matches V167 / control.43; duplicate compiled resources are restored when needed.
+
+**V167 update: Fixed body jitter.**
 
 ## 🎮 Two consoles, two jobs
 
-| 🐣 Robot Console · R17 V164 | 🧠 Training Studio · R1.5.27 |
+| 🐣 Robot Console · R17 V167 | 🧠 Training Studio · R1.5.27 |
 | --- | --- |
 | Live 3D pose, camera, joint / IMU data, servo calibration | Training tasks, recipes, queue, progress and reward curves |
 | Physical gamepad control, firmware maintenance, model status | Visual simulation, policy evaluation, ONNX export |
 | No need to compile the ZERO services yourself | Requires a computer with a training environment; the interface itself does not require a ZERO |
 
-**V164 includes 10 movement models: 6 regular models and 4 roller models.** The control service executes the models; you do not have to hand-script servo movements. Roller movements and recovery depend on assembly, calibration, and training and still need careful real-robot evaluation.
+**V167 includes 10 movement models: 6 regular models and 4 roller models.** The control service executes the models; you do not have to hand-script servo movements. Roller movements and recovery depend on assembly, calibration, and training and still need careful real-robot evaluation.
 
 **English instructions:** [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [Image setup](docs/releases/public-image-r1.en.md) · [Source / build guides](microduck-hd1910/README.en.md). The application interfaces in the current downloads remain Chinese; the English guides include the original button labels where needed.
 

@@ -8,14 +8,15 @@
 
 | 说明 | 中文 | English |
 | --- | --- | --- |
-| 飞特已编译固件 control.40 — 下载与安装 | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
+| 飞特已编译固件 control.43 — 下载与安装 | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
 | 🎬 看看鸭鸭的真实表现（5 段视频） | [中文](../README.md) | [English](../README.en.md) |
 | 🌱 作者如何从新手进阶 — 学习时间线与完整提问回顾 | [中文](AUTHOR-JOURNEY.md) | [English](AUTHOR-JOURNEY.en.md) |
 | START-HERE | [中文](../START-HERE.txt) | [English](../START-HERE.en.md) |
 | 🦆 Microduck 一键系统镜像 R1 | [中文](releases/public-image-r1.md) | [English](releases/public-image-r1.en.md) |
 | Microduck HD1910 | [中文](../microduck-hd1910/README.md) | [English](../microduck-hd1910/README.en.md) |
 | 发布基线与验证范围 | [中文](../microduck-hd1910/docs/BASELINE.md) | [English](../microduck-hd1910/docs/BASELINE.en.md) |
-| 从源码编译 control.40 | [中文](../microduck-hd1910/docs/BUILD.md) | [English](../microduck-hd1910/docs/BUILD.en.md) |
+| V167 构建与源码资源准备 | [中文](../microduck-hd1910/firmware/BUILDING-V167.md) | [English](../microduck-hd1910/firmware/BUILDING-V167.en.md) |
+| 从源码编译 control.43 | [中文](../microduck-hd1910/docs/BUILD.md) | [English](../microduck-hd1910/docs/BUILD.en.md) |
 | 当前仓库的发布方式 | [中文](../microduck-hd1910/docs/PUBLISH.md) | [English](../microduck-hd1910/docs/PUBLISH.en.md) |
 | 第三方来源与授权范围 | [中文](../microduck-hd1910/docs/THIRD-PARTY.md) | [English](../microduck-hd1910/docs/THIRD-PARTY.en.md) |
 
@@ -35,8 +36,8 @@
 | 说明 | 中文 | English |
 | --- | --- | --- |
 | PUBLICATION-NOTE | [中文](../microduck-hd1910/firmware/console/PUBLICATION-NOTE.txt) | [English](../microduck-hd1910/firmware/console/PUBLICATION-NOTE.en.md) |
-| 🎮 Microduck 机器人中控 · R17 V164 | [中文](../microduck-hd1910/firmware/console/README.md) | [English](../microduck-hd1910/firmware/console/README.en.md) |
-| Microduck R17 V164 / control.40 使用说明 | [中文](../microduck-hd1910/firmware/console/README.zh-CN.md) | [English](../microduck-hd1910/firmware/console/USER-GUIDE.en.md) |
+| 🎮 Microduck 机器人中控 · R17 V167 | [中文](../microduck-hd1910/firmware/console/README.md) | [English](../microduck-hd1910/firmware/console/README.en.md) |
+| Microduck R17 V167 / control.43 使用说明 | [中文](../microduck-hd1910/firmware/console/README.zh-CN.md) | [English](../microduck-hd1910/firmware/console/USER-GUIDE.en.md) |
 | 本次音源与手柄来源 | [中文](../microduck-hd1910/firmware/console/THIRD_PARTY_NOTICES.md) | [English](../microduck-hd1910/firmware/console/THIRD_PARTY_NOTICES.en.md) |
 | R17 中控参数来源 | [中文](../microduck-hd1910/firmware/console/docs/joint-scale-design148.md) | [English](../microduck-hd1910/firmware/console/docs/joint-scale-design148.en.md) |
 | R147 验证记录 | [中文](../microduck-hd1910/firmware/console/verification/README.md) | [English](../microduck-hd1910/firmware/console/verification/README.en.md) |
@@ -62,7 +63,7 @@
 | OFFICIAL-CHANGES.zh-CN | [中文](../microduck-hd1910/firmware/OFFICIAL-CHANGES.zh-CN.md) | [English](../microduck-hd1910/firmware/OFFICIAL-CHANGES.en.md) |
 | OFFICIAL-GAMEPAD.zh-CN | [中文](../microduck-hd1910/firmware/OFFICIAL-GAMEPAD.zh-CN.md) | [English](../microduck-hd1910/firmware/OFFICIAL-GAMEPAD.en.md) |
 | R17-CHANGES.zh-CN | [中文](../microduck-hd1910/firmware/R17-CHANGES.zh-CN.md) | [English](../microduck-hd1910/firmware/R17-CHANGES.en.md) |
-| Microduck control.40 固件与 R17 V164 中控 | [中文](../microduck-hd1910/firmware/README-R17.zh-CN.md) | [English](../microduck-hd1910/firmware/README-R17.en.md) |
+| Microduck control.43 固件与 R17 V167 中控 | [中文](../microduck-hd1910/firmware/README-R17.zh-CN.md) | [English](../microduck-hd1910/firmware/README-R17.en.md) |
 | It does things | [中文](../microduck-hd1910/firmware/README.md) | [English](../microduck-hd1910/firmware/README.en.md) |
 | SELF-TRAINED.zh-CN | [中文](../microduck-hd1910/firmware/SELF-TRAINED.zh-CN.md) | [English](../microduck-hd1910/firmware/SELF-TRAINED.en.md) |
 | Microduck R17 V163 / control.40 构建与使用范围 | [中文](../microduck-hd1910/firmware/V163-构建说明.md) | [English](../microduck-hd1910/firmware/V163-BUILD.en.md) |
@@ -70,7 +71,7 @@
 | R17 中控参数来源 | [中文](../microduck-hd1910/firmware/docs/design/r17-settings-design.md) | [English](../microduck-hd1910/firmware/docs/design/r17-settings-design.en.md) |
 | WebRTC: sessions, signalling, and the control channel | [中文](../microduck-hd1910/firmware/docs/design/remote-webrtc.md) | [English](../microduck-hd1910/firmware/docs/design/remote-webrtc.en.md) |
 | 当前 R17 v1.0.157-Fix6 / control.36 | [中文](../microduck-hd1910/firmware/docs/design/robotd-design.md) | [English](../microduck-hd1910/firmware/docs/design/robotd-design.en.md) |
-| Microduck R17 V164 / control.40 随包固件 | [中文](../microduck-hd1910/firmware/packaging/README.zh-CN.md) | [English](../microduck-hd1910/firmware/packaging/README.en.md) |
+| Microduck R17 V167 / control.43 随包固件 | [中文](../microduck-hd1910/firmware/packaging/README.zh-CN.md) | [English](../microduck-hd1910/firmware/packaging/README.en.md) |
 | HD1910 自训模型 · 目标固件 0.15.1 · 1cbf8730eadd75a5704332c9f3c10f60 | [中文](../microduck-hd1910/firmware/packaging/models/1cbf8730eadd75a5704332c9f3c10f60/使用说明.md) | [English](../microduck-hd1910/firmware/packaging/models/1cbf8730eadd75a5704332c9f3c10f60/README.en.md) |
 | HD1910 自训模型 · 目标固件 0.15.1 · 59e15d7b04d0c40e9b11b8a70bdecae6 | [中文](../microduck-hd1910/firmware/packaging/models/59e15d7b04d0c40e9b11b8a70bdecae6/使用说明.md) | [English](../microduck-hd1910/firmware/packaging/models/59e15d7b04d0c40e9b11b8a70bdecae6/README.en.md) |
 | HD1910 自训模型 · 目标固件 0.15.1 · 67ad09d82f4865d222a7ae06f250cf9f | [中文](../microduck-hd1910/firmware/packaging/models/67ad09d82f4865d222a7ae06f250cf9f/使用说明.md) | [English](../microduck-hd1910/firmware/packaging/models/67ad09d82f4865d222a7ae06f250cf9f/README.en.md) |

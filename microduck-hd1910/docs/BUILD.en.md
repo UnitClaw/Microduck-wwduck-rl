@@ -1,8 +1,8 @@
 [简体中文](BUILD.md) | **English**
 
-# Build control.40 from source
+# Build control.43 from source
 
-For daily use, download the system image and V164 console; compilation is unnecessary. This page covers rebuilding ZERO programs after changing the source. Current firmware is **control.40**, compiled for V163 and distributed with V164.
+For daily use, download the system image and V167 console; compilation is unnecessary. This page covers rebuilding ZERO programs after changing the source. Current firmware is **control.43**, distributed with V167.
 
 On Windows, use a WSL / Linux terminal in VS Code. After cloning this repository, enter `microduck-hd1910` first.
 
@@ -35,7 +35,7 @@ bash tools/build-firmware.sh --check
 bash tools/build-firmware.sh
 ```
 
-`--check` checks installed tools and pinned dependency records without downloading or compiling. The build uses `Cargo.lock`, Rust **1.99.0**, cargo-zigbuild **0.23.4**, and Zig **0.15.1**, targeting `aarch64-unknown-linux-gnu.2.31`. It matches the control.40 records and sets release codegen-units to 1 for `robotd` and `pet-detect`.
+`--check` checks installed tools and pinned dependency records without downloading or compiling. The build uses `Cargo.lock`, Rust **1.99.0**, cargo-zigbuild **0.23.4**, and Zig **0.15.1**, targeting `aarch64-unknown-linux-gnu.2.31`. It matches the control.43 records and sets release codegen-units to 1 for `robotd` and `pet-detect`.
 
 Output is in **`.build/firmware/bin/`**:
 
@@ -56,7 +56,7 @@ The gamepad program requires libudev. Host `libudev-dev` supports host-side buil
 
 ### Relationship to delivered programs
 
-Original build identity and native program hashes are in [`firmware/BUILD.json`](../firmware/BUILD.json). Original control.40 compilation and targeted verification are in [`verification/v163/`](../firmware/verification/v163/). For the original build environment, 235 targeted Rust tests, and ten ARM64/QEMU models, see the [V163 build record](../firmware/V163-BUILD.en.md).
+Current build identity and binary hashes are in [`firmware/BUILD.json`](../firmware/BUILD.json). Release reproduction and prior test records are in [BUILDING-V167.en.md](../firmware/BUILDING-V167.en.md) and [`verification/v167/`](../firmware/verification/v167/): 237 Rust tests, 18 Python tests and ten ARM64/QEMU models.
 
 `firmware/build-V163.sh` and `package-V163.py` reproduce the original process and require the V162 base ZIP, QEMU, and compatible runtime libraries. Three historical base ZIPs are not duplicated in this repository. Use `tools/build-firmware.sh` here for ordinary source compilation.
 
