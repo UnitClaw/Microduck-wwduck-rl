@@ -2,7 +2,7 @@
 
 # 发布基线与验证范围
 
-当前整理版本为 **R17 V167 / control.43 + Training R1.5.27**，官方基线为 **0.15.1**。身份与哈希见 [PUBLICATION-MANIFEST.json](../PUBLICATION-MANIFEST.json)。
+当前公开版本为 **R17 V167 / control.43 + Training R1.5.27**，官方基线为 **0.15.1**。身份与哈希见 [PUBLICATION-MANIFEST.json](../PUBLICATION-MANIFEST.json)。
 
 **V167 更新：修复鸭身抖动的问题。**
 
@@ -36,4 +36,4 @@
 
 当前软件发布参考为 **0.15.1 + R17 V167 / control.43 + Training R1.5.27**；系统镜像仍使用已重刷验证的 **Public Image R1**，不同动作的验收范围按各自实测记录执行。
 
-**下一步唯一主任务：审核本次整理包，再发布到仓库。** 一次只验证一个变量。
+**下一步唯一主任务：按公开下载复现 V167 安装与本机标定。** 一次只验证一个变量。

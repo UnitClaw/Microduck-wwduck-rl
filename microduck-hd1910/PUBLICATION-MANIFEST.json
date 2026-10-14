@@ -1,6 +1,6 @@
 {
   "schema": "microduck-publication/v2",
-  "publication_revision": "v167-control43-source-cleanup",
+  "publication_revision": "v167-control43-published",
   "date": "2026-10-14",
   "firmware_console_version": "1.0.167",
   "firmware_build": "1fa8438-feetech-ft6-control.43",
@@ -211,8 +211,13 @@
   },
   "repository_layout": {
     "base_commit": "7a52d297a9adfe6d2315481953dc64060252d142",
-    "generated_runtime_files": 22,
+    "generated_runtime_files": 30,
     "duplicate_bytes_removed": 61487165,
     "baseline": "release-assets/build-baselines/Microduck-Console-R17-V164.zip"
+  },
+  "publication_state": {
+    "published": true,
+    "initial_commit": "8f6060711f38ce9bf2aa67cb21054d32c0abddf2",
+    "changes": "修复鸭身抖动的问题"
   }
 }

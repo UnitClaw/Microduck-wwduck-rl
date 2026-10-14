@@ -2,7 +2,7 @@
 
 # Release baseline and verification scope
 
-Prepared version: **R17 V167 / control.43 + Training R1.5.27**, based on official **0.15.1**. See [PUBLICATION-MANIFEST.json](../PUBLICATION-MANIFEST.json) for identities and hashes.
+Published version: **R17 V167 / control.43 + Training R1.5.27**, based on official **0.15.1**. See [PUBLICATION-MANIFEST.json](../PUBLICATION-MANIFEST.json) for identities and hashes.
 
 **V167 update: Fixed body jitter.**
 
@@ -36,4 +36,4 @@ The image was previously verified by reflashing, first Wi-Fi setup, SSH, robot c
 
 Current release reference: **0.15.1 + R17 V167 / control.43 + Training R1.5.27**, with the reflash-verified **Public Image R1**. Action-specific acceptance remains governed by the corresponding real-robot records.
 
-**Single next task: review this prepared package, then publish it to the repository.** Validate one variable at a time.
+**Single next task: reproduce V167 installation and local calibration from the published downloads.** Validate one variable at a time.
