@@ -28,9 +28,10 @@ English editions of the homepage, user guides, hardware records, and technical n
 | HAT build timeline | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
 | IMU full build video and timeline | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | DIY HAT and IMU hardware | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
-| Microduck native Feetech FT1 — communication and IMU test build | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.en.md) |
-| FT2 Sync 20 increment | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.en.md) |
-| Protocol and compatibility | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md) |
+| IMU firmware FT6 — download, wiring, flash, and checks | [中文](../hardware/IMU-FIRMWARE.md) | [English](../hardware/IMU-FIRMWARE.en.md) |
+| Current IMU FT6: protocol and compatibility | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md) |
+| Historical FT1 — communication and IMU test build | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT1.en.md) |
+| Historical FT2 Sync20 increment | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT2_SYNC20.en.md) |
 
 ## Robot Console / 机器人中控
 

@@ -4,6 +4,8 @@
 
 🎬 **[观看 IMU 手工制作全过程（Bilibili）](https://www.bilibili.com/video/BV1qapz6PERs/)**
 
+**搭建飞特版本先看 [当前 IMU FT6 下载与烧录指南](IMU-FIRMWARE.md)**；下面是包含原 Dynamixel A5 的制作历史。
+
 制作时间均为 2026 年。先完成独立 IMU 的硬件和真实姿态读取，再接入总线；原 Dynamixel 方案跑通后，复用硬件适配飞特。
 
 **当前状态（2026-10-12 确认）：已在整机上经过长时间使用验证，运行正常，没有发现问题。**

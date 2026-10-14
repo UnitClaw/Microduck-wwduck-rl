@@ -8,6 +8,8 @@
 
 **更新：修复鸭身抖动的问题。**
 
+**自制 IMU 板单独刷 STM32 FT6：** [下载与烧录指南](../hardware/IMU-FIRMWARE.md)；control.43 安装到 ZERO，不会烧录外置 IMU。
+
 ## 和镜像、中控是什么关系
 
 | 文件 | 用途 |

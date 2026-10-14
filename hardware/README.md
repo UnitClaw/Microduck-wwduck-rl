@@ -4,6 +4,8 @@
 
 **HAT 和独立躯干 IMU 均已在实机上经过长时间使用验证，运行正常，没有发现问题。**
 
+**自制 IMU 板还需要烧录固件：** [当前 FT6 下载、J2 接线、烧录步骤与检查](IMU-FIRMWARE.md)。STM32 IMU 固件与 ZERO 的 control.43 服务分别安装。
+
 | 硬件 | 制作记录 | EasyEDA Pro 工程 |
 | --- | --- | --- |
 | HAT 主板 | [制作时间线及两层板的选择](HAT-TIMELINE.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |

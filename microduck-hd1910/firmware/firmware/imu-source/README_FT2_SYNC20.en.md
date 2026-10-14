@@ -1,5 +1,7 @@
 [简体中文](README_FT2_SYNC20.md) | **English**
 
+> **Historical version. Current Feetech setup: FT6.** Start with [IMU download and flashing](../../../../hardware/IMU-FIRMWARE.en.md); the protocol, LED behavior, and test tools below describe this earlier stage.
+
 # FT2 Sync 20 increment
 
 FT2 adds a read-only alias at address 56 for FT1's 20-byte IMU snapshot, while retaining address 124. Firmware identity changes from 1.0 to 2.0; data schema remains 1.

@@ -66,9 +66,9 @@ Source synchronization did not download the build environment again or rebuild f
 
 The Robot Console includes `ssh-askpass.exe`; source is [`firmware/scripts/ssh-askpass-windows.c`](../firmware/scripts/ssh-askpass-windows.c). This Windows OpenSSH callback is separate from ARM64 firmware. Rebuild instructions are in the C file header. The Linux console uses the `firmware/console/ssh-askpass` Python file and needs no compilation.
 
-## HAT / IMU
+## IMU (STM32)
 
-HAT / IMU firmware uses Arm GNU Toolchain **14.3.Rel 1**. The build entry is [`Makefile.feetech`](../firmware/firmware/imu-source/Makefile.feetech), currently **FT6_SYNC15_UART_IRQ_v 1**. Prepare STM32 CubeG0 and set `TOOLCHAIN` and `CUBE` as required by the Makefile.
+The independent IMU STM32 firmware uses Arm GNU Toolchain **14.3.Rel1**. The build entry is [`Makefile.feetech`](../firmware/firmware/imu-source/Makefile.feetech), currently **FT6_SYNC15_UART_IRQ_v1**. Prepare STM32 CubeG0 and set `TOOLCHAIN` and `CUBE` as required by the Makefile.
 
 | Dependency | Pinned source version |
 | --- | --- |
@@ -81,4 +81,4 @@ make -C firmware/firmware/imu-source -f Makefile.feetech \
   CUBE=/path/to/your/STM32CubeG0
 ```
 
-Output is in `firmware/firmware/imu-source/build-feetech-ft6/`. Compilation does not flash the board. Source synchronization did not modify or rebuild HAT firmware.
+Output is in `firmware/firmware/imu-source/build-feetech-ft6/`. Compilation does not flash the board. For the compiled binary and flashing procedure, see [IMU firmware FT6](../../hardware/IMU-FIRMWARE.en.md).

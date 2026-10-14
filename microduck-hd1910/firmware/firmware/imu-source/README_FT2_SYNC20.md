@@ -1,5 +1,7 @@
 **简体中文** | [English](README_FT2_SYNC20.en.md)
 
+> **历史版本；当前飞特方案使用 FT6。** 制作请先看 [IMU 下载与烧录指南](../../../../hardware/IMU-FIRMWARE.md)，下文的协议、LED 和测试工具属于当时版本。
+
 # FT2 Sync20 增量
 
 FT2 在 FT1 的 20 字节 IMU 快照上增加地址 56 的只读别名，同时保留地址 124。

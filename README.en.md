@@ -63,8 +63,9 @@ This little duck can **walk, sit, pick things up, kick a ball, and roll forward*
 | **Robot Console R17 V167** | Connect to and operate the duck from your computer; includes the matching firmware payload | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
 | **Training Studio R1.5.27** | Train, evaluate, and export your own models | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
 | **Compiled Feetech HD1910 firmware control.43** | Upgrade ZERO-side services on an existing system; ARM64 installation package | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
+| **IMU firmware FT6 (STM32)** | Flash a newly built torso IMU separately; 8.2 KiB, Feetech HD1910 setup | [⬇️ .bin](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [Flashing guide](hardware/IMU-FIRMWARE.en.md) |
 
-**For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware matches V167 bundled control.43. Image R1 still includes control.40; install bundled firmware from V167 to upgrade after flashing. No compilation is required.
+**For ordinary use, download the system image and Robot Console.** Training Studio is optional. The standalone firmware matches V167 bundled control.43. Image R1 still includes control.40; install bundled firmware from V167 to upgrade after flashing. No compilation is required. **A newly built IMU also needs the separate FT6 `.bin`; system images and ZERO service upgrades do not program it.**
 
 [Robot Console guide](microduck-hd1910/firmware/console/README.en.md) · [Training Studio guide](microduck-hd1910/training-console/README.en.md) · [Standalone firmware installation and checksums](release-assets/README.en.md) · [Image release guide](docs/releases/public-image-r1.en.md)
 
@@ -90,7 +91,7 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 
 Both the custom HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.
 
-[HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🔧 PCB shopping list (HAT / IMU)](hardware/README.en.md#shopping-list)
+[IMU firmware download and flashing](hardware/IMU-FIRMWARE.en.md) · [HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🔧 PCB shopping list (HAT / IMU)](hardware/README.en.md#shopping-list)
 
 ## ❤️ Sharing the project and crediting its creators
 

@@ -8,6 +8,8 @@
 
 **已有编译好的固件。** control.43 已随 V167 中控提供；系统镜像 R1 仍预装 control.40；单独使用见[固件安装与下载说明](../release-assets/README.md)。
 
+**自制 IMU 板单独刷 STM32 FT6：** [下载与烧录指南](../hardware/IMU-FIRMWARE.md)；control.43 安装到 ZERO，不会烧录外置 IMU。
+
 ## 当前版本与源码
 
 | 内容 | 当前版本 | 源码位置 |

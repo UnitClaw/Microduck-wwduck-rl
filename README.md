@@ -63,8 +63,9 @@
 | **机器人中控 R17 V167** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
 | **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
 | **飞特 HD1910 已编译固件 control.43** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
+| **IMU 固件 FT6（STM32）** | 自制躯干 IMU 板单独烧录；8.2 KiB，飞特 HD1910 方案 | [⬇️ .bin](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [烧录指南](hardware/IMU-FIRMWARE.md) |
 
-**普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；V167 中控内含 control.43，独立固件与它一致。镜像 R1 仍预装 control.40，刷卡后在 V167 中控安装随包固件即可更新。
+**普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；V167 中控内含 control.43，独立固件与它一致。镜像 R1 仍预装 control.40，刷卡后在 V167 中控安装随包固件即可更新。**新制作的 IMU 板还需单独刷入 FT6 `.bin`；系统镜像和 ZERO 服务升级不会烧录 IMU。**
 
 [机器人中控说明](microduck-hd1910/firmware/console/README.md) · [训练中控说明](microduck-hd1910/training-console/README.md) · [独立固件安装与校验](release-assets/README.md) · [镜像发布说明](docs/releases/public-image-r1.md)
 
@@ -89,7 +90,7 @@
 
 自制 HAT 与独立躯干 IMU 均已在实机上经过长时间验证，运行正常，没有发现问题。
 
-[HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/) · [🔧 PCB采购表（HAT／IMU）](hardware/README.md#采购清单)
+[IMU 固件下载与烧录](hardware/IMU-FIRMWARE.md) · [HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/) · [🔧 PCB采购表（HAT／IMU）](hardware/README.md#采购清单)
 
 ## ❤️ 分享给大家，也尊重原创
 

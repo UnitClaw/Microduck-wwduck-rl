@@ -1,3 +1,5 @@
+> **Historical version. Current Feetech setup: FT6.** Start with [IMU download and flashing](../../../../hardware/IMU-FIRMWARE.en.md); the protocol, LED behavior, and test tools below describe this earlier stage.
+
 # imu-to-dxl RevA — official-format live IMU firmware M8-A5
 
 This build combines the two RevA paths already proven on physical hardware:

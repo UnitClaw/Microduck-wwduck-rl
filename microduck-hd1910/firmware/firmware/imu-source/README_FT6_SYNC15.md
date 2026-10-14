@@ -1,5 +1,7 @@
 **简体中文** | [English](README_FT6_SYNC15.en.md)
 
+**当前 IMU 固件：FT6_SYNC15_UART_IRQ_v1。** [下载、接线、烧录与检查](../../../../hardware/IMU-FIRMWARE.md) · [源码目录说明](README.md)。本页维护协议和主控兼容约定。
+
 ## 协议与兼容
 
 地址 56–70：角速度 XYZ i16 小端 6 字节，四元数 XYZ binary16 小端 6 字节，u8 采样计数、状态、保留 0，各 1 字节。

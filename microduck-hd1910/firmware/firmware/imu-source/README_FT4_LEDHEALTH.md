@@ -1,3 +1,5 @@
+> **Historical version. Current Feetech setup: FT6.** Start with [IMU download and flashing](../../../../hardware/IMU-FIRMWARE.en.md); the protocol, LED behavior, and test tools below describe this earlier stage.
+
 # FT4 RX-turnaround and LED health semantics
 
 FT4 contains the unchanged FT3 USART/bus-direction fix and keeps the same

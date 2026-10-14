@@ -1,5 +1,7 @@
 [简体中文](README_FT6_SYNC15.md) | **English**
 
+**Current IMU firmware: FT6_SYNC15_UART_IRQ_v1.** [Download, wiring, flashing, and checks](../../../../hardware/IMU-FIRMWARE.en.md) · [Source directory guide](README.en.md). This page owns the protocol and host compatibility contract.
+
 ## Protocol and compatibility
 
 Addresses 56–70: gyro XYZ i 16 little-endian (6 bytes), quaternion XYZ binary 16 little-endian (6 bytes), then u 8 sample counter, status, and reserved zero (1 byte each).

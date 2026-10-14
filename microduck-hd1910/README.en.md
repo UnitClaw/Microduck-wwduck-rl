@@ -8,6 +8,8 @@ A Feetech HD1910 adaptation based on official Microduck **0.15.1**, including ro
 
 **Compiled firmware is available.** control.43 is already supplied in Public Image R1 and Robot Console V167; see the [standalone package and installation guide](../release-assets/README.en.md).
 
+**Flash STM32 FT6 separately on a newly built IMU:** [download and flashing guide](../hardware/IMU-FIRMWARE.en.md); installing control.43 on ZERO does not program the external IMU.
+
 ## Current versions and source
 
 | Component | Current version | Source |

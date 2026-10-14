@@ -4,6 +4,8 @@
 
 **Both the HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.**
 
+**A newly built IMU also needs firmware:** [current FT6 download, J2 wiring, flashing, and checks](IMU-FIRMWARE.en.md). STM32 IMU firmware and ZERO control.43 services are installed separately.
+
 | Hardware | Build record | EasyEDA Pro project |
 | --- | --- | --- |
 | HAT board | [Build timeline and the choice of a two-layer PCB](HAT-TIMELINE.en.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |

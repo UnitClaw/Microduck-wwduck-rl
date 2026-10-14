@@ -1,5 +1,7 @@
 [简体中文](README_FT1.md) | **English**
 
+> **Historical version. Current Feetech setup: FT6.** Start with [IMU download and flashing](../../../../hardware/IMU-FIRMWARE.en.md); the protocol, LED behavior, and test tools below describe this earlier stage.
+
 # Microduck native Feetech FT1 — communication and IMU test build
 
 September 20, 2026. Based on frozen daemon 0.10.0, commit `590b986bd8c0d50ae02cb3ea2f59c463b6828168`. This is a historical communication test, not an upstream-main upgrade or a finished walking release. Current FT6 documentation and hardware validation are recorded separately.

@@ -66,9 +66,9 @@ bash tools/build-firmware.sh
 
 机器人中控已经包含 `ssh-askpass.exe`；源码为 [`firmware/scripts/ssh-askpass-windows.c`](../firmware/scripts/ssh-askpass-windows.c)。它供 Windows OpenSSH 回调使用，不属于 ARM64 固件。重建命令见该 C 文件头部；Linux 中控使用 `firmware/console/ssh-askpass` Python 文件，无需编译。
 
-## HAT / IMU
+## IMU (STM32)
 
-HAT / IMU 使用独立的 Arm GNU Toolchain **14.3.Rel1**，源码入口为 [`Makefile.feetech`](../firmware/firmware/imu-source/Makefile.feetech)，当前版本为 **FT6_SYNC15_UART_IRQ_v1**。另外准备 STM32CubeG0，并按 Makefile 设置 `TOOLCHAIN` 和 `CUBE`。
+独立 IMU 的 STM32 固件使用 Arm GNU Toolchain **14.3.Rel1**，源码入口为 [`Makefile.feetech`](../firmware/firmware/imu-source/Makefile.feetech)，当前版本为 **FT6_SYNC15_UART_IRQ_v1**。另外准备 STM32CubeG0，并按 Makefile 设置 `TOOLCHAIN` 和 `CUBE`。
 
 | 依赖 | 固定源码版本 |
 | --- | --- |
@@ -81,4 +81,4 @@ make -C firmware/firmware/imu-source -f Makefile.feetech \
   CUBE=/你的STM32CubeG0目录
 ```
 
-输出在 `firmware/firmware/imu-source/build-feetech-ft6/`，编译不执行烧录。本次没有修改或重新构建 HAT 固件。
+输出在 `firmware/firmware/imu-source/build-feetech-ft6/`，编译不执行烧录。直接下载已编译文件及烧录说明见 [IMU 固件 FT6](../../hardware/IMU-FIRMWARE.md)。

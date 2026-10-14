@@ -8,6 +8,8 @@ An **ARM64 robot-service installation package for Radxa ZERO 3W**, based on offi
 
 **Update: Fixed body jitter.**
 
+**Flash STM32 FT6 separately on a newly built IMU:** [download and flashing guide](../hardware/IMU-FIRMWARE.en.md); installing control.43 on ZERO does not program the external IMU.
+
 ## Image, console, and standalone firmware
 
 | Package | Purpose |

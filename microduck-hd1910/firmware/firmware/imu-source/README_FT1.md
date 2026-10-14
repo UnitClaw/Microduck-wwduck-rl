@@ -1,5 +1,7 @@
 **简体中文** | [English](README_FT1.en.md)
 
+> **历史版本；当前飞特方案使用 FT6。** 制作请先看 [IMU 下载与烧录指南](../../../../hardware/IMU-FIRMWARE.md)，下文的协议、LED 和测试工具属于当时版本。
+
 # Microduck 原生飞特 FT1：通信与 IMU 测试版
 
 2026-09-20。基于已冻结的 daemon 0.10.0，基线提交
