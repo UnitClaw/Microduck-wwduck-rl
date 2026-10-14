@@ -102,4 +102,16 @@
 
 这个项目从一块板、一只鸭、一次次调试做起来；我不是专业团队，代码也有 AI 协作的部分。希望你能少走弯路，更快见到自己的小鸭动起来。欢迎 Star ⭐、交流和反馈。
 
-<p align="center"><img width="180" alt="支持作者的二维码" src="https://github.com/user-attachments/assets/49054608-65ba-41d6-b3f1-a97941976c4b" /></p>
+<table align="center">
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <b>❤️ 支持作者</b><br><br>
+      <img width="180" alt="支持作者的二维码" src="https://github.com/user-attachments/assets/49054608-65ba-41d6-b3f1-a97941976c4b" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <b>💬 加群交流</b><br><br>
+      <a href="docs/assets/community-wechat-qr.jpg"><img width="260" alt="微信交流群二维码" src="docs/assets/community-wechat-qr.jpg" /></a><br>
+      <sub>微信扫一扫，或点击二维码查看原图。<br>本二维码在 2026 年 10 月 21 日前有效。</sub>
+    </td>
+  </tr>
+</table>
