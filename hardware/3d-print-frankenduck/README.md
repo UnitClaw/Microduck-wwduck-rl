@@ -4,9 +4,11 @@
 
 **这套打印件结合了多位社区制作者的优化，以及 kissqy 在实际装配、运行和维护中做的修改，因此叫“缝合怪版”。** 改动较多，不逐一列出；这里提供作者整理的全套鸭子打印部件和参考摆盘。
 
-**[⬇️ 下载完整打印包（RAR，15.13 MiB）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256 校验](SHA256SUMS) · [包内文件清单](FILES.md) · [鸭子采购总清单](../../DUCK-SHOPPING-LIST.md) · [返回首页](../../README.md)
+**[⬇️ 下载完整打印包（RAR，15.44 MiB）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256 校验](SHA256SUMS) · [包内文件清单](FILES.md) · [鸭子采购总清单](../../DUCK-SHOPPING-LIST.md) · [返回首页](../../README.md)
 
 发布于 **2026-10-15**。包内 **36 个 STL 文件 + 1 个 3MF 摆盘项目（5 盘）**，保留原文件名和摆盘；文件数量不等于装配数量。下载的是原始压缩包，模型与摆盘内容没有重新编辑。
+
+**2026-10-15 更新：** 轮滑鞋已换为 `roller_blade_R17_shifted_through_holes.stl`，配套摆盘与预览同步更新。
 
 ## 先看这几项
 

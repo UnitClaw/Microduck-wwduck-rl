@@ -4,9 +4,11 @@
 
 **This set combines improvements from several community makers with modifications kissqy made while assembling, running, and maintaining the real robot. That is why it is called the “FrankenDuck” edition.** The changes are numerous and are not listed individually. This package supplies the author's complete duck printing parts and reference plate layout.
 
-**[⬇️ Download the complete package (RAR, 15.13 MiB)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256](SHA256SUMS) · [Package file list](FILES.md) · [Duck shopping guide](../../DUCK-SHOPPING-LIST.en.md) · [Homepage](../../README.en.md)
+**[⬇️ Download the complete package (RAR, 15.44 MiB)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256](SHA256SUMS) · [Package file list](FILES.md) · [Duck shopping guide](../../DUCK-SHOPPING-LIST.en.md) · [Homepage](../../README.en.md)
 
 Published **October 15, 2026**. The archive contains **36 STL files and one 3MF project with 5 plates**. Original filenames and layouts are preserved; file counts are not assembly quantities. The original archive is supplied without editing the models or plate project.
+
+**October 15, 2026 update:** the roller shoe is now `roller_blade_R17_shifted_through_holes.stl`; the plate project and previews have been updated to match.
 
 ## Read these first
 

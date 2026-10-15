@@ -2,8 +2,8 @@
   "publication_date": "2026-10-15",
   "archive": {
     "file": "Microduck-Print-FrankenDuck-20261015.rar",
-    "bytes": 15868485,
-    "sha256": "4691c6093cbe69f4bb5ef236053f1f30fc66f719cd164be65ae220bc0e46246c",
+    "bytes": 16190775,
+    "sha256": "bb38274aa09a89305ffc3b0178c1f95e8e8ae6a51d43ab26c0f58639f824e912",
     "uploaded_content_unchanged": true
   },
   "contents": {
@@ -83,6 +83,46 @@
       "sha256": "ee252e92ae5806858a5fda01587df501f8d85245a4c0e5efe1f37eaaa75b44c8"
     },
     {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/bottom_head_shell_rear_M2_counterbore_D4p2_depth5mm.stl",
+      "bytes": 1269584,
+      "sha256": "405b69524aedd4ea6202d8f76647bfbe48a23a292dcdf3daf53a028b57fc8ca4"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/item-17-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
+      "bytes": 1225984,
+      "sha256": "3711c1ebb01c5bb28b9f3a1f6079dc1574228a6399f7cd1a7097c44d3e4f3e7f"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/item-19-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
+      "bytes": 1225984,
+      "sha256": "75cccd153c680d1b42dab46c09fdc32b37dff486514d1ef85e5ffacbf66ce584"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/item-28-ankle_right_dual_locks_v10_stl.stl",
+      "bytes": 1714984,
+      "sha256": "2b33896cc0ec1ede75a508355a43dc2e6035fcb8aac94be1ad9ebb8f970ee4b4"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/item-29-ankle_left_dual_locks_v10_stl.stl",
+      "bytes": 1714984,
+      "sha256": "5bab7e99b48df20216b628a07372f073bacb8aa653bf6e34d72d88917feb5284"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/jaw.stl",
+      "bytes": 495984,
+      "sha256": "65c300349113d3c6cd4a2cc587f76f7228115565a854492e42358ba8df71796a"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/noenoeil_3xD1p6_blind_depth5_backwall2mm.stl",
+      "bytes": 109284,
+      "sha256": "e390422b25ee0a7f504d48e0c6d79d0cf5ce45e2b92f8da51e0acacaa1a12675"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/roller_blade_R17_shifted_through_holes.stl",
+      "bytes": 3151484,
+      "sha256": "f9e7e8924afa7e5a8a913e12437283d6a79d66127e51c9b5ac1bee21a11e9e3e"
+    },
+    {
       "path": "3D打印缝合怪版/stl模型/躯体部分/item-21-______STL.stl",
       "bytes": 1163584,
       "sha256": "9c5a64fde21a64c2e137a926f94b20e5c579c21572b3970e1ead6a32204e2d0c"
@@ -116,46 +156,6 @@
       "path": "3D打印缝合怪版/stl模型/躯体部分/top_head_shell_vents_R3_rounded_long_slots_mm.stl",
       "bytes": 1270184,
       "sha256": "9911301b9effb00a320a10afc6d13aaa557c6fe1dd2e1cd6036532a27b0ef390"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/bottom_head_shell_rear_M2_counterbore_D4p2_depth5mm.stl",
-      "bytes": 1269584,
-      "sha256": "405b69524aedd4ea6202d8f76647bfbe48a23a292dcdf3daf53a028b57fc8ca4"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/item-17-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
-      "bytes": 1225984,
-      "sha256": "3711c1ebb01c5bb28b9f3a1f6079dc1574228a6399f7cd1a7097c44d3e4f3e7f"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/item-19-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
-      "bytes": 1225984,
-      "sha256": "75cccd153c680d1b42dab46c09fdc32b37dff486514d1ef85e5ffacbf66ce584"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/item-28-ankle_right_dual_locks_v10_stl.stl",
-      "bytes": 1714984,
-      "sha256": "2b33896cc0ec1ede75a508355a43dc2e6035fcb8aac94be1ad9ebb8f970ee4b4"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/item-29-ankle_left_dual_locks_v10_stl.stl",
-      "bytes": 1714984,
-      "sha256": "5bab7e99b48df20216b628a07372f073bacb8aa653bf6e34d72d88917feb5284"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/jaw.stl",
-      "bytes": 495984,
-      "sha256": "65c300349113d3c6cd4a2cc587f76f7228115565a854492e42358ba8df71796a"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/noenoeil_3xD1p6_blind_depth5_backwall2mm.stl",
-      "bytes": 109284,
-      "sha256": "e390422b25ee0a7f504d48e0c6d79d0cf5ce45e2b92f8da51e0acacaa1a12675"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/鸭子橙色部分/roller_blade_R12_smooth_integrated_rounded_beam.stl",
-      "bytes": 2543484,
-      "sha256": "2e23f6f1099529766bc8b9a4c0bed97fc467844dcda424581cfff6780818a472"
     },
     {
       "path": "3D打印缝合怪版/stl模型/黑色部分/bearing_roll_34x21mm_D17_4holes_rounded.stl",
@@ -194,8 +194,10 @@
     },
     {
       "path": "3D打印缝合怪版/缝合怪摆盘.3mf",
-      "bytes": 7074975,
-      "sha256": "be3c3b4ba7cfd1f4cc6dafef2d310d1b5bddcdf873b8045ad204fe1069f3f16a"
+      "bytes": 7217090,
+      "sha256": "641e9988ff6fbe91b9ffa360deb4b62d7179017abc0cf4575d7c13aea9335bd3"
     }
-  ]
+  ],
+  "updated_date": "2026-10-15",
+  "update_note": "Roller shoe updated to roller_blade_R17_shifted_through_holes.stl; plate project updated to match."
 }
