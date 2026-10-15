@@ -97,6 +97,8 @@
 
 自制 HAT 与独立躯干 IMU 均已在实机上经过长时间验证，运行正常，没有发现问题。
 
+**硬件提供两种接口版本：原版 EH2.5 与 AMP2.0 版并存。** AMP2.0 版 HAT 的喇叭、麦克风改用 HP1.25，并新增绿色 LED 和 1kΩ 电阻。[查看两版工程](hardware/) · [AMP2.0 版说明与用料](hardware/AMP2.0-VERSION.md)
+
 [IMU 固件下载与烧录](hardware/IMU-FIRMWARE.md) · [HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/) · [🔧 PCB采购表（HAT／IMU）](hardware/README.md#采购清单)
 
 ## ❤️ 分享给大家，也尊重原创

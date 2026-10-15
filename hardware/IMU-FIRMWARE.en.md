@@ -4,6 +4,8 @@
 
 **A newly built torso IMU needs its own STM32 firmware. The current Feetech HD1910 setup uses FT6. An already programmed IMU that works correctly does not need reflashing.** This firmware reads real angular velocity and fused orientation from the LSM6DSV16X and supplies them to the ZERO control service over the Feetech bus.
 
+**The IMU project has EH2.5 and AMP2.0 connector variants.** [Both projects](README.en.md) · [AMP2.0 version](AMP2.0-VERSION.en.md). Both use the same J2 SWD pin assignments.
+
 ## Choose the correct file
 
 | Component | Where it is written | Current project version |

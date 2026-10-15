@@ -29,6 +29,7 @@
 | HAT 制作时间线 | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
 | IMU 制作全过程视频与时间线 | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | HAT 与 IMU 自制硬件 | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
+| HAT / IMU AMP2.0 版：HP1.25 音频与新增 LED | [中文](../hardware/AMP2.0-VERSION.md) | [English](../hardware/AMP2.0-VERSION.en.md) |
 | IMU 固件 FT6 — 下载、接线、烧录与检查 | [中文](../hardware/IMU-FIRMWARE.md) | [English](../hardware/IMU-FIRMWARE.en.md) |
 | 当前 IMU FT6：协议与兼容 | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md) |
 

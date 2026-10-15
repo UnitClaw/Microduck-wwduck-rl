@@ -2,20 +2,22 @@
 
 # DIY HAT and IMU hardware
 
-**Both the HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.**
+**The original HAT and independent torso IMU have passed extended real-robot use and operate normally. An AMP2.0 connector variant is also available.**
 
 **A newly built IMU also needs firmware:** [current FT6 download, J2 wiring, flashing, and checks](IMU-FIRMWARE.en.md). STM32 IMU firmware and ZERO control.43 services are installed separately.
 
 🖨️ The [complete FrankenDuck printing set and plate project](3d-print-frankenduck/README.en.md) is available separately, with two battery holders and a foot kit that accepts rollers without removing servos.
 
-| Hardware | Build record | EasyEDA Pro project |
-| --- | --- | --- |
-| HAT board | [Build timeline and the choice of a two-layer PCB](HAT-TIMELINE.en.md) | [HAT_REVA_SCH](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) |
-| Independent torso IMU | [🎬 Complete build video](https://www.bilibili.com/video/BV1qapz6PERs/) · [Build timeline and Feetech adaptation](IMU-TIMELINE.en.md) | [imu_to_dxl_RevA_V1](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) |
+**Both connector versions are retained. Choose for your wiring.** [AMP2.0 connectors, LED, and parts](AMP2.0-VERSION.en.md).
+
+| Hardware | Original EH2.5 · October 7, 2026 | AMP2.0 · October 15, 2026 | Build record |
+| --- | --- | --- | --- |
+| HAT | [EH2.5 project](ProPrj_HAT_REVA_SCH_2026-10-07.epro2) | [AMP2.0 project](ProPrj_HAT_REVA_SCH_2026-10-15.epro2), HP1.25 audio, added LED + 1kΩ | [Timeline](HAT-TIMELINE.en.md) |
+| Torso IMU | [EH2.5 project](ProPrj_imu_to_dxl_RevA_V1_2026-10-07.epro2) | [AMP2.0 project](ProPrj_imu_to_dxl_RevA_V1_2026-10-15.epro2) | [Build video](https://www.bilibili.com/video/BV1qapz6PERs/) · [Timeline](IMU-TIMELINE.en.md) |
 
 The HAT started with a study of the official components and their surrounding circuits. Unneeded functions were removed, and the board was made using a two-layer PCB and home reflow. The IMU first established working independent hardware and the original protocol, then reused that hardware on the Feetech bus with 15 servos.
 
-The timelines follow the build history organized on October 12, 2026. The published project files are snapshots dated October 7, 2026. Differences between physical-board tuning and the project BOM are documented in the HAT guide.
+The timelines follow the build history organized on October 12, 2026. Original projects are dated October 7, 2026; the AMP2.0 variant is dated October 15, 2026. Differences between physical-board tuning and the project BOM are documented in the HAT guide.
 
 **Current baseline, confirmed October 12, 2026:** fabrication, full-robot integration, and extended real-robot validation are complete for both boards. IMU fabrication and Feetech adaptation test records are in the timeline.
 
@@ -29,6 +31,8 @@ The timelines follow the build history organized on October 12, 2026. The publis
 > One by one, the components settle into place as time quietly slips by. Before you know it, a perfect circuit board is finished. ✨
 
 ## Shopping list
+
+**Version scope: the procurement tables, historical prices, and Excel below describe the original EH2.5 version. For AMP2.0 connectors and added parts, use the [separate parts guide](AMP2.0-VERSION.en.md).**
 
 > [!IMPORTANT]
 > **Purchased by the author, selected after price comparisons, and verified on the real robot**

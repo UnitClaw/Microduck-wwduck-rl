@@ -29,6 +29,7 @@ English editions of the homepage, user guides, hardware records, and technical n
 | HAT build timeline | [中文](../hardware/HAT-TIMELINE.md) | [English](../hardware/HAT-TIMELINE.en.md) |
 | IMU full build video and timeline | [中文](../hardware/IMU-TIMELINE.md) | [English](../hardware/IMU-TIMELINE.en.md) |
 | DIY HAT and IMU hardware | [中文](../hardware/README.md) | [English](../hardware/README.en.md) |
+| HAT / IMU AMP2.0 variant: HP1.25 audio and added LED | [中文](../hardware/AMP2.0-VERSION.md) | [English](../hardware/AMP2.0-VERSION.en.md) |
 | IMU firmware FT6 — download, wiring, flash, and checks | [中文](../hardware/IMU-FIRMWARE.md) | [English](../hardware/IMU-FIRMWARE.en.md) |
 | Current IMU FT6: protocol and compatibility | [中文](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.md) | [English](../microduck-hd1910/firmware/firmware/imu-source/README_FT6_SYNC15.en.md) |
 

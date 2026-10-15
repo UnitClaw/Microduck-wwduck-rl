@@ -98,6 +98,8 @@ This set combines community improvements with the author's real-robot modificati
 
 Both the custom HAT and the independent torso IMU have passed extended real-robot use, operate normally, and have no identified issues.
 
+**Two connector versions are available: original EH2.5 and AMP2.0.** The AMP2.0 HAT uses HP1.25 speaker / microphone sockets and adds a green LED plus a 1kΩ resistor. [Both project versions](hardware/README.en.md) · [AMP2.0 guide and parts](hardware/AMP2.0-VERSION.en.md)
+
 [IMU firmware download and flashing](hardware/IMU-FIRMWARE.en.md) · [HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🔧 PCB shopping list (HAT / IMU)](hardware/README.en.md#shopping-list)
 
 ## ❤️ Sharing the project and crediting its creators

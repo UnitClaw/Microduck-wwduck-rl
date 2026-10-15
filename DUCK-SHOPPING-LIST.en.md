@@ -38,7 +38,7 @@ The board lines above allocate component costs by actual use, including their hi
 
 ## Duck body
 
-**🔌 Use EH 2.5mm connectors for the HAT/IMU interfaces; use ready-made 10cm / 20cm AMP2.0 cables for Feetech servos.** Seller variant labels are retained in Chinese for accurate purchasing.
+**🔌 The original tables on this page describe EH2.5 HAT / IMU boards; Feetech servos use AMP2.0 cables. An AMP2.0 project variant is also available, with AMP2.0 bus sockets, HP1.25 audio sockets, and an added LED plus 1kΩ resistor. See its [separate parts guide](hardware/AMP2.0-VERSION.en.md).** Choose the version for your wiring.
 
 ### 🦆 Controller, servos and external modules
 
