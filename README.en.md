@@ -116,14 +116,19 @@ This project grew from one board, one duck, and many debugging sessions. I am an
 
 <table align="center">
   <tr>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <b>❤️ Support the author</b><br><br>
       <img width="180" alt="QR code to support the author" src="https://github.com/user-attachments/assets/49054608-65ba-41d6-b3f1-a97941976c4b" />
     </td>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <b>💬 Join the WeChat group</b><br><br>
-      <a href="docs/assets/community-wechat-qr.jpg"><img width="260" alt="WeChat community group QR code" src="docs/assets/community-wechat-qr.jpg" /></a><br>
+      <a href="docs/assets/community-wechat-qr.jpg"><img width="220" alt="WeChat community group QR code" src="docs/assets/community-wechat-qr.jpg" /></a><br>
       <sub>Scan in WeChat, or click the QR code for the original image.<br>This QR code is valid before October 21, 2026.</sub>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <b>Buy a complete robot</b><br><br>
+      <a href="docs/assets/purchase-wechat-qr.jpg"><img width="220" alt="WeChat contact QR code for complete robot purchases" src="docs/assets/purchase-wechat-qr.jpg" /></a><br>
+      <sub>Scan in WeChat to ask about purchasing a complete robot.<br>Click the QR code for the original image.</sub>
     </td>
   </tr>
 </table>
