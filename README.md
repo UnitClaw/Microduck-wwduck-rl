@@ -131,7 +131,7 @@
       <sub>微信扫一扫，或点击二维码查看原图。<br>本二维码在 2026 年 10 月 21 日前有效。</sub>
     </td>
     <td align="center" valign="top" width="33%">
-      <b>整机购买</b><br><br>
+      <b>🛒 整机购买</b><br><br>
       <a href="docs/assets/purchase-wechat-qr.jpg"><img width="220" alt="整机购买微信二维码" src="docs/assets/purchase-wechat-qr.jpg" /></a><br>
       <sub>微信扫码咨询整机购买。<br>点击二维码查看原图。</sub>
     </td>

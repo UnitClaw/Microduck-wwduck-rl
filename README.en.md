@@ -126,7 +126,7 @@ This project grew from one board, one duck, and many debugging sessions. I am an
       <sub>Scan in WeChat, or click the QR code for the original image.<br>This QR code is valid before October 21, 2026.</sub>
     </td>
     <td align="center" valign="top" width="33%">
-      <b>Buy a complete robot</b><br><br>
+      <b>🛒 Buy a complete robot</b><br><br>
       <a href="docs/assets/purchase-wechat-qr.jpg"><img width="220" alt="WeChat contact QR code for complete robot purchases" src="docs/assets/purchase-wechat-qr.jpg" /></a><br>
       <sub>Scan in WeChat to ask about purchasing a complete robot.<br>Click the QR code for the original image.</sub>
     </td>
