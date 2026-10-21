@@ -2,6 +2,8 @@
 
 # DIY HAT and IMU hardware
 
+**[🔧 Assembly notes: 5 GHz Wi-Fi for ZERO and a 1000 µF capacitor across the main power input; wiring and precautions](../docs/ASSEMBLY-NOTES.en.md)**
+
 **The original HAT and independent torso IMU have passed extended real-robot use and operate normally. An AMP2.0 connector variant is also available.**
 
 **A newly built IMU also needs firmware:** [current FT6 download, J2 wiring, flashing, and checks](IMU-FIRMWARE.en.md). STM32 IMU firmware and ZERO control.43 services are installed separately.

@@ -8,6 +8,7 @@
 
 | 说明 | 中文 | English |
 | --- | --- | --- |
+| 🔧 装机与使用注意事项 / Assembly: 5 GHz Wi-Fi & 1000 µF input capacitor | [中文](ASSEMBLY-NOTES.md) | [English](ASSEMBLY-NOTES.en.md) |
 | 仓库目录与重复资源 | [中文](REPOSITORY-LAYOUT.md) | [English](REPOSITORY-LAYOUT.en.md) |
 | 飞特已编译固件 control.43 — 下载与安装 | [中文](../release-assets/README.md) | [English](../release-assets/README.en.md) |
 | 🎬 看看鸭鸭的真实表现（5 段视频） | [中文](../README.md) | [English](../README.en.md) |

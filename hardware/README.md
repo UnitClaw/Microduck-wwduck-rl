@@ -2,6 +2,8 @@
 
 # HAT 与 IMU 自制硬件
 
+**[🔧 装机提醒：ZERO 使用 5 GHz Wi-Fi；总电源入口并联 1000 µF 电容。接线与注意事项](../docs/ASSEMBLY-NOTES.md)**
+
 **原版 HAT 和独立躯干 IMU 均已在实机上经过长时间使用验证，运行正常。现另提供 AMP2.0 接口版。**
 
 **自制 IMU 板还需要烧录固件：** [当前 FT6 下载、J2 接线、烧录步骤与检查](IMU-FIRMWARE.md)。STM32 IMU 固件与 ZERO 的 control.43 服务分别安装。
