@@ -12,6 +12,7 @@ V167 更新：修复鸭身抖动的问题。当前顶层 [BUILD.json](BUILD.json
 - [新机器从源码编译](../docs/BUILD.md)
 - [当前发布版本与验收范围](../docs/BASELINE.md)
 - [V167 构建与测试记录](BUILDING-V167.md)
+- [无需升级系统的 Armbian 启动配置修复](docs/robot/armbian-boot-config.md)
 - [上游工作区开发说明](CONTRIBUTING.md)
 
 Rust、Python、网页、模型与原生程序按对应交付文件同步；本次只整理源码公开和版本索引。每台机器人仍需使用并核对自己的关节、方向、限位和 IMU 标定。

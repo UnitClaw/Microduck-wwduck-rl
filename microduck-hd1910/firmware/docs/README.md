@@ -27,6 +27,7 @@ docs give the reasoning and point at it.
 | [`duckctl.md`](robot/duckctl.md) | Every `duckctl` command — the robot from a laptop, over Bluetooth. |
 | [`install-dev.md`](robot/install-dev.md) | Setting up a board for development, from nothing. |
 | [`install-by-hand.md`](robot/install-by-hand.md) | The same install as separate commands, for testing one step at a time. |
+| [`armbian-boot-config.md`](robot/armbian-boot-config.md) | Repair the known Armbian boot-config writer without an OS upgrade; check, backup, and rollback. |
 
 ## `design/` — you are changing the daemon
 
