@@ -53,7 +53,7 @@ SHA256: 75da978b5d56acd9e4146256431732381de84523bb683e4ab7ac9f0580a7bce5
 
 The project includes circuits and PCBs, HD1910 adaptation, the R17 console, Training Studio, and self-trained movement models. The author developed the code with ChatGPT assistance, hoping to make robotics development more approachable for newcomers.
 
-Repository: <https://github.com/kissqy/Microduck-kissqy>
+Repository: <https://github.com/UnitClaw/Microduck-wwduck-rl>
 
 **Licensing:** original work owned and independently licensable by the author is provided for personal learning, research, and noncommercial use only; obtain written permission for commercial use. Official Apache-2.0 firmware, third-party software, geometry, and model assets retain their own licenses. Personal terms do not override third-party rights. See the [component license](../../microduck-hd1910/LICENSE) and [third-party guide](../../microduck-hd1910/docs/THIRD-PARTY.en.md).
 

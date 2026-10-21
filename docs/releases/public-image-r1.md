@@ -53,7 +53,7 @@ SHA256: 75da978b5d56acd9e4146256431732381de84523bb683e4ab7ac9f0580a7bce5
 
 项目包含硬件电路与 PCB、HD1910 适配、R17 中控、训练中控和自训练动作模型。代码由作者借助 ChatGPT 协作完成，期待它能降低新手了解机器人开发的门槛。
 
-仓库地址：<https://github.com/kissqy/Microduck-kissqy>
+仓库地址：<https://github.com/UnitClaw/Microduck-wwduck-rl>
 
 **授权提示：** 作者拥有并有权单独授权的原创部分仅供个人学习、研究和非商业使用；商业使用前请取得作者书面授权。原官方固件的 Apache-2.0、第三方程序及几何/模型素材各自遵守原许可证，个人限制不覆盖第三方权利。详细范围见仓库 [分项许可证](../../microduck-hd1910/LICENSE) 和 [第三方说明](../../microduck-hd1910/docs/THIRD-PARTY.md)。
 

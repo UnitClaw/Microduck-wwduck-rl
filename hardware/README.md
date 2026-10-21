@@ -51,7 +51,7 @@ HAT 的思路是先分析官方器件及外围，按实际需要精简，再用�
 
 最少拍数按每行单套用量计算；同商品、同款式的用料可以合并数量后，再按每拍含量向上取整。
 
-[🦆 返回鸭子采购总清单](../DUCK-SHOPPING-LIST.md) · [制作成本](#制作成本) · [板上器件](#板上器件) · [裸板与打样](#裸板与打样) · [完整位号BOM](#完整位号bom) · [🧰 工具清单](../docs/BUILD-TOOLS.md) · [另存Excel（可选）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[🦆 返回鸭子采购总清单](../DUCK-SHOPPING-LIST.md) · [制作成本](#制作成本) · [板上器件](#板上器件) · [裸板与打样](#裸板与打样) · [完整位号BOM](#完整位号bom) · [🧰 工具清单](../docs/BUILD-TOOLS.md) · [另存Excel（可选）](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
 
 ### 制作成本
 

@@ -4,7 +4,7 @@
 
 当前中控版本为 `1.0.167`，随包机器人固件为 `1fa8438-feetech-ft6-control.43`，配套官方系统为 `0.15.1`。实体手柄使用原生 padd → robotd 通道，可控制行走和滑轮模型；四个滑轮 ONNX 随固件安装。
 
-开源地址：[Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy)。网页顶部和 Windows 启动窗口均提供入口。
+开源地址：[Microduck-wwduck-rl](https://github.com/UnitClaw/Microduck-wwduck-rl)。网页顶部和 Windows 启动窗口均提供入口。
 
 ## 启动与安装
 

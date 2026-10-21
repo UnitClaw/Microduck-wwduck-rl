@@ -5,7 +5,7 @@
 Independent Training Studio for **Microduck firmware 0.15.1, official chassis + HD1910**. It currently provides **14 action categories and 35 task recipes**, covering ordinary walking, recovery, sit / stand, joint training, picking, kicking, forward rolls, and six roller action categories.
 
 - **Console:** <http://127.0.0.1:8092>
-- **Project:** <https://github.com/kissqy/Microduck-kissqy>, linked at the top of the page.
+- **Project:** <https://github.com/UnitClaw/Microduck-wwduck-rl>, linked at the top of the page.
 - **Environment:** local Windows / WSL or an SSH training server. Training does not require Radxa ZERO; connect only to retrieve current joint calibration, or import a calibration file.
 
 ## Startup and training

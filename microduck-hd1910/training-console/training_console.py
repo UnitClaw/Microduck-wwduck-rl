@@ -944,7 +944,7 @@ def main(argv=None):
     except OSError:
         print(f'端口 {args.port} 已被占用，请先关闭旧训练中控。', flush=True);return 2
     server.daemon_threads = True
-    print('Microduck Training Studio R1.5.27\n中控：http://127.0.0.1:%s\n开源：https://github.com/kissqy/Microduck-kissqy' % args.port, flush=True)
+    print('Microduck Training Studio R1.5.27\n中控：http://127.0.0.1:%s\n开源：https://github.com/UnitClaw/Microduck-wwduck-rl' % args.port, flush=True)
     try:
         manager.reconnect_training()
         manager.start_queue_scheduler()

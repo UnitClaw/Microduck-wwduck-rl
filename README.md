@@ -34,7 +34,7 @@
 
 [🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [🖨️ **打印全套 · 缝合怪版**](hardware/3d-print-frankenduck/) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
 
-[🎮 机器人中控在线演示](https://kissqy.github.io/Microduck-kissqy/) · [🧠 训练中控在线演示](https://kissqy.github.io/Microduck-kissqy/training/)
+[🎮 机器人中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/) · [🧠 训练中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/training/)
 
 </div>
 
@@ -67,12 +67,12 @@
 
 | 文件 | 用途 | 下载 |
 | --- | --- | --- |
-| **系统镜像 R1** · 官方 0.15.1 / control.40 | 新装 ZERO 3W，预装机器人服务和运动模型 | [⬇️ .img.xz](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
-| **机器人中控 R17 V167** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
-| **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
-| **飞特 HD1910 已编译固件 control.43** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
-| **IMU 固件 FT6（STM32）** | 自制躯干 IMU 板单独烧录；8.2 KiB，飞特 HD1910 方案 | [⬇️ .bin](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [烧录指南](hardware/IMU-FIRMWARE.md) |
-| **鸭子全套打印件 · 缝合怪版** | 含 36 个 STL、5 盘 3MF 项目；两种电池仓 | [⬇️ RAR](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar) · [使用说明](hardware/3d-print-frankenduck/) |
+| **系统镜像 R1** · 官方 0.15.1 / control.40 | 新装 ZERO 3W，预装机器人服务和运动模型 | [⬇️ .img.xz](https://github.com/UnitClaw/Microduck-wwduck-rl/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz) |
+| **机器人中控 R17 V167** | 电脑连接与操作鸭鸭，内含同版固件升级包 | [⬇️ ZIP](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) |
+| **训练中控 R1.5.27** | 自行训练、仿真评估和导出模型时使用 | [⬇️ ZIP](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip) |
+| **飞特 HD1910 已编译固件 control.43** | 已有系统单独升级 ZERO 端服务；ARM64 安装包 | [⬇️ .tar.gz](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) |
+| **IMU 固件 FT6（STM32）** | 自制躯干 IMU 板单独烧录；8.2 KiB，飞特 HD1910 方案 | [⬇️ .bin](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/imu_to_feetech_ReVA_FT6_SYNC15_UART_IRQ_v1.bin) · [烧录指南](hardware/IMU-FIRMWARE.md) |
+| **鸭子全套打印件 · 缝合怪版** | 含 36 个 STL、5 盘 3MF 项目；两种电池仓 | [⬇️ RAR](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar) · [使用说明](hardware/3d-print-frankenduck/) |
 
 **普通使用下载「系统镜像＋机器人中控」即可。** 训练中控按需下载；V167 中控内含 control.43，独立固件与它一致。镜像 R1 仍预装 control.40，刷卡后在 V167 中控安装随包固件即可更新。**新制作的 IMU 板还需单独刷入 FT6 `.bin`；系统镜像和 ZERO 服务升级不会烧录 IMU。**
 
@@ -123,19 +123,16 @@
 
 <table align="center">
   <tr>
-    <td align="center" valign="top" width="33%">
-      <b>❤️ 支持作者</b><br><br>
-      <img width="180" alt="支持作者的二维码" src="https://github.com/user-attachments/assets/49054608-65ba-41d6-b3f1-a97941976c4b" />
-    </td>
-    <td align="center" valign="top" width="33%">
-      <b>💬 加群交流</b><br><br>
-      <a href="docs/assets/community-wechat-qr.jpg"><img width="220" alt="微信交流群二维码" src="docs/assets/community-wechat-qr.jpg" /></a><br>
-      <sub>微信扫一扫，或点击二维码查看原图。<br>本二维码在 2026 年 10 月 21 日前有效。</sub>
-    </td>
-    <td align="center" valign="top" width="33%">
-      <b>🛒 整机购买</b><br><br>
-      <a href="docs/assets/purchase-wechat-qr.jpg"><img width="220" alt="整机购买微信二维码" src="docs/assets/purchase-wechat-qr.jpg" /></a><br>
-      <sub>微信扫码咨询整机购买。<br>点击二维码查看原图。</sub>
+    <td align="center" valign="top">
+      <b>💬 微信交流群</b><br><br>
+      <a href="docs/assets/wwnt-wechat-group.png"><img width="220" alt="WWNT Robotics 微信交流群二维码" src="docs/assets/wwnt-wechat-group.png" /></a><br>
+      <sub>微信扫一扫加入交流群，或点击二维码查看原图。</sub>
     </td>
   </tr>
 </table>
+
+<div align="center">
+
+**WWNT Robotics** · [官网 www.wwntai.com](https://www.wwntai.com) · [国际站 wwnt.ai](https://wwnt.ai) · [Support@wwntai.com](mailto:Support@wwntai.com)
+
+</div>

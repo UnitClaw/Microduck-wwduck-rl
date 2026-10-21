@@ -8,8 +8,8 @@
 
 | Hardware | Project | This version |
 | --- | --- | --- |
-| **HAT · AMP2.0** | [Download October 15 project](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/ProPrj_HAT_REVA_SCH_2026-10-15.epro2) | AMP2.0 bus connectors, HP1.25 speaker / microphone connectors, added D5 LED and R34 1kΩ resistor. |
-| **IMU · AMP2.0** | [Download October 15 project](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/ProPrj_imu_to_dxl_RevA_V1_2026-10-15.epro2) | J1 bus connector uses AMP2.0; J2 remains the SWD 1×5 header. |
+| **HAT · AMP2.0** | [Download October 15 project](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/ProPrj_HAT_REVA_SCH_2026-10-15.epro2) | AMP2.0 bus connectors, HP1.25 speaker / microphone connectors, added D5 LED and R34 1kΩ resistor. |
+| **IMU · AMP2.0** | [Download October 15 project](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/ProPrj_imu_to_dxl_RevA_V1_2026-10-15.epro2) | J1 bus connector uses AMP2.0; J2 remains the SWD 1×5 header. |
 
 The author's project files are published unchanged and contain both schematic and PCB data. The HAT has **86 schematic / 86 PCB components** and the IMU **25 / 25**. Exact parts, quantities, and file SHA256 hashes are listed in [AMP2.0-BOM.json](AMP2.0-BOM.json).
 

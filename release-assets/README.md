@@ -4,7 +4,7 @@
 
 这是用于 **Radxa ZERO 3W 的 ARM64 机器人服务安装包**，基于官方 Microduck 0.15.1，配套 R17 V167 中控，IPC API40。包内已包含编译好的 `robotd`、`padd`、`robotctl`、摄像头服务、推理库、10 个运动模型及安装脚本，**普通使用不需要从源码编译**。
 
-[⬇️ 下载已编译固件 .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) · [SHA256 校验文件](Microduck-Robotd-FT6-R17.sha256) · [包身份与核验记录](firmware-control43.json) · [项目首页](../README.md)
+[⬇️ 下载已编译固件 .tar.gz](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) · [SHA256 校验文件](Microduck-Robotd-FT6-R17.sha256) · [包身份与核验记录](firmware-control43.json) · [项目首页](../README.md)
 
 **更新：修复鸭身抖动的问题。**
 
@@ -22,7 +22,7 @@
 
 ## 用中控安装
 
-完整解压 [机器人中控 V167](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip)，运行 `start.cmd`（macOS/Linux 用 `bash start.command`），通过 SSH 连接 ZERO，在 **系统维护 → 随包固件** 安装。中控已自带本页的固件，因此走此流程不用另外下载 `.tar.gz`。
+完整解压 [机器人中控 V167](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip)，运行 `start.cmd`（macOS/Linux 用 `bash start.command`），通过 SSH 连接 ZERO，在 **系统维护 → 随包固件** 安装。中控已自带本页的固件，因此走此流程不用另外下载 `.tar.gz`。
 
 中控的本地固件导入接受 ZIP，不直接接受 `.tar.gz`。如果已经下载本页固件，可在 Windows PowerShell 将它原样放入 ZIP：
 
@@ -42,7 +42,7 @@ Compress-Archive -Path .\Microduck-Robotd-FT6-R17.tar.gz -DestinationPath .\Micr
   microduck_fw_dir=$(mktemp -d "$HOME/microduck-control43.XXXXXX")
   curl -fL --progress-bar \
     -o "$microduck_fw_dir/Microduck-Robotd-FT6-R17.tar.gz" \
-    "https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz"
+    "https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz"
   printf '%s  %s\n' \
     'bcfd5c183c697b9c4e0fdbd563d995eda6a48331a7c49b9e76d20bd156c65cce' \
     "$microduck_fw_dir/Microduck-Robotd-FT6-R17.tar.gz" | sha256sum -c -

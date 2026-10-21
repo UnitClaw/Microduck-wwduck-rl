@@ -1,5 +1,5 @@
 @echo off
-echo [GitHub Open Source] https://github.com/kissqy/Microduck-kissqy
+echo [GitHub Open Source] https://github.com/UnitClaw/Microduck-wwduck-rl
 setlocal
 set "MICRODUCK_CONSOLE_ROOT=%~dp0"
 cd /d "%TEMP%"

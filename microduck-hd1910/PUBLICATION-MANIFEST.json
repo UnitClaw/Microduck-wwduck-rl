@@ -199,8 +199,8 @@
     "robot_console_version": "1.0.167",
     "robot_firmware_display": "1fa8438-feetech-ft6-control.43",
     "training_console_version": "1.5.27",
-    "robot_url": "https://kissqy.github.io/Microduck-kissqy/",
-    "training_url": "https://kissqy.github.io/Microduck-kissqy/training/",
+    "robot_url": "https://UnitClaw.github.io/Microduck-wwduck-rl/",
+    "training_url": "https://UnitClaw.github.io/Microduck-wwduck-rl/training/",
     "data": "Simulated telemetry, training curves and job history; published task and hardware reference snapshots",
     "isolation": "Static same-origin assets only; no robot, SSH, CUDA, training, firmware writes or camera connections; recipe drafts exist only in the current tab",
     "source_frontends_runtime_archives_and_firmware_unchanged": true

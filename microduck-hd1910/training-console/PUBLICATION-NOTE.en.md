@@ -3,6 +3,6 @@
 # Microduck Training Studio R1.5.27 publication note
 
 - Console: <http://127.0.0.1:8092>
-- Project: <https://github.com/kissqy/Microduck-kissqy>
+- Project: <https://github.com/UnitClaw/Microduck-wwduck-rl>
 - Training: 14 action categories and 35 recipes for Microduck 0.15.1 and HD1910 P5.
 - [Installation and user guide](USER-GUIDE.en.md)

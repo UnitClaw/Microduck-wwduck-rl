@@ -6,7 +6,7 @@
 
 **当前配套：Radxa ZERO 3W · 飞特 HD1910 · Microduck 官方 0.15.1 · control.43 固件。**
 
-[⬇️ 下载完整机器人中控 V167](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) · [详细使用及手柄按键说明](README.zh-CN.md) · [项目首页](../../../README.md)
+[⬇️ 下载完整机器人中控 V167](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip) · [详细使用及手柄按键说明](README.zh-CN.md) · [项目首页](../../../README.md)
 
 ## 能做什么
 

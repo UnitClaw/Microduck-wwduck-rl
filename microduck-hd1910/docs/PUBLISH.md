@@ -2,7 +2,7 @@
 
 # 当前仓库的发布方式
 
-项目地址：[kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy)。用 VS Code 打开**包含根目录 README.md、microduck-hd1910 和 release-assets 的整个仓库目录**。
+项目地址：[UnitClaw/Microduck-wwduck-rl](https://github.com/UnitClaw/Microduck-wwduck-rl)。用 VS Code 打开**包含根目录 README.md、microduck-hd1910 和 release-assets 的整个仓库目录**。
 
 ## 已发布内容
 

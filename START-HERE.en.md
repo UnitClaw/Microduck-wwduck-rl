@@ -2,7 +2,7 @@
 
 # Current public Microduck release
 
-Project: <https://github.com/kissqy/Microduck-kissqy>
+Project: <https://github.com/UnitClaw/Microduck-wwduck-rl>
 
 The homepage provides the system image, two console ZIPs, and source entry points.
 

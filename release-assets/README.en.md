@@ -4,7 +4,7 @@
 
 An **ARM64 robot-service installation package for Radxa ZERO 3W**, based on official Microduck 0.15.1 and paired with Robot Console R17 V167, IPC API40. It includes compiled `robotd`, `padd`, `robotctl`, camera services, inference libraries, 10 movement models, and installation scripts. **No source compilation is required for ordinary use.**
 
-[⬇️ Download compiled firmware .tar.gz](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) · [SHA256 file](Microduck-Robotd-FT6-R17.sha256) · [Identity and verification record](firmware-control43.json) · [Project homepage](../README.en.md)
+[⬇️ Download compiled firmware .tar.gz](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz) · [SHA256 file](Microduck-Robotd-FT6-R17.sha256) · [Identity and verification record](firmware-control43.json) · [Project homepage](../README.en.md)
 
 **Update: Fixed body jitter.**
 
@@ -22,7 +22,7 @@ An **ARM64 robot-service installation package for Radxa ZERO 3W**, based on offi
 
 ## Install with the console
 
-Extract the complete [Robot Console V167](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip), run `start.cmd` (macOS/Linux: `bash start.command`), connect to ZERO over SSH, and use **系统维护 → 随包固件** (System Maintenance → Bundled Firmware). The console already includes this payload; no separate `.tar.gz` download is needed for that flow.
+Extract the complete [Robot Console V167](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip), run `start.cmd` (macOS/Linux: `bash start.command`), connect to ZERO over SSH, and use **系统维护 → 随包固件** (System Maintenance → Bundled Firmware). The console already includes this payload; no separate `.tar.gz` download is needed for that flow.
 
 Local firmware import accepts ZIP rather than a bare `.tar.gz`. If you downloaded this standalone package, wrap the unchanged archive in ZIP using Windows PowerShell:
 
@@ -42,7 +42,7 @@ Use on ZERO with an existing official Microduck 0.15.1 or this project's Public 
   microduck_fw_dir=$(mktemp -d "$HOME/microduck-control43.XXXXXX")
   curl -fL --progress-bar \
     -o "$microduck_fw_dir/Microduck-Robotd-FT6-R17.tar.gz" \
-    "https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz"
+    "https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/microduck-hd1910/firmware/console/updates/Microduck-Robotd-FT6-R17.tar.gz"
   printf '%s  %s\n' \
     'bcfd5c183c697b9c4e0fdbd563d995eda6a48331a7c49b9e76d20bd156c65cce' \
     "$microduck_fw_dir/Microduck-Robotd-FT6-R17.tar.gz" | sha256sum -c -

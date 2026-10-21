@@ -8,8 +8,8 @@
 
 | 硬件 | 工程 | 本版内容 |
 | --- | --- | --- |
-| **HAT · AMP2.0** | [下载 2026-10-15 工程](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/ProPrj_HAT_REVA_SCH_2026-10-15.epro2) | 总线 AMP2.0，喇叭 / 麦克风 HP1.25，新增 D5 LED 与 R34 1kΩ 电阻。 |
-| **IMU · AMP2.0** | [下载 2026-10-15 工程](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/ProPrj_imu_to_dxl_RevA_V1_2026-10-15.epro2) | J1 总线接口改为 AMP2.0；J2 仍为 SWD 1×5。 |
+| **HAT · AMP2.0** | [下载 2026-10-15 工程](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/ProPrj_HAT_REVA_SCH_2026-10-15.epro2) | 总线 AMP2.0，喇叭 / 麦克风 HP1.25，新增 D5 LED 与 R34 1kΩ 电阻。 |
+| **IMU · AMP2.0** | [下载 2026-10-15 工程](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/ProPrj_imu_to_dxl_RevA_V1_2026-10-15.epro2) | J1 总线接口改为 AMP2.0；J2 仍为 SWD 1×5。 |
 
 工程按作者提供的文件原样发布，均包含原理图和 PCB。源文件中 HAT 为 **86 个原理图器件 / 86 个 PCB 器件**，IMU 为 **25 / 25**；完整型号、用量及文件 SHA256 见 [AMP2.0-BOM.json](AMP2.0-BOM.json)。
 

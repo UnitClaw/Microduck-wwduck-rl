@@ -141,4 +141,4 @@ NP-F550按原订单「2200mAh，2电＋标准双充」套装计费。M2×5螺丝
 
 **[🧰 查看工具与耗材清单](docs/BUILD-TOOLS.md)**
 
-[📊 另存Excel采购表（可选）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[📊 另存Excel采购表（可选）](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)

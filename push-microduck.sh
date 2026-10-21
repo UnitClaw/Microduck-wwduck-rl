@@ -3,7 +3,7 @@
 # The directory containing this script must be the unpacked repository root.
 set -Eeuo pipefail
 
-REPO_URL='https://github.com/kissqy/Microduck-kissqy.git'
+REPO_URL='https://github.com/UnitClaw/Microduck-wwduck-rl.git'
 BRANCH='main'
 LIMIT=$((100 * 1024 * 1024))
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -29,7 +29,7 @@ trap failed ERR
 
 step 1 '确认源码文件夹与 Git'
 command -v git >/dev/null || die '未找到 Git。请先安装 Git for Windows，重新打开 VS Code 并选择 Git Bash 终端。'
-[[ -f README.md ]] || die '请把脚本放到解压后的 Microduck-kissqy 根目录，与 README.md 放在一起。'
+[[ -f README.md ]] || die '请把脚本放到解压后的 Microduck-wwduck-rl 根目录，与 README.md 放在一起。'
 printf '源码目录：%s\n仓库：%s\n分支：%s\n' "$SCRIPT_DIR" "$REPO_URL" "$BRANCH"
 git --version
 if [[ -e .git ]]; then
@@ -54,14 +54,14 @@ step 2 '连接原仓库并读取 main 历史（下载进度）'
 if ! git remote | grep -Fxq origin; then git remote add origin "$REPO_URL"; fi
 is_expected_url() {
     [[ "$1" == "$REPO_URL" || "$1" == "${REPO_URL%.git}" ||
-       "$1" == 'git@github.com:kissqy/Microduck-kissqy.git' ||
-       "$1" == 'ssh://git@github.com/kissqy/Microduck-kissqy.git' ]]
+       "$1" == 'git@github.com:UnitClaw/Microduck-wwduck-rl.git' ||
+       "$1" == 'ssh://git@github.com/UnitClaw/Microduck-wwduck-rl.git' ]]
 }
 mapfile -t FETCH_URLS < <(git remote get-url --all origin)
 mapfile -t PUSH_URLS < <(git remote get-url --push --all origin)
 [[ ${#FETCH_URLS[@]} == 1 && ${#PUSH_URLS[@]} == 1 ]] || die 'origin 配置了多个地址，请先核对。'
-is_expected_url "${FETCH_URLS[0]}" || die '现有 origin 不是 kissqy/Microduck-kissqy，未修改该地址。'
-is_expected_url "${PUSH_URLS[0]}" || die '现有 origin 推送地址不是 kissqy/Microduck-kissqy。'
+is_expected_url "${FETCH_URLS[0]}" || die '现有 origin 不是 UnitClaw/Microduck-wwduck-rl，未修改该地址。'
+is_expected_url "${PUSH_URLS[0]}" || die '现有 origin 推送地址不是 UnitClaw/Microduck-wwduck-rl。'
 git -c http.version=HTTP/1.1 fetch --progress --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
 if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
     # Only an unborn branch is attached to remote history. Source bytes stay intact.
@@ -113,8 +113,8 @@ IGNORE
 fi
 if ! git var GIT_AUTHOR_IDENT >/dev/null 2>&1; then
     printf '首次提交需要设置作者信息，只保存在这个仓库。\n'
-    read -r -p '提交者名称（回车使用 kissqy）：' AUTHOR_NAME
-    git config user.name "${AUTHOR_NAME:-kissqy}"
+    read -r -p '提交者名称（回车使用 WWNT）：' AUTHOR_NAME
+    git config user.name "${AUTHOR_NAME:-WWNT}"
     read -r -p '提交邮箱（填你的 GitHub 邮箱或 GitHub 设置中的隐私邮箱）：' AUTHOR_EMAIL
     [[ -n "$AUTHOR_EMAIL" ]] || die '未填写提交邮箱，可设置后重跑。'
     git config user.email "$AUTHOR_EMAIL"
@@ -191,10 +191,10 @@ else
 fi
 
 step 7 '上传 GitHub（压缩/上传进度、已传大小、速度）'
-printf 'Git 登录窗口若弹出，请登录 kissqy。网络中断后可以重跑。\n'
+printf 'Git 登录窗口若弹出，请登录 WWNT。网络中断后可以重跑。\n'
 GIT_LFS_FORCE_PROGRESS=1 git -c http.version=HTTP/1.1 push --progress --set-upstream origin "HEAD:refs/heads/$BRANCH"
 LOCAL_SHA="$(git rev-parse HEAD)"
 REMOTE_SHA="$(git -c http.version=HTTP/1.1 ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
 [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]] || die '远端提交与本地不一致，请查看是否同时有其他人推送。'
 printf '\n推送成功！GitHub main 已核对到本地提交 %s。\n' "${LOCAL_SHA:0:12}"
-printf '打开：https://github.com/kissqy/Microduck-kissqy\n日志：%s\n' "$LOG_FILE"
+printf '打开：https://github.com/UnitClaw/Microduck-wwduck-rl\n日志：%s\n' "$LOG_FILE"

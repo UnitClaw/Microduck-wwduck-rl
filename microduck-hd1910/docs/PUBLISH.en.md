@@ -2,7 +2,7 @@
 
 # Publishing this repository
 
-Project: [kissqy / Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy). Open the **whole repository folder containing the root README.md, microduck-hd 1910, and release-assets** in VS Code.
+Project: [WWNT / Microduck-wwduck-rl](https://github.com/UnitClaw/Microduck-wwduck-rl). Open the **whole repository folder containing the root README.md, microduck-hd 1910, and release-assets** in VS Code.
 
 ## Published content
 

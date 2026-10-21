@@ -17,17 +17,17 @@
 | 机器人固件与设备服务 | 官方 0.15.1 · control.43 · API40 | [firmware/](firmware/) |
 | 机器人中控 | R17 V167（1.0.167） | [firmware/console/](firmware/console/) |
 | 训练中控 | R1.5.27 | [training-console/](training-console/) |
-| 公开系统镜像 | Public Image R1 · 首次配网 R5 | [镜像发布页](https://github.com/kissqy/Microduck-kissqy/releases/tag/public-image-r1) |
+| 公开系统镜像 | Public Image R1 · 首次配网 R5 | [镜像发布页](https://github.com/UnitClaw/Microduck-wwduck-rl/releases/tag/public-image-r1) |
 
 V167 中控配套已编译的 **control.43** 固件。更新：**修复鸭身抖动的问题**。当前 `firmware/BUILD.json` 与 V167 随包固件的 BUILD 记录一致，两个中控的程序源码与各自 ZIP 同步。
 
 ## 下载与使用
 
-1. [下载系统镜像 R1](https://github.com/kissqy/Microduck-kissqy/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)，用 [Armbian Imager](https://imager.armbian.com/) 刷入 TF 卡。
+1. [下载系统镜像 R1](https://github.com/UnitClaw/Microduck-wwduck-rl/releases/download/public-image-r1/microduck-zero3w-0.15.1-R1.img.xz)，用 [Armbian Imager](https://imager.armbian.com/) 刷入 TF 卡。
 2. 首次开机连接 `Microduck-kissqy` 热点（密码 `12345678`），设置家庭 Wi-Fi 和新的系统登录密码。未自动弹出页面时访问 `http://10.42.0.1:8088`。
-3. [下载机器人中控 V167](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip)，完整解压后运行 `start.cmd`；macOS/Linux 运行 `bash start.command`。页面地址为 `http://127.0.0.1:8090`。
+3. [下载机器人中控 V167](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Console-R17-V167.zip)，完整解压后运行 `start.cmd`；macOS/Linux 运行 `bash start.command`。页面地址为 `http://127.0.0.1:8090`。
 4. 填写自己的 `用户名@机器人IP` 和 SSH 登录信息，连接后核对本机标定，按 **HOME → 保持 → 行走** 使用。镜像已预装机器人服务；已有系统需要升级时，可在中控“系统维护”安装随包固件。
-5. 需要训练时，[下载训练中控 R1.5.27](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)，运行 `start-training.cmd` 或 `bash start-training.command`，打开 `http://127.0.0.1:8092`。
+5. 需要训练时，[下载训练中控 R1.5.27](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/release-assets/Microduck-Training-Studio-R1.5.27.zip)，运行 `start-training.cmd` 或 `bash start-training.command`，打开 `http://127.0.0.1:8092`。
 
 训练使用 NVIDIA GPU + Linux/WSL2，先安装 git 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。首次准备环境会下载固定版本的训练引擎和依赖。当前提供 14 类动作、35 种任务配方；具体使用见 [训练中控说明](training-console/README.zh-CN.md)。
 

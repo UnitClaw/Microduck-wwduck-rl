@@ -141,4 +141,4 @@ NP-F550 is the original 2200mAh kit with two batteries and a standard dual charg
 
 **[🧰 Open the tools and consumables list](docs/BUILD-TOOLS.en.md)**
 
-[📊 Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[📊 Optional Excel download (Chinese)](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)

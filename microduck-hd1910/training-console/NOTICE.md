@@ -2,7 +2,7 @@
 
 Microduck Training Studio is an independent local/SSH training orchestration and user interface. It is not a robot firmware package and does not flash or replace the daemon running on Radxa ZERO.
 
-**Project:** https://github.com/kissqy/Microduck-kissqy
+**Project:** https://github.com/UnitClaw/Microduck-wwduck-rl
 
 ## Software and source references
 

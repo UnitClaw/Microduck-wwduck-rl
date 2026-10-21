@@ -1,9 +1,9 @@
 中文：START-HERE.txt
-English: https://github.com/kissqy/Microduck-kissqy/blob/main/START-HERE.en.md
+English: https://github.com/UnitClaw/Microduck-wwduck-rl/blob/main/START-HERE.en.md
 
 Microduck 当前公开发布
 
-项目：https://github.com/kissqy/Microduck-kissqy
+项目：https://github.com/UnitClaw/Microduck-wwduck-rl
 首页 README.md 提供系统镜像、两个中控 ZIP 和源码入口。
 
 机器人中控：R17 V167（1.0.167）

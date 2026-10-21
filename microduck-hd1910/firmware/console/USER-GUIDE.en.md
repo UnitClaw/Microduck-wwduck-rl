@@ -4,7 +4,7 @@
 
 The console is `1.0.167`, bundled firmware is `1fa8438-feetech-ft6-control.43`, and the paired official system is `0.15.1`. The physical gamepad uses the native padd → robotd path for walking and roller models. Four roller ONNX models install with the firmware.
 
-Project: [Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy). Links appear at the top of the page and in the Windows launch window.
+Project: [Microduck-wwduck-rl](https://github.com/UnitClaw/Microduck-wwduck-rl). Links appear at the top of the page and in the Windows launch window.
 
 ## Startup and installation
 

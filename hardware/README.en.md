@@ -51,7 +51,7 @@ This is the duck build’s **🔧 PCB procurement branch**. Preview the HAT and 
 
 Minimum pack counts below apply to each row for one set. Rows with the same product and variant can be combined before rounding up to whole packs.
 
-[🦆 Main duck shopping guide](../DUCK-SHOPPING-LIST.en.md) · [Build cost](#build-cost) · [Board components](#board-components) · [Bare PCB fabrication](#bare-pcbs-and-fabrication) · [Full reference-designator BOMs](#full-reference-designator-boms) · [🧰 Tools](../docs/BUILD-TOOLS.en.md) · [Optional Excel download (Chinese)](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
+[🦆 Main duck shopping guide](../DUCK-SHOPPING-LIST.en.md) · [Build cost](#build-cost) · [Board components](#board-components) · [Bare PCB fabrication](#bare-pcbs-and-fabrication) · [Full reference-designator BOMs](#full-reference-designator-boms) · [🧰 Tools](../docs/BUILD-TOOLS.en.md) · [Optional Excel download (Chinese)](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/Microduck-HAT-IMU-Shopping-List-20261013.xlsx)
 
 ### Build cost
 
