@@ -2,8 +2,8 @@
   "publication_date": "2026-10-15",
   "archive": {
     "file": "Microduck-Print-FrankenDuck-20261015.rar",
-    "bytes": 16190775,
-    "sha256": "bb38274aa09a89305ffc3b0178c1f95e8e8ae6a51d43ab26c0f58639f824e912",
+    "bytes": 15248649,
+    "sha256": "ff78c1d7431733d1fd9fc9265d8930548e72551dd42ee05771c3fbf0d14e302f",
     "uploaded_content_unchanged": true
   },
   "contents": {
@@ -13,191 +13,191 @@
   },
   "files": [
     {
-      "path": "3D打印缝合怪版/stl模型/TPU部分/sole_left.stl",
-      "bytes": 789484,
-      "sha256": "db35f3b231c075fe1f9cb5449e7a698fb8ea97362daf8432be3e9700c2067574"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/TPU部分/sole_right.stl",
+      "path": "3D打印缝合怪版/stl模型/TPU部分/右脚底.stl",
       "bytes": 794484,
       "sha256": "a4f5c114aae7137d559cacfb71d77c981588850335de5a09a14f95a4192a218f"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/TPU部分/tire_623_TPU_dual_lips_1p8mm.stl",
+      "path": "3D打印缝合怪版/stl模型/TPU部分/左脚底.stl",
+      "bytes": 789484,
+      "sha256": "db35f3b231c075fe1f9cb5449e7a698fb8ea97362daf8432be3e9700c2067574"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/TPU部分/滑轮.stl",
       "bytes": 1360884,
       "sha256": "2b1cf8c8a2947d7434d432afc5ddc21c5de9fd527247fe0672dd73995433187c"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/01-upper_leg_rigidity_plate_上腿加固板-FT.STEP(1).stl",
-      "bytes": 246884,
-      "sha256": "957d229d62084b5196f3259c9307f53a98c7405f37dc04683fb5ab12c099b816"
+      "path": "3D打印缝合怪版/stl模型/支撑部分/右胯侧摆.stl",
+      "bytes": 1048584,
+      "sha256": "02bc777ce76a31b3d5c415188f8268b989f4eca57bc440a2900825ac459dec38"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/01-upper_leg_rigidity_plate_上腿加固板-FT.STEP.stl",
-      "bytes": 246884,
-      "sha256": "222bb244ce8b94ed09f502907f806793315df04a5099e49da9ca75f88f76a3e5"
+      "path": "3D打印缝合怪版/stl模型/支撑部分/右膝支撑.stl",
+      "bytes": 817384,
+      "sha256": "4c97774a0a386695d05b8ea083dbd684fea589109cea8e5567bc00f13104554d"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/face_part_IMX219_camera7mm_outer12mm.stl",
-      "bytes": 562984,
-      "sha256": "e250da95ca2237a0de0d328236c86e336e8bfdd9f7d964ed0fe828db235da2e4"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/item-26-___STEP.stl",
-      "bytes": 896984,
-      "sha256": "910a1911529ec2df2498517d43f8b2a2c42def28d85197607a09649ccaf9e16b"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/item-27-___STEP.stl",
-      "bytes": 896984,
-      "sha256": "5f967e9090e68b6fa3cd0fbe60a5722d5e6629143f9f91e72c2a043d1fa00cd4"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/item-3-____STL.stl",
-      "bytes": 1052184,
-      "sha256": "51c316274ab772d880a2d328b2b824f7e2137ba081df37a2a3bf0d1c0f02ed77"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/item-8-____STL.stl",
-      "bytes": 1052184,
-      "sha256": "1109c43589f6947eb611f87cdd11a7174f2e5cff4d6397f73b249c4f0c74d4b6"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/neck_pitch_R5_counterbores_shallower0p5mm.stl",
+      "path": "3D打印缝合怪版/stl模型/支撑部分/头部旋转.stl",
       "bytes": 384884,
       "sha256": "ba061ded5424fe7b801c51c2d91cd7b249c33424230858a080c568a5bdab1421"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/neck_颈部.stl(1).stl",
-      "bytes": 73484,
-      "sha256": "251f3082cc1d24ade8205959fc008293abab20bd3ab6b6bf12a7ec9d11c02040"
+      "path": "3D打印缝合怪版/stl模型/支撑部分/左胯侧摆.stl",
+      "bytes": 1048584,
+      "sha256": "02bc777ce76a31b3d5c415188f8268b989f4eca57bc440a2900825ac459dec38"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/neck_颈部.stl.stl",
+      "path": "3D打印缝合怪版/stl模型/支撑部分/左膝支撑.stl",
+      "bytes": 817384,
+      "sha256": "4c97774a0a386695d05b8ea083dbd684fea589109cea8e5567bc00f13104554d"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/支撑部分/脸.stl",
+      "bytes": 562984,
+      "sha256": "e250da95ca2237a0de0d328236c86e336e8bfdd9f7d964ed0fe828db235da2e4"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/支撑部分/颈部固定右.stl",
       "bytes": 73484,
       "sha256": "4a3524f66260c9ead2c19a7dc3f37d2bb4708e0f505c74c9203ae7de90b26fad"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/支撑部分/trunk_base_躯干底座.stl.stl",
-      "bytes": 184984,
-      "sha256": "ee252e92ae5806858a5fda01587df501f8d85245a4c0e5efe1f37eaaa75b44c8"
+      "path": "3D打印缝合怪版/stl模型/支撑部分/颈部固定左.stl",
+      "bytes": 73484,
+      "sha256": "251f3082cc1d24ade8205959fc008293abab20bd3ab6b6bf12a7ec9d11c02040"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/bottom_head_shell_rear_M2_counterbore_D4p2_depth5mm.stl",
-      "bytes": 1269584,
-      "sha256": "405b69524aedd4ea6202d8f76647bfbe48a23a292dcdf3daf53a028b57fc8ca4"
+      "path": "3D打印缝合怪版/stl模型/橙色部分/右脚.stl",
+      "bytes": 253084,
+      "sha256": "a1c89e0cf991fc57fef02575cfd6c76d9071c0f1a54814176dc18541c705387b"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/item-17-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
-      "bytes": 1225984,
-      "sha256": "3711c1ebb01c5bb28b9f3a1f6079dc1574228a6399f7cd1a7097c44d3e4f3e7f"
+      "path": "3D打印缝合怪版/stl模型/橙色部分/右脚掌.stl",
+      "bytes": 995784,
+      "sha256": "95a70872de9e45248af064c4b1968bfa98dc62de204f1462b6f7774c6efc8724"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/item-19-walking_base_dual_locks_no_end_tabs_v9_stl.stl",
-      "bytes": 1225984,
-      "sha256": "75cccd153c680d1b42dab46c09fdc32b37dff486514d1ef85e5ffacbf66ce584"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/item-28-ankle_right_dual_locks_v10_stl.stl",
-      "bytes": 1714984,
-      "sha256": "2b33896cc0ec1ede75a508355a43dc2e6035fcb8aac94be1ad9ebb8f970ee4b4"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/item-29-ankle_left_dual_locks_v10_stl.stl",
-      "bytes": 1714984,
-      "sha256": "5bab7e99b48df20216b628a07372f073bacb8aa653bf6e34d72d88917feb5284"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/jaw.stl",
+      "path": "3D打印缝合怪版/stl模型/橙色部分/嘴巴.stl",
       "bytes": 495984,
       "sha256": "65c300349113d3c6cd4a2cc587f76f7228115565a854492e42358ba8df71796a"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/noenoeil_3xD1p6_blind_depth5_backwall2mm.stl",
+      "path": "3D打印缝合怪版/stl模型/橙色部分/头部集成板.stl",
+      "bytes": 1269584,
+      "sha256": "405b69524aedd4ea6202d8f76647bfbe48a23a292dcdf3daf53a028b57fc8ca4"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/左脚.stl",
+      "bytes": 253184,
+      "sha256": "e10497f367caec0cb5e69897b597e941e3044a2e2dc256d38dee5747fb35b6bd"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/左脚掌.stl",
+      "bytes": 996184,
+      "sha256": "8c097d59369d5b4e836acf77b7bf1eb99c6a6e519627e9512a7c8fde9dd0fa25"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/滑轮支架右.stl",
+      "bytes": 5930560,
+      "sha256": "f6a34c647b665cacda372f3a24348f93a6b12a2c8dff00243f94e4f8ebe98dfb"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/滑轮支架左.stl",
+      "bytes": 5930560,
+      "sha256": "f6a34c647b665cacda372f3a24348f93a6b12a2c8dff00243f94e4f8ebe98dfb"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/橙色部分/眼睛.stl",
       "bytes": 109284,
       "sha256": "e390422b25ee0a7f504d48e0c6d79d0cf5ce45e2b92f8da51e0acacaa1a12675"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/橙色部分/roller_blade_R17_shifted_through_holes.stl",
-      "bytes": 3151484,
-      "sha256": "f9e7e8924afa7e5a8a913e12437283d6a79d66127e51c9b5ac1bee21a11e9e3e"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/item-21-______STL.stl",
-      "bytes": 1163584,
-      "sha256": "9c5a64fde21a64c2e137a926f94b20e5c579c21572b3970e1ead6a32204e2d0c"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/item-22-__6____6____1____1___.stl",
-      "bytes": 1163584,
-      "sha256": "42b7fb74f4df1298e8288a6054d7978082580deef1f25927ff2702276be92dd1"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/left_shell.stl",
+      "path": "3D打印缝合怪版/stl模型/躯体部分/右壳.stl",
       "bytes": 1048584,
-      "sha256": "efc16f55a4c32d21d74bf834faba27346788f154e29b40850cbcc69fda2f2396"
+      "sha256": "af2655c07de663925e950207dd17c43b2c933521d6ec831e6cec13c013b88a32"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/power_support_IMU_clip_R5_flat_face_extended_ramp.stl",
-      "bytes": 2621762,
-      "sha256": "66a40d4622763dc770de49834f70ad632034d927cb5f1fb03f815c78ad9d294e"
+      "path": "3D打印缝合怪版/stl模型/躯体部分/右胯外壳.stl",
+      "bytes": 6703545,
+      "sha256": "a33db72acb437a6e9a18ad6610bbf471f3e017efce9daea816b7af160a397d43"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/power_support_IMU_R5_back_upper_crossbar_down2mm.stl",
-      "bytes": 747184,
-      "sha256": "b92cb2265913af4303ffa983cedbbe09c09c2e5dac55b6837d81f8e8477790ec"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/right_shell.stl",
-      "bytes": 1048584,
-      "sha256": "484779f2bbe856f212d96a152550bb6834fd3c69603da315b6f70d1a3766d120"
-    },
-    {
-      "path": "3D打印缝合怪版/stl模型/躯体部分/top_head_shell_vents_R3_rounded_long_slots_mm.stl",
+      "path": "3D打印缝合怪版/stl模型/躯体部分/头盖.stl",
       "bytes": 1270184,
       "sha256": "9911301b9effb00a320a10afc6d13aaa557c6fe1dd2e1cd6036532a27b0ef390"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/bearing_roll_34x21mm_D17_4holes_rounded.stl",
-      "bytes": 325084,
-      "sha256": "6099393c17b48de873bdca8f7fb5aa425ef60da2dafc0b2c6d524783f441acdc"
+      "path": "3D打印缝合怪版/stl模型/躯体部分/左壳.stl",
+      "bytes": 1048584,
+      "sha256": "037504bdc1ec6708f75a215003c8a61c0425e49d1c66ff70a9d17425fd52fca2"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/bearing_roll_轴承滚轮-FT.STEP(1).stl",
-      "bytes": 223684,
-      "sha256": "d7503f7ff6dde4eda58e213770172bcec4af8b541f366a717c7a379153c03993"
+      "path": "3D打印缝合怪版/stl模型/躯体部分/左胯外盖.stl",
+      "bytes": 6803871,
+      "sha256": "3db31237e92fcfb0bd2ea561d5d35c24d374198de9766d1464d58cf0cbe9b3f7"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/bearing_roll_轴承滚轮-FT.STEP.stl",
-      "bytes": 223684,
-      "sha256": "745ff0cd4d0d7af29424098b8e9713e8b4db3476a231e14a4e8c6f0c5d698f21"
+      "path": "3D打印缝合怪版/stl模型/躯体部分/电池仓_M2.5螺丝_HUB组合.stl",
+      "bytes": 821384,
+      "sha256": "1740ec7cf55346a932ea58fa8fea972d42ba2c7384a799e9f29581bce3074bd1"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/motor_support.stl",
-      "bytes": 180884,
-      "sha256": "5a741ee0dc71b349b8d6def4bffb826c4b9304c47cf0f00ffd1a3140b9205220"
+      "path": "3D打印缝合怪版/stl模型/躯体部分/电池仓_卡扣加厚.stl",
+      "bytes": 2621762,
+      "sha256": "66a40d4622763dc770de49834f70ad632034d927cb5f1fb03f815c78ad9d294e"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/yaw2roll_FT_center_D6_depth1mm - 副本.stl",
+      "path": "3D打印缝合怪版/stl模型/黑色部分/右胯固定片.stl",
+      "bytes": 121084,
+      "sha256": "2b30cbdb110c5cca7092a9b2658c9e899e294bf2df71635828858e1d1a20abfe"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/右胯旋转.stl",
       "bytes": 717684,
       "sha256": "fdd013d1660d8a0b47bc553e85c8f925ac0e642821e51d76f7bea038bc354bbd"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/yaw2roll_FT_center_D6_depth1mm.stl",
-      "bytes": 717684,
-      "sha256": "fdd013d1660d8a0b47bc553e85c8f925ac0e642821e51d76f7bea038bc354bbd"
+      "path": "3D打印缝合怪版/stl模型/黑色部分/右腿固定片.stl",
+      "bytes": 180084,
+      "sha256": "41a4f826b5badfb75a1c0a6d26527c49761de88597d67c25ad731df2cdab7995"
     },
     {
-      "path": "3D打印缝合怪版/stl模型/黑色部分/yaw_roll_motion_gap21mm_M2_depth2mm_bottom_inner_minus2mm.stl",
+      "path": "3D打印缝合怪版/stl模型/黑色部分/头部侧倾.stl",
       "bytes": 922084,
       "sha256": "18574ebd43dfe30940af2989f84b8d6791612ba0fc25d700bdedee2df827ed1b"
     },
     {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/头部集成盖.stl",
+      "bytes": 180884,
+      "sha256": "5a741ee0dc71b349b8d6def4bffb826c4b9304c47cf0f00ffd1a3140b9205220"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/左胯固定片.stl",
+      "bytes": 121084,
+      "sha256": "2b30cbdb110c5cca7092a9b2658c9e899e294bf2df71635828858e1d1a20abfe"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/左胯旋转.stl",
+      "bytes": 717684,
+      "sha256": "fdd013d1660d8a0b47bc553e85c8f925ac0e642821e51d76f7bea038bc354bbd"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/左腿固定片.stl",
+      "bytes": 180084,
+      "sha256": "41a4f826b5badfb75a1c0a6d26527c49761de88597d67c25ad731df2cdab7995"
+    },
+    {
+      "path": "3D打印缝合怪版/stl模型/黑色部分/躯干台.stl",
+      "bytes": 184984,
+      "sha256": "fabfecefb73fbdc027e0fc8fc482a3857b86682a8dac0ca2ed88ae3011c01659"
+    },
+    {
       "path": "3D打印缝合怪版/缝合怪摆盘.3mf",
-      "bytes": 7217090,
-      "sha256": "641e9988ff6fbe91b9ffa360deb4b62d7179017abc0cf4575d7c13aea9335bd3"
+      "bytes": 5727217,
+      "sha256": "02012811530a94554d0deb0c4c0c0e3365f877daa0b2577d2d9f202ae2705ec5"
     }
   ],
-  "updated_date": "2026-10-15",
-  "update_note": "Roller shoe updated to roller_blade_R17_shifted_through_holes.stl; plate project updated to match."
+  "updated_date": "2026-10-21",
+  "update_note": "Added leg support ramps, removed outer leg-shell counterbores, and integrated an interchangeable-foot design based on the official roller shoes."
 }

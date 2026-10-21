@@ -99,6 +99,8 @@
 
 [打印文件、摆盘预览与两种电池仓说明](hardware/3d-print-frankenduck/) · [623ZZ 采购](DUCK-SHOPPING-LIST.md#滑轮选配轴承)
 
+**10 月 21 日打印件更新：** 增加腿部支撑斜面，装脚更容易；取消左右腿外壳外侧沉孔，降低跌落断孔风险；基于官方滑轮鞋整合可替换脚掌结构，换装无需拆舵机。
+
 ## 🔧 HAT 与 IMU 自制记录
 
 🎬 **[IMU 手工制作全过程 · Bilibili](https://www.bilibili.com/video/BV1qapz6PERs/)**

@@ -4,11 +4,15 @@
 
 **这套打印件结合了多位社区制作者的优化，以及 kissqy 在实际装配、运行和维护中做的修改，因此叫“缝合怪版”。** 改动较多，不逐一列出；这里提供作者整理的全套鸭子打印部件和参考摆盘。
 
-**[⬇️ 下载完整打印包（RAR，15.44 MiB）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256 校验](SHA256SUMS) · [包内文件清单](FILES.md) · [鸭子采购总清单](../../DUCK-SHOPPING-LIST.md) · [返回首页](../../README.md)
+**[⬇️ 下载完整打印包（RAR，14.54 MiB）](https://github.com/kissqy/Microduck-kissqy/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256 校验](SHA256SUMS) · [包内文件清单](FILES.md) · [鸭子采购总清单](../../DUCK-SHOPPING-LIST.md) · [返回首页](../../README.md)
 
 发布于 **2026-10-15**。包内 **36 个 STL 文件 + 1 个 3MF 摆盘项目（5 盘）**，保留原文件名和摆盘；文件数量不等于装配数量。下载的是原始压缩包，模型与摆盘内容没有重新编辑。
 
-**2026-10-15 更新：** 轮滑鞋已换为 `roller_blade_R17_shifted_through_holes.stl`，配套摆盘与预览同步更新。
+**2026-10-21 更新：**
+
+- **腿部支撑增加斜面**，装脚更顺手，减少安装时将脚掌撑开的情况。
+- **取消左右腿外壳外侧沉孔**，保留螺丝孔周围的壁厚，降低跌落时螺丝孔断裂的风险。
+- **在官方滑轮鞋基础上整合可替换脚掌结构**，方便换装脚掌与滑轮组件，无需拆卸舵机。
 
 ## 先看这几项
 
@@ -23,8 +27,8 @@
 
 | 版本 | 文件名 | 用途 |
 | --- | --- | --- |
-| **夹 HUB 板版** | `power_support_IMU_clip_R5_flat_face_extended_ramp.stl` | 需要同时夹持 HUB 板时选择；原 3MF 摆盘采用这一份。 |
-| **官方式加厚卡扣版** | `power_support_IMU_R5_back_upper_crossbar_down2mm.stl` | 沿用官方式电池仓结构，加厚卡扣部分；可用这份 STL 替换摆盘中的电池仓。 |
+| **夹 HUB 板版** | `电池仓_M2.5螺丝_HUB组合.stl` | 需要同时夹持 HUB 板时选择；使用 M2.5 螺丝的 HUB 组合结构；按需要选择。 |
+| **官方式加厚卡扣版** | `电池仓_卡扣加厚.stl` | 沿用官方式电池仓结构，加厚卡扣部分；可用这份 STL 替换摆盘中的电池仓。 |
 
 两者均配套 [本仓库 IMU](../README.md)；IMU 的烧录与接线见 [FT6 固件指南](../IMU-FIRMWARE.md)。
 
@@ -33,7 +37,7 @@
 1. 下载并解压 RAR。根目录里的 **`缝合怪摆盘.3mf`** 是参考摆盘，`stl模型/` 是分类后的单件模型。
 2. 用 Bambu Studio 打开 3MF 项目。原项目记录为 **BambuStudio 02.08.02.61 / Bambu Lab P2S / 0.4 mm 喷嘴 / 0.20 mm Standard**；按自己的打印机、喷嘴和材料调整。
 3. 选择所需电池仓版本；需要调整布局、数量或单独重打时，从对应分类导入 STL。
-4. **第 5 盘名为 TPU，`TPU部分/` 包含左右脚底和轮胎。** 原项目保存的材料预设为 PLA／ABS，打印这盘前要切换为实际使用的 **TPU 材料配置**。
+4. **第 5 盘名为 TPU，`TPU部分/` 包含 `左脚底.stl`、`右脚底.stl` 和 `滑轮.stl`。** 原项目保存的材料预设为 PLA，打印这盘前要切换为实际使用的 **TPU 材料配置**。
 
 硬质零件按实际材料、机器和装配需要选择切片设置；摆盘保留作者的布置，不作为所有设备通用的打印参数。
 

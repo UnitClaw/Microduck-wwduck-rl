@@ -94,6 +94,8 @@ This set combines community improvements with the author's real-robot modificati
 
 [Printing files, plate previews, and battery holders](hardware/3d-print-frankenduck/README.en.md) · [623ZZ purchasing](DUCK-SHOPPING-LIST.en.md#optional-roller-bearings)
 
+**October 21 printing update:** Added leg support ramps for easier foot installation, removed outer leg-shell counterbores to reduce screw-hole breakage in falls, and integrated interchangeable feet based on the official roller shoes so swaps do not require servo removal.
+
 ## 🔧 DIY HAT and IMU
 
 🎬 **[Watch the complete IMU build · Bilibili](https://www.bilibili.com/video/BV1qapz6PERs/)**
