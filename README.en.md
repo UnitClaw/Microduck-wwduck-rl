@@ -1,6 +1,21 @@
-[简体中文](README.md) | **English**
+# 🦆 Microduck · Bring a little desktop duck to life
 
-<div align="center">
+**English** | [简体中文](README.md)
+
+**Flash the image. Connect to Wi-Fi. Open the console. Get your duck moving.**
+
+**An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
+**Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
+
+[🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [🖨️ **Complete printing set · FrankenDuck**](hardware/3d-print-frankenduck/README.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
+
+[🎮 Robot Console online demo](https://UnitClaw.github.io/Microduck-wwduck-rl/) · [🧠 Training Studio online demo](https://UnitClaw.github.io/Microduck-wwduck-rl/training/)
+
+> ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, Wi-Fi setup, SSH, robot communication, and R17 recognition. **No need to compile the robot firmware yourself.**
+>
+> 📦 **Robot Console R17 V167 and Training Studio R1.5.27 are ready to download.** Compiled control.43 firmware and both console sources are also published. All downloads are grouped in the table below.
+
+---
 
 ## 🎬 See the duck in action — 7 real-robot videos
 
@@ -18,23 +33,20 @@
 
 <sub>These clips show the real robot — click a thumbnail to play. The online demos now match the Robot Console R17 V167 and Training Studio R1.5.27 interfaces. They use simulated data and cannot connect to your robot or run actual training.</sub>
 
-# 🦆 Microduck · Bring a little desktop duck to life
+---
 
-### Flash the image. Connect to Wi-Fi. Open the console. Get your duck moving.
+## Repository layout
 
-**An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
-
-**Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
-
-[🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [🖨️ **Complete printing set · FrankenDuck**](hardware/3d-print-frankenduck/README.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)
-
-[🎮 Robot Console online demo](https://UnitClaw.github.io/Microduck-wwduck-rl/) · [🧠 Training Studio online demo](https://UnitClaw.github.io/Microduck-wwduck-rl/training/)
-
-</div>
-
-> ✅ **Public Image R1 is available!** The integrated image has passed a fresh-card installation test covering boot, Wi-Fi setup, SSH, robot communication, and R17 recognition. **No need to compile the robot firmware yourself.**
->
-> 📦 **Robot Console R17 V167 and Training Studio R1.5.27 are ready to download.** Compiled control.43 firmware and both console sources are also published. All downloads are grouped in the table below.
+```
+Microduck-wwduck-rl/
+├── docs/                    # Guides, author's journey, online console (web)
+├── hardware/                # HAT / IMU build notes, 3D printing set
+├── microduck-hd1910/        # Firmware, Robot Console, Training Studio source
+├── release-assets/          # Console ZIPs, standalone firmware packages
+├── DUCK-SHOPPING-LIST.md    # Complete shopping guide
+├── START-HERE.txt           # Quick-start pointer
+└── README.md
+```
 
 ---
 
@@ -43,6 +55,8 @@
 This little duck can **walk, sit, pick things up, kick a ball, and roll forward**. Add rollers to explore **swizzling, crouching, spinning, and standing up after a fall**. Use a physical gamepad to control it; an independent Training Studio is available when you want to train your own movements.
 
 **Public Image R1 is released and has been tested by reflashing a real board.** It combines the official system with this project's preinstalled robot services and movement models. Flash it onto a Radxa ZERO 3W, connect to Wi-Fi, and open the console to use the prepared software environment without compiling firmware from source.
+
+---
 
 ## 🚀 Start in three steps
 
@@ -57,7 +71,9 @@ This little duck can **walk, sit, pick things up, kick a ball, and roll forward*
   <p><sub>First-boot Wi-Fi setup preview. The actual screen is the one shipped with Public Image R1.</sub></p>
 </div>
 
-## Downloads and versions
+---
+
+## 📥 Downloads and versions
 
 | Package | Purpose | Download |
 | --- | --- | --- |
@@ -76,6 +92,8 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 
 **V167 update: Fixed body jitter.**
 
+---
+
 ## 🎮 Two consoles, two jobs
 
 | 🐣 Robot Console · R17 V167 | 🧠 Training Studio · R1.5.27 |
@@ -88,6 +106,8 @@ Source: [firmware](microduck-hd1910/firmware/README.en.md) · [Robot Console](mi
 
 **English instructions:** [Robot Console](microduck-hd1910/firmware/console/README.en.md) · [Training Studio](microduck-hd1910/training-console/README.en.md) · [Image setup](docs/releases/public-image-r1.en.md) · [Source / build guides](microduck-hd1910/README.en.md). The application interfaces in the current downloads remain Chinese; the English guides include the original button labels where needed.
 
+---
+
 ## 🖨️ Complete printing set · FrankenDuck
 
 This set combines community improvements with the author's real-robot modifications, including STL files and a reference plate project. **Install rollers without removing the servos.** Choose a HUB-clamping battery holder or the official-style holder with thicker latches; both IMU mounts fit this repository's IMU. Rollers use **623ZZ (3×10×4 mm)** bearings.
@@ -95,6 +115,8 @@ This set combines community improvements with the author's real-robot modificati
 [Printing files, plate previews, and battery holders](hardware/3d-print-frankenduck/README.en.md) · [623ZZ purchasing](DUCK-SHOPPING-LIST.en.md#optional-roller-bearings)
 
 **October 21 printing update:** Added leg support ramps for easier foot installation, removed outer leg-shell counterbores to reduce screw-hole breakage in falls, and integrated interchangeable feet based on the official roller shoes so swaps do not require servo removal.
+
+---
 
 ## 🔧 DIY HAT and IMU
 
@@ -105,6 +127,8 @@ Both the custom HAT and the independent torso IMU have passed extended real-robo
 **Two connector versions are available: original EH2.5 and AMP2.0.** The AMP2.0 HAT uses HP1.25 speaker / microphone sockets and adds a green LED plus a 1kΩ resistor. [Both project versions](hardware/README.en.md) · [AMP2.0 guide and parts](hardware/AMP2.0-VERSION.en.md)
 
 [IMU firmware download and flashing](hardware/IMU-FIRMWARE.en.md) · [HAT build timeline](hardware/HAT-TIMELINE.en.md) · [IMU build timeline](hardware/IMU-TIMELINE.en.md) · [Hardware projects and notes](hardware/README.en.md) · [🔧 PCB shopping list (HAT / IMU)](hardware/README.en.md#shopping-list)
+
+---
 
 ## ❤️ Sharing the project and crediting its creators
 

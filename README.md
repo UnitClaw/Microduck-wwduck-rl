@@ -1,12 +1,21 @@
-
-
-
-
-
+# 🦆 Microduck · 让桌面上的小鸭动起来
 
 **简体中文** | [English](README.en.md)
 
-<div align="center">
+**刷好镜像，连上 Wi-Fi，打开中控 —— 简单一点，好玩很多。**
+
+**基于官方 Microduck 0.15.1 · 飞特 HD1910 适配 · 两套中文中控**
+**版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
+
+[🦆 **采购总清单**](DUCK-SHOPPING-LIST.md) · [🖨️ **打印全套 · 缝合怪版**](hardware/3d-print-frankenduck/) · [📥 下载与版本](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者进阶](docs/AUTHOR-JOURNEY.md)
+
+[🎮 机器人中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/) · [🧠 训练中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/training/)
+
+> ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试，**无需自行编译机器人固件。**
+>
+> 📦 **机器人中控 R17 V167 和训练中控 R1.5.27 已上传，可直接下载。** 配套的已编译 control.43 固件及两个中控源码也已公开，下载统一见下方表格。
+
+---
 
 ## 🎬 看看鸭鸭的真实表现（7 段视频）
 
@@ -24,23 +33,20 @@
 
 <sub>以上为实机视频，点击缩略图即可播放。在线演示已同步机器人中控 R17 V167 与训练中控 R1.5.27 的界面，使用模拟数据，不连接实机，也不会真正训练。</sub>
 
-# 🦆 Microduck · 让桌面上的小鸭动起来
+---
 
-### 刷好镜像，连上 Wi-Fi，打开中控。简单一点，好玩很多。
+## 仓库结构
 
-**基于官方 Microduck 0.15.1 · 飞特 HD1910 适配 · 两套中文中控**
-
-**软件版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
-
-[🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [🖨️ **打印全套 · 缝合怪版**](hardware/3d-print-frankenduck/) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)
-
-[🎮 机器人中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/) · [🧠 训练中控在线演示](https://UnitClaw.github.io/Microduck-wwduck-rl/training/)
-
-</div>
-
-> ✅ **Public Image R1 已正式发布！** 整合镜像已通过重新刷卡、首次配网、SSH、机器人通信和 R17 中控识别测试，**无需自行编译机器人固件。**
->
-> 📦 **机器人中控 R17 V167 和训练中控 R1.5.27 已上传，可直接下载。** 配套的已编译 control.43 固件及两个中控源码也已公开，下载统一见下方表格。
+```
+Microduck-wwduck-rl/
+├── docs/                    # 使用说明、作者进阶、在线中控（网页）
+├── hardware/                # HAT / IMU 自制记录、3D 打印件
+├── microduck-hd1910/        # 固件、机器人中控、训练中控源码
+├── release-assets/          # 中控 ZIP、独立固件安装包
+├── DUCK-SHOPPING-LIST.md    # 鸭子采购总清单
+├── START-HERE.txt           # 快速开始指引
+└── README.md
+```
 
 ---
 
@@ -49,6 +55,8 @@
 这是一只会**走路、坐下、捡东西、踢球、前滚翻**的小鸭。装上滑轮，还能探索**对称滑行、蹲下、原地转和倒地起身**等动作。实体手柄就能控制，不必为了每个动作打开电脑点按钮；想训练自己的动作，还有独立训练中控。
 
 **Public Image R1 已正式发布并通过刷卡实测**：把官方系统和本项目机器人服务预装在一起。刷入 Radxa ZERO 3W、连接 Wi-Fi，再打开中文中控，就能使用现成的软件环境，无须从源码编译固件。
+
+---
 
 ## 🚀 三步开始
 
@@ -63,7 +71,9 @@
   <p><sub>首次热点配网页面展示；实际以 Public Image R1 开机界面为准。</sub></p>
 </div>
 
-## 下载与版本
+---
+
+## 📥 下载与版本
 
 | 文件 | 用途 | 下载 |
 | --- | --- | --- |
@@ -82,6 +92,8 @@
 
 **V167 更新：修复鸭身抖动的问题。**
 
+---
+
 ## 🎮 两个中控，各做各的事
 
 | 🐣 机器人中控 · R17 V167 | 🧠 训练中控 · R1.5.27 |
@@ -92,6 +104,7 @@
 
 **V167 版本准备了 10 份运动模型**（6 个常规 + 4 个滑轮）。不用手动编写舵机动作，模型由控制服务执行。滑轮动作、倒地起身的效果受装配、标定和模型训练影响，仍需实机谨慎验证。
 
+---
 
 ## 🖨️ 鸭子全套打印件 · 缝合怪版
 
@@ -100,6 +113,8 @@
 [打印文件、摆盘预览与两种电池仓说明](hardware/3d-print-frankenduck/) · [623ZZ 采购](DUCK-SHOPPING-LIST.md#滑轮选配轴承)
 
 **10 月 21 日打印件更新：** 增加腿部支撑斜面，装脚更容易；取消左右腿外壳外侧沉孔，降低跌落断孔风险；基于官方滑轮鞋整合可替换脚掌结构，换装无需拆舵机。
+
+---
 
 ## 🔧 HAT 与 IMU 自制记录
 
@@ -110,6 +125,8 @@
 **硬件提供两种接口版本：原版 EH2.5 与 AMP2.0 版并存。** AMP2.0 版 HAT 的喇叭、麦克风改用 HP1.25，并新增绿色 LED 和 1kΩ 电阻。[查看两版工程](hardware/) · [AMP2.0 版说明与用料](hardware/AMP2.0-VERSION.md)
 
 [IMU 固件下载与烧录](hardware/IMU-FIRMWARE.md) · [HAT 制作时间线](hardware/HAT-TIMELINE.md) · [IMU 制作时间线](hardware/IMU-TIMELINE.md) · [硬件工程与说明](hardware/) · [🔧 PCB采购表（HAT／IMU）](hardware/README.md#采购清单)
+
+---
 
 ## ❤️ 分享给大家，也尊重原创
 
