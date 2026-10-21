@@ -6,25 +6,23 @@
 
 <table>
 <tr>
-      <td width="10%"><video src="https://github.com/user-attachments/assets/0ec5b46b-1ec0-483a-a95d-3b3f307e155f" controls></video></td>
-   <td width="10%"><video src="https://github.com/user-attachments/assets/71fc2c95-8499-49f6-924b-837df42814cf" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
+      <td width="10%"><a href="https://github.com/user-attachments/assets/0ec5b46b-1ec0-483a-a95d-3b3f307e155f"><img src="docs/assets/videos/video-1.jpg" alt="Video 1" width="160"></a></td>
+   <td width="10%"><a href="https://github.com/user-attachments/assets/71fc2c95-8499-49f6-924b-837df42814cf"><img src="docs/assets/videos/video-2.jpg" alt="Video 2" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad"><img src="docs/assets/videos/video-3.jpg" alt="Video 3" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5"><img src="docs/assets/videos/video-4.jpg" alt="Video 4" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3"><img src="docs/assets/videos/video-5.jpg" alt="Video 5" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d"><img src="docs/assets/videos/video-6.jpg" alt="Video 6" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f"><img src="docs/assets/videos/video-7.jpg" alt="Video 7" width="160"></a></td>
 </tr>
 </table>
 
-<sub>These clips show the real robot. The online demos now match the Robot Console R17 V167 and Training Studio R1.5.27 interfaces. They use simulated data and cannot connect to your robot or run actual training.</sub>
+<sub>These clips show the real robot — click a thumbnail to play. The online demos now match the Robot Console R17 V167 and Training Studio R1.5.27 interfaces. They use simulated data and cannot connect to your robot or run actual training.</sub>
 
 # 🦆 Microduck · Bring a little desktop duck to life
 
 ### Flash the image. Connect to Wi-Fi. Open the console. Get your duck moving.
 
 **An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
-
-> 🍴 This repository is a fork of [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy), maintained by **WWNT Robotics**. Original author attribution, license and third-party notices are preserved; download links and contact details now point to WWNT Robotics.
 
 **Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
@@ -133,3 +131,7 @@ This project grew from one board, one duck, and many debugging sessions. I am an
 **WWNT Robotics** · [Website www.wwntai.com](https://www.wwntai.com) · [International wwnt.ai](https://wwnt.ai) · [Support@wwntai.com](mailto:Support@wwntai.com)
 
 </div>
+
+---
+
+> 🍴 This repository is a fork of [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy), maintained by **WWNT Robotics**. Original author attribution, license and third-party notices are preserved; download links and contact details now point to WWNT Robotics.

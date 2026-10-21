@@ -12,25 +12,23 @@
 
 <table>
 <tr>
-      <td width="10%"><video src="https://github.com/user-attachments/assets/0ec5b46b-1ec0-483a-a95d-3b3f307e155f" controls></video></td>
-   <td width="10%"><video src="https://github.com/user-attachments/assets/71fc2c95-8499-49f6-924b-837df42814cf" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d" controls></video></td>
-  <td width="10%"><video src="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f" controls></video></td>
+      <td width="10%"><a href="https://github.com/user-attachments/assets/0ec5b46b-1ec0-483a-a95d-3b3f307e155f"><img src="docs/assets/videos/video-1.jpg" alt="视频 1" width="160"></a></td>
+   <td width="10%"><a href="https://github.com/user-attachments/assets/71fc2c95-8499-49f6-924b-837df42814cf"><img src="docs/assets/videos/video-2.jpg" alt="视频 2" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/d09a6bfe-7a28-4266-ba90-de2b331472ad"><img src="docs/assets/videos/video-3.jpg" alt="视频 3" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/a604c0e0-af01-413f-ab00-99ccd26db8d5"><img src="docs/assets/videos/video-4.jpg" alt="视频 4" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/4508d91c-e91c-40f4-8c3e-5ca5a3f959c3"><img src="docs/assets/videos/video-5.jpg" alt="视频 5" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/fd0dfafd-dd02-4852-940c-33706c287e9d"><img src="docs/assets/videos/video-6.jpg" alt="视频 6" width="160"></a></td>
+  <td width="10%"><a href="https://github.com/user-attachments/assets/693a3272-d814-42f6-86b3-be5cb3b35b0f"><img src="docs/assets/videos/video-7.jpg" alt="视频 7" width="160"></a></td>
 </tr>
 </table>
 
-<sub>以上为实机视频。在线演示已同步机器人中控 R17 V167 与训练中控 R1.5.27 的界面，使用模拟数据，不连接实机，也不会真正训练。</sub>
+<sub>以上为实机视频，点击缩略图即可播放。在线演示已同步机器人中控 R17 V167 与训练中控 R1.5.27 的界面，使用模拟数据，不连接实机，也不会真正训练。</sub>
 
 # 🦆 Microduck · 让桌面上的小鸭动起来
 
 ### 刷好镜像，连上 Wi-Fi，打开中控。简单一点，好玩很多。
 
 **基于官方 Microduck 0.15.1 · 飞特 HD1910 适配 · 两套中文中控**
-
-> 🍴 本仓库是 [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy) 的 fork，现由 **WWNT Robotics** 维护。原作者署名、分项许可与第三方声明均按原样保留；下载链接与联系方式已更新为 WWNT Robotics。
 
 **软件版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
 
@@ -138,3 +136,7 @@
 **WWNT Robotics** · [官网 www.wwntai.com](https://www.wwntai.com) · [国际站 wwnt.ai](https://wwnt.ai) · [Support@wwntai.com](mailto:Support@wwntai.com)
 
 </div>
+
+---
+
+> 🍴 本仓库是 [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy) 的 fork，现由 **WWNT Robotics** 维护。原作者署名、分项许可与第三方声明均按原样保留；下载链接与联系方式已更新为 WWNT Robotics。
