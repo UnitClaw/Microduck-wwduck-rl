@@ -30,6 +30,8 @@
 
 **基于官方 Microduck 0.15.1 · 飞特 HD1910 适配 · 两套中文中控**
 
+> 🍴 本仓库是 [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy) 的 fork，现由 **WWNT Robotics** 维护。原作者署名、分项许可与第三方声明均按原样保留；下载链接与联系方式已更新为 WWNT Robotics。
+
 **软件版本：机器人中控 R17 V167 · 固件 control.43 · 训练中控 R1.5.27 · 首次配网 R5**
 
 [🦆 **鸭子采购总清单**](DUCK-SHOPPING-LIST.md) · [🖨️ **打印全套 · 缝合怪版**](hardware/3d-print-frankenduck/) · [📥 前往下载区](#下载与版本) · [📚 使用说明](docs/README.md) · [🛠️ 源码](microduck-hd1910/README.md) · [🌱 作者如何从新手进阶](docs/AUTHOR-JOURNEY.md)

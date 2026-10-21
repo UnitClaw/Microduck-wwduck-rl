@@ -2,7 +2,7 @@
 
 # 🔧 Assembly and operating notes
 
-These notes record WWNT's experience assembling and running this project's real robot, dated October 22, 2026.
+These notes record kissqy's experience assembling and running this project's real robot, dated October 22, 2026.
 
 ## Connect ZERO to 5 GHz Wi-Fi
 

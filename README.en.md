@@ -24,6 +24,8 @@
 
 **An integrated ZERO 3W firmware image · Official Microduck 0.15.1 · Feetech HD1910 support · Two Chinese-language consoles**
 
+> 🍴 This repository is a fork of [kissqy/Microduck-kissqy](https://github.com/kissqy/Microduck-kissqy), maintained by **WWNT Robotics**. Original author attribution, license and third-party notices are preserved; download links and contact details now point to WWNT Robotics.
+
 **Versions: Robot Console R17 V167 · Firmware control.43 · Training Studio R1.5.27 · First-boot Wi-Fi setup R5**
 
 [🦆 **Duck shopping guide**](DUCK-SHOPPING-LIST.en.md) · [🖨️ **Complete printing set · FrankenDuck**](hardware/3d-print-frankenduck/README.en.md) · [📥 Downloads](#downloads-and-versions) · [📚 Guides](docs/README.en.md) · [🛠️ Source](microduck-hd1910/README.en.md) · [🌱 The author's learning journey](docs/AUTHOR-JOURNEY.en.md)

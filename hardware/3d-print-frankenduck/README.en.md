@@ -2,7 +2,7 @@
 
 # 🖨️ Complete duck printing parts · FrankenDuck edition
 
-**This set combines improvements from several community makers with modifications WWNT made while assembling, running, and maintaining the real robot. That is why it is called the “FrankenDuck” edition.** The changes are numerous and are not listed individually. This package supplies the author's complete duck printing parts and reference plate layout.
+**This set combines improvements from several community makers with modifications kissqy made while assembling, running, and maintaining the real robot. That is why it is called the “FrankenDuck” edition.** The changes are numerous and are not listed individually. This package supplies the author's complete duck printing parts and reference plate layout.
 
 **[⬇️ Download the complete package (RAR, 14.54 MiB)](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256](SHA256SUMS) · [Package file list](FILES.md) · [Duck shopping guide](../../DUCK-SHOPPING-LIST.en.md) · [Homepage](../../README.en.md)
 
@@ -59,6 +59,6 @@ These images come directly from the supplied 3MF project. Plate 5 is the TPU gro
 
 ## Sources and assembly
 
-This set starts from the official Microduck structure, incorporates improvements from multiple community makers, and combines them with WWNT's practical robot modifications. Credit belongs to the upstream project and the contributing makers. Original works retain their source rights and licenses; WWNT's additions follow this project's [component licenses](../../microduck-hd1910/LICENSE).
+This set starts from the official Microduck structure, incorporates improvements from multiple community makers, and combines them with kissqy's practical robot modifications. Credit belongs to the upstream project and the contributing makers. Original works retain their source rights and licenses; kissqy's additions follow this project's [component licenses](../../microduck-hd1910/LICENSE).
 
 Archive paths, sizes, and SHA256 hashes are recorded in [FILE-MANIFEST.json](FILE-MANIFEST.json).

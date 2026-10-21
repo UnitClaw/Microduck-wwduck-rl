@@ -2,7 +2,7 @@
 
 # 🖨️ 鸭子全套打印件 · 缝合怪版
 
-**这套打印件结合了多位社区制作者的优化，以及 WWNT 在实际装配、运行和维护中做的修改，因此叫“缝合怪版”。** 改动较多，不逐一列出；这里提供作者整理的全套鸭子打印部件和参考摆盘。
+**这套打印件结合了多位社区制作者的优化，以及 kissqy 在实际装配、运行和维护中做的修改，因此叫“缝合怪版”。** 改动较多，不逐一列出；这里提供作者整理的全套鸭子打印部件和参考摆盘。
 
 **[⬇️ 下载完整打印包（RAR，14.54 MiB）](https://github.com/UnitClaw/Microduck-wwduck-rl/raw/refs/heads/main/hardware/3d-print-frankenduck/Microduck-Print-FrankenDuck-20261015.rar)** · [SHA256 校验](SHA256SUMS) · [包内文件清单](FILES.md) · [鸭子采购总清单](../../DUCK-SHOPPING-LIST.md) · [返回首页](../../README.md)
 
@@ -59,6 +59,6 @@
 
 ## 来源与整理
 
-这套文件在官方 Microduck 结构的基础上，汇集多位社区制作者的优化，并结合 WWNT 的实机经验做组合和适配。感谢官方与社区原作者的贡献；各原作的权利与许可按原来源保留，WWNT 的新增修改遵循 [本项目分项许可](../../microduck-hd1910/LICENSE)。
+这套文件在官方 Microduck 结构的基础上，汇集多位社区制作者的优化，并结合 kissqy 的实机经验做组合和适配。感谢官方与社区原作者的贡献；各原作的权利与许可按原来源保留，kissqy 的新增修改遵循 [本项目分项许可](../../microduck-hd1910/LICENSE)。
 
 包内文件路径、大小与 SHA256 见 [FILE-MANIFEST.json](FILE-MANIFEST.json)。

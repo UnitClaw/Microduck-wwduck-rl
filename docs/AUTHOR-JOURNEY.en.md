@@ -8,7 +8,7 @@
 
 This project records two learning tracks that both began with the basics: boards, components, circuits, soldering, and assembly on one side; GitHub, running the official software, training, model deployment, and service responsibilities on the other. The author learned through questions and hands-on work, gradually bringing these parts together into a usable system. This page preserves the complete initial recap and adds the robot software learning process.
 
-**Author: WWNT · Compiled: October 13, 2026 · Period covered: August 31–October 13, 2026**
+**Author: kissqy · Compiled: October 13, 2026 · Period covered: August 31–October 13, 2026**
 
 [Learning timeline](#timeline) · [Complete initial reply](#full-recap) · [Robot software supplement](#software-learning) · [Related build records](#related)
 
